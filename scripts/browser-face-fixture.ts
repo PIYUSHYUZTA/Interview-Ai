@@ -1,0 +1,7 @@
+import fs from 'node:fs';
+/** Official portrait fixture -> real browser video -> real Python. Not a live webcam. */
+export async function installFaceFixture(page: any): Promise<void> {
+  const image = `data:image/jpeg;base64,${fs.readFileSync('proctoring/fixtures/portrait.jpg').toString('base64')}`;
+  const hands = `data:image/jpeg;base64,${fs.readFileSync('proctoring/fixtures/right_hands.jpg').toString('base64')}`;
+  await page.addInitScript({content:`const fixtureCapture=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async function(options){if(!options.video)return fixtureCapture(options);const permitted=await fixtureCapture(options);permitted.getTracks().forEach(function(track){track.stop();});const canvas=document.createElement('canvas');canvas.width=480;canvas.height=600;window.fixtureCanvas=canvas;const picture=new Image();picture.src=${JSON.stringify(image)};await picture.decode();const hands=new Image();hands.src=${JSON.stringify(hands)};await hands.decode();const draw=function(){const ctx=canvas.getContext('2d');ctx.fillStyle='#17202b';ctx.fillRect(0,0,480,canvas.height);if(window.fixtureImageMode==='hands')ctx.drawImage(hands,0,(canvas.height-255)/2,480,255);else if(window.fixtureImageMode!=='blank')ctx.drawImage(picture,0,(canvas.height-600)/2,480,600);};draw();const timer=setInterval(draw,100);const stream=canvas.captureStream(10);stream.getTracks().forEach(function(track){const stop=track.stop.bind(track);track.stop=function(){clearInterval(timer);stop();};});return stream;};`});
+}

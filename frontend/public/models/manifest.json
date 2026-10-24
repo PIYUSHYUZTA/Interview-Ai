@@ -1,0 +1,28 @@
+{
+  "generator": "scripts/blender/generate_assets.py",
+  "blender": "5.4.0 Alpha",
+  "palette": {
+    "ink": "031211",
+    "ivory": "E8E4D3",
+    "teal": "00AEBB",
+    "charcoal": "090907",
+    "earth": "6C5636",
+    "amber": "B99D73"
+  },
+  "assets": [
+    {
+      "file": "/models/intelligence-core.glb",
+      "bytes": 363252,
+      "triangles": 16688,
+      "sha256": "35ee34f6b8c400cf2a8aee0617426853981a960c88e96045ce89d977b1e338f1",
+      "source": "assets/blender/intelligence-core.blend"
+    },
+    {
+      "file": "/models/interview-studio.glb",
+      "bytes": 235076,
+      "triangles": 11400,
+      "sha256": "05b1e332f5c441ac31bff467493d43e623ef56d28973e1335cab99d86a3db94d",
+      "source": "assets/blender/interview-studio.blend"
+    }
+  ]
+}

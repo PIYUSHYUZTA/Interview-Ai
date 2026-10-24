@@ -1,0 +1,40 @@
+import { synthesizeInterviewSpeech } from './InterviewSpeech.js';
+import { afterEach,describe,it,expect } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import path from 'node:path';
+import { ApiServer } from './server.js';
+import { DeterministicProvider } from '../core/provider/DeterministicProvider.js';
+import { STRONG_RESUME } from '../testSupport/fixtures.js';
+
+describe('owned active interview question speech',()=>{
+  let close:(()=>Promise<void>)|undefined;let directory='';
+  afterEach(async()=>{await close?.();if(directory)rmSync(directory,{recursive:true,force:true});});
+  it.skipIf(process.platform!=='win32')('rejects foreign/stale questions and arbitrary text, produces real speech, rejects completed sessions',async()=>{
+    directory=mkdtempSync(path.resolve('.test-speech-'));
+    const api=await new ApiServer({provider:new DeterministicProvider(),dataDirectory:directory}).listen(0);close=api.close;
+    const base=`http://127.0.0.1:${api.port}`;
+    const post=(url:string,body:unknown,cookie='')=>fetch(base+url,{method:'POST',headers:{'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify(body)});
+    const registration=await post('/auth/register',{name:'Speech Candidate',email:'speech@example.test',password:'VoiceVerifyPass!2026'});
+    const cookie=registration.headers.get('set-cookie')!.split(';')[0];
+    const created=await post('/interviews',{resumeText:STRONG_RESUME,numRounds:1,questionsPerRound:1},cookie);expect(created.status).toBe(201);const session=await created.json();
+    expect((await post(`/interviews/${session.sessionId}/speech`,{questionId:'absent'},cookie)).status).toBe(409);
+    const start=await(await post(`/interviews/${session.sessionId}/start`,{},cookie)).json();
+    const url=`/interviews/${session.sessionId}/speech`,questionId=start.currentQuestion.id;
+    expect((await post(url,{questionId})).status).toBe(401);
+    expect((await post(url,{questionId:'stale'},cookie)).status).toBe(409);
+    expect((await post(url,{questionId,text:'arbitrary client prompt'},cookie)).status).toBe(400);
+    const other=await post('/auth/register',{name:'Other Candidate',email:'other-speech@example.test',password:'VoiceVerifyPass!2026'});
+    expect((await post(url,{questionId},other.headers.get('set-cookie')!.split(';')[0])).status).toBe(404);
+    const response=await post(url,{questionId},cookie);expect(response.status).toBe(200);expect(response.headers.get('cache-control')).toBe('no-store');
+    const speech=await response.json();expect(speech.questionId).toBe(questionId);expect(speech.visemes.length).toBeGreaterThan(10);
+    expect(Buffer.from(speech.audioBase64,'base64').subarray(0,4).toString()).toBe('RIFF');
+    const transcribeUrl=`/interviews/${session.sessionId}/transcribe`;
+    expect((await post(transcribeUrl,{questionId,audioBase64:'a'.repeat(100)},cookie)).status).toBe(415);
+    const answerAudio=await synthesizeInterviewSpeech('I used transactions to prevent duplicate payments and measured API latency.',new AbortController().signal);
+    expect((await post(transcribeUrl,{questionId,audioBase64:answerAudio.audioBase64},other.headers.get('set-cookie')!.split(';')[0])).status).toBe(404);
+    const transcribed=await post(transcribeUrl,{questionId,audioBase64:answerAudio.audioBase64},cookie);expect(transcribed.status).toBe(200);expect((await transcribed.json()).text.length).toBeGreaterThan(10);
+    expect((await post(`/interviews/${session.sessionId}/answer`,{questionId,text:'I validated transactions and measured latency, then used an idempotency key and a unique constraint to prevent duplicate retries.'},cookie)).status).toBe(200);
+    expect((await post(url,{questionId},cookie)).status).toBe(409);
+    expect((await post(transcribeUrl,{questionId,audioBase64:answerAudio.audioBase64},cookie)).status).toBe(409);
+  },30000);
+});

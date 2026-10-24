@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.npm-cache/
+.venv-proctoring/
+
+# Python cache & environments
+__pycache__/
+*.py[cod]
+*$py.class
+.cache/
+.pytest_cache/
+
+# Production builds
+dist/
+dist-ssr/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+.env.local
+!.env.example
+
+# Temporary test, browser, and diagnostic data
+.data/
+.browser-verification/
+.test-reliability-*/
+output*.txt
+tscerror*.txt
+*.log
+
+# System & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

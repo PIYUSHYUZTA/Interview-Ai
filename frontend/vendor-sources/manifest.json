@@ -1,0 +1,32 @@
+[
+  {
+    "file": "unlumen-switch.json",
+    "url": "https://ui.unlumen.com/r/switch.json",
+    "sha256": "fb5d1ef79ee6f1bfc69954682735a5218e5852d23a23300e0aa24e390d4f88ee"
+  },
+  {
+    "file": "magic-blur-fade.json",
+    "url": "https://magicui.design/r/blur-fade.json",
+    "sha256": "5161e38f05b5898ee42892daa9c133688f528b20817bb4c62ae79f68967a88ba"
+  },
+  {
+    "file": "smooth-ai-loader.json",
+    "url": "https://smoothui.dev/r/ai-loader.json",
+    "sha256": "ffc7aec06811ca21a23507a83422ee3d2d55c579b2fb8c822cd278b7839b61a6"
+  },
+  {
+    "file": "smooth-siri-orb.json",
+    "url": "https://smoothui.dev/r/siri-orb.json",
+    "sha256": "bb5e9519f144f344bd713e09990efd7447f7e5596905528464b90bf8e3a22629"
+  },
+  {
+    "file": "smooth-ai-core.json",
+    "url": "https://smoothui.dev/r/ai-core.json",
+    "sha256": "d005f55e94e189595720255ee3dd2b8a085a4b507888ea4b99a0583ad3caa849"
+  },
+  {
+    "file": "retro-button.json",
+    "url": "https://neobrutalism.com/r/base/button.json",
+    "sha256": "b5c78b2086537c49348d0d7d29916fe0daa60915cce506d228b266e0f51ddd58"
+  }
+]

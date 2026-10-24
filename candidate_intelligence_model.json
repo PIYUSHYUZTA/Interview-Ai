@@ -1,0 +1,242 @@
+{
+  "databases": {
+    "score": 0.61,
+    "confidence": 0.30,
+    "evidence": {
+      "resume": [
+        {
+          "kind": "resume",
+          "claimId": "db_claim",
+          "text": "Designed and scaled Postgres from 2M to 40M rows; introduced partitioning and indexing.",
+          "verdict": "validated",
+          "weight": 0.8,
+          "source": {"line": 7, "excerpt": "Scaled Postgres from 2M to 40M rows; introduced partitioning and indexing."}
+        }
+      ],
+      "interview": [
+        {
+          "kind": "interview",
+          "evidenceId": "q1",
+          "questionId": "q1",
+          "claimId": "db_claim",
+          "excerpt": "Addressed B-tree maintenance and schema design for 10M-row table",
+          "supportStrength": 0.65,
+          "timestamp": 100
+        },
+        {
+          "kind": "interview",
+          "evidenceId": "q6",
+          "questionId": "q6",
+          "claimId": "db_claim",
+          "excerpt": "Correctly identified READ COMMITTED anomaly",
+          "supportStrength": 0.95,
+          "timestamp": 200
+        }
+      ]
+    },
+    "knowledgeGaps": [
+      {
+        "skillId": "databases",
+        "currentEstimate": 0.61,
+        "requiredLevel": "senior",
+        "severity": 0.24,
+        "confidence": 0.30,
+        "reason": "Below the senior band (target ≈ 6–9)."
+      }
+    ],
+    "relatedTopics": [
+      {"topic": "Schema design & data modeling", "provenance": "resume_probe"},
+      {"topic": "Query performance & indexing", "provenance": "resume_probe"},
+      {"topic": "Transactions & consistency", "provenance": "resume_probe"},
+      {"topic": "Architecture & components", "provenance": "resume_probe"},
+      {"topic": "Scaling & performance", "provenance": "resume_probe"},
+      {"topic": "Trade-offs & alternatives", "provenance": "resume_probe"}
+    ]
+  },
+  "backend": {
+    "score": 0.63,
+    "confidence": 0.31,
+    "evidence": {
+      "resume": [
+        {
+          "kind": "resume",
+          "claimId": "backend_claim",
+          "text": "Led design and delivery of an idempotent payments API (Express, Redis).",
+          "verdict": "validated",
+          "weight": 0.9,
+          "source": {"line": 10, "excerpt": "Led design and delivery of an idempotent payments API (Express, Redis)."}
+        }
+      ],
+      "interview": [
+        {
+          "kind": "interview",
+          "evidenceId": "q2",
+          "questionId": "q2",
+          "claimId": "backend_claim",
+          "excerpt": "Designed idempotent POST /payments API with idempotency keys",
+          "supportStrength": 0.72,
+          "timestamp": 150
+        },
+        {
+          "kind": "interview",
+          "evidenceId": "q7",
+          "questionId": "q7",
+          "claimId": "backend_claim",
+          "excerpt": "Correctly identified canary deployment advantage",
+          "supportStrength": 0.95,
+          "timestamp": 250
+        }
+      ]
+    },
+    "knowledgeGaps": [
+      {
+        "skillId": "backend",
+        "currentEstimate": 0.63,
+        "requiredLevel": "senior",
+        "severity": 0.21,
+        "confidence": 0.31,
+        "reason": "Below the senior band (target ≈ 6–9)."
+      }
+    ],
+    "relatedTopics": [
+      {"topic": "Architecture & components", "provenance": "resume_probe"},
+      {"topic": "Scaling & performance", "provenance": "resume_probe"},
+      {"topic": "Deployment architecture", "provenance": "resume_probe"},
+      {"topic": "Infrastructure & automation", "provenance": "resume_probe"},
+      {"topic": "Idempotent API design", "provenance": "interviewed"},
+      {"topic": "Read-heavy caching with Redis", "provenance": "interviewed"}
+    ]
+  },
+  "cloud": {
+    "score": 0.47,
+    "confidence": 0.20,
+    "evidence": {
+      "resume": [],
+      "interview": [
+        {
+          "kind": "interview",
+          "evidenceId": "q4",
+          "questionId": "q4",
+          "claimId": "cloud_claim",
+          "excerpt": "Contrasted K8s container vs VM for batch job workload",
+          "supportStrength": 0.44,
+          "timestamp": 300
+        }
+      ]
+    },
+    "knowledgeGaps": [
+      {
+        "skillId": "cloud",
+        "currentEstimate": 0.47,
+        "requiredLevel": "junior",
+        "severity": 0.46,
+        "confidence": 0.20,
+        "reason": "Below the senior band (target ≈ 6–9)."
+      }
+    ],
+    "relatedTopics": [
+      {"topic": "Deployment architecture", "provenance": "resume_probe"},
+      {"topic": "Infrastructure & automation", "provenance": "resume_probe"}
+    ]
+  },
+  "system_design": {
+    "score": 0.51,
+    "confidence": 0.20,
+    "evidence": {
+      "resume": [],
+      "interview": [
+        {
+          "kind": "interview",
+          "evidenceId": "q5",
+          "questionId": "q5",
+          "claimId": "system_design_claim",
+          "excerpt": "Designed URL shortener for 100M writes and 10B reads per day",
+          "supportStrength": 0.57,
+          "timestamp": 350
+        }
+      ]
+    },
+    "knowledgeGaps": [
+      {
+        "skillId": "system_design",
+        "currentEstimate": 0.51,
+        "requiredLevel": "mid",
+        "severity": 0.39,
+        "confidence": 0.20,
+        "reason": "Below the senior band (target ≈ 6–9)."
+      }
+    ],
+    "relatedTopics": [
+      {"topic": "URL shortener design", "provenance": "interviewed"},
+      {"topic": "Architecture & components", "provenance": "resume_probe"}
+    ]
+  },
+  "data_engineering": {
+    "score": 0.50,
+    "confidence": 0.00,
+    "evidence": {
+      "resume": [
+        {
+          "kind": "resume",
+          "claimId": "de_claim",
+          "text": "Insights pipeline: ETL with Apache Spark and dbt modeling.",
+          "verdict": "unverified",
+          "weight": 0.5,
+          "source": {"line": 26, "excerpt": "Insights pipeline: ETL with Apache Spark and dbt modeling."}
+        }
+      ],
+      "interview": []
+    },
+    "knowledgeGaps": [],
+    "relatedTopics": [
+      {"topic": "ETL with Apache Spark", "provenance": "resume_probe"},
+      {"topic": "dbt modeling", "provenance": "resume_probe"},
+      {"topic": "Data pipeline design", "provenance": "resume_probe"}
+    ]
+  },
+  "testing": {
+    "score": 0.50,
+    "confidence": 0.00,
+    "evidence": {
+      "resume": [
+        {
+          "kind": "resume",
+          "claimId": "testing_claim",
+          "text": "Introduced unit and integration testing (Jest), raising coverage to 85%.",
+          "verdict": "unverified",
+          "weight": 0.6,
+          "source": {"line": 22, "excerpt": "Introduced unit and integration testing (Jest), raising coverage to 85%."}
+        }
+      ],
+      "interview": []
+    },
+    "knowledgeGaps": [],
+    "relatedTopics": [
+      {"topic": "Unit and integration testing", "provenance": "resume_probe"},
+      {"topic": "Test coverage analysis", "provenance": "resume_probe"}
+    ]
+  },
+  "software_delivery": {
+    "score": 0.50,
+    "confidence": 0.00,
+    "evidence": {
+      "resume": [
+        {
+          "kind": "resume",
+          "claimId": "sd_claim",
+          "text": "Improved CI/CD with GitHub Actions and Docker; cut deploys to 10 minutes.",
+          "verdict": "partial",
+          "weight": 0.7,
+          "source": {"line": 21, "excerpt": "Improved CI/CD with GitHub Actions and Docker; cut deploys to 10 minutes."}
+        }
+      ],
+      "interview": []
+    },
+    "knowledgeGaps": [],
+    "relatedTopics": [
+      {"topic": "CI/CD pipeline improvement", "provenance": "resume_probe"},
+      {"topic": "GitHub Actions", "provenance": "resume_probe"},
+      {"topic": "Docker-based deployment", "provenance": "resume_probe"}
+    ]
+  }
+}

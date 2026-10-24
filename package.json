@@ -1,0 +1,34 @@
+{
+  "name": "ai-mock-interview-core",
+  "version": "0.1.0",
+  "description": "Adaptive AI mock interview intelligence core: UNDERSTAND \u00e2\u2020\u2019 ASSESS \u00e2\u2020\u2019 ADAPT \u00e2\u2020\u2019 IMPROVE",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "tsx src/demo.ts",
+    "proof:live": "tsx src/e2e-integration-proof.ts",
+    "start:api": "tsx src/api/server.ts",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "migrate:sqlite": "tsx scripts/migrate-storage.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.1"
+  },
+  "dependencies": {
+    "mammoth": "^1.13.0",
+    "pdf-parse": "^2.4.5",
+    "zod": "^4.6.4"
+  }
+}

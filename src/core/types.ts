@@ -1,0 +1,625 @@
+/**
+ * Shared, provider-independent domain model for the mock interview intelligence core.
+ *
+ * Everything downstream (understanding, assessment, adaptation, improvement)
+ * speaks in these types so the whole brain can be unit-tested offline.
+ */
+import type { CandidateIntelligenceModel } from './intelligence/CandidateIntelligenceModel.js';
+
+// ---------------------------------------------------------------------------
+// Skills & roles
+// ---------------------------------------------------------------------------
+
+export type SkillCategory =
+  | 'algorithms'
+  | 'frontend'
+  | 'backend'
+  | 'databases'
+  | 'cloud'
+  | 'devops'
+  | 'system_design'
+  | 'data'
+  | 'mobile'
+  | 'security'
+  | 'testing'
+  | 'engineering';
+
+export const SKILL_CATEGORIES: readonly SkillCategory[] = [
+  'algorithms',
+  'frontend',
+  'backend',
+  'databases',
+  'cloud',
+  'devops',
+  'system_design',
+  'data',
+  'mobile',
+  'security',
+  'testing',
+  'engineering',
+];
+
+export type LevelBand = 'junior' | 'mid' | 'senior';
+
+export const LEVEL_BANDS: readonly LevelBand[] = ['junior', 'mid', 'senior'];
+
+/**
+ * A skill the intelligence layer recognises. `competencyWindow` defines the
+ * expected proficiency range per level band, which drives gap analysis.
+ */
+export interface SkillDef {
+  readonly id: string;
+  readonly label: string;
+  readonly category: SkillCategory;
+  readonly description: string;
+  /** Expected score window (0..10) for each career band. */
+  readonly competencyWindow: Record<LevelBand, { min: number; max: number }>;
+}
+
+export interface SkillsTaxonomy {
+  readonly definitions: ReadonlyMap<string, SkillDef>;
+  list(): SkillDef[];
+  get(id: string): SkillDef | undefined;
+  assert(id: string): SkillDef;
+}
+
+// ---------------------------------------------------------------------------
+// Claims & evidence (treat resume/JD statements as hypotheses)
+// ---------------------------------------------------------------------------
+
+export type ClaimSource = 'resume' | 'job_description' | 'self_reported' | 'inferred';
+
+export type EvidenceVerdict = 'validated' | 'refuted' | 'partial' | 'unverified';
+
+/** One atomic assertion that must be proven (or disproven) via interview evidence. */
+export interface Claim {
+  readonly id: string;
+  readonly text: string;
+  readonly source: ClaimSource;
+  /** Line-bound resume reference that raised this claim, when determinable. */
+  readonly sourceRef?: ResumeSourceRef;
+  /** Skill ids this claim depends on, if any. */
+  readonly skillIds: readonly string[];
+  readonly weight: number; // importance 0..1
+  verdict: EvidenceVerdict;
+  /** Points to evidence records that produced the verdict. */
+  evidenceIds: string[];
+}
+
+/** A single piece of interview evidence bound to a claim. */
+export interface EvidenceRecord {
+  readonly id: string;
+  readonly claimId: string;
+  readonly questionId: string;
+  /** Supporting (verbatim) excerpt from the candidate's answer, if used. */
+  readonly excerpt: string;
+  /** 0..1: how strongly this piece supports the claim. 0 = refutes, 0.5 = neutral. */
+  readonly supportStrength: number;
+  readonly timestamp: number;
+}
+
+// ---------------------------------------------------------------------------
+// Proficiency state (the rolling assessment)
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of a single graded probe for one skill. Scores are 0..10.
+ */
+export interface SkillObservation {
+  readonly skillId: string;
+  readonly questionId: string;
+  /** Holistic probe score 0..10. */
+  readonly score: number;
+  /** Quality of evidence contained in the answer (0..1). */
+  readonly evidenceQuality: number;
+  /** Confidence weight of this probe (coarser than an essay = noisier). */
+  readonly weight: number;
+  readonly difficulty: Difficulty;
+  readonly timestamp: number;
+}
+
+/**
+ * Rolling estimate for one skill. Deliberately a *distribution-shaped* estimate:
+ * `estimate` is the centre, `confidence` shrinks with the observation stream and
+ * grows with consistency. No single answer moves this much.
+ */
+export interface SkillState {
+  readonly skillId: string;
+  estimate: number; // 0..10 mean of weighted evidence
+  confidence: number; // 0..1
+  samples: number;
+  /** Recent observations keep the estimate responsive but not jumpy. */
+  history: readonly SkillObservation[];
+  lastAnsweredAt: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Questions & answers
+// ---------------------------------------------------------------------------
+
+export type Difficulty = 1 | 2 | 3 | 4 | 5;
+
+export type QuestionType =
+  | 'behavioral'
+  | 'conceptual'
+  | 'code'
+  | 'system_design'
+  | 'numerical'
+  | 'mcq'
+  | 'situational';
+
+export const QUESTION_TYPES: readonly QuestionType[] = [
+  'behavioral',
+  'conceptual',
+  'code',
+  'system_design',
+  'numerical',
+  'mcq',
+  'situational',
+];
+
+/** A concrete, askable question generated by the planner/adaptation layer. */
+export interface Question {
+  readonly id: string;
+  readonly skillId: string;
+  readonly subtopic: string;
+  readonly type: QuestionType;
+  readonly difficulty: Difficulty;
+  readonly prompt: string;
+  /** Explicit scoring cues so evaluators share vocabulary with graders. */
+  readonly rubricHints: readonly string[];
+  /** Seconds to plan/respond (parameterisable by difficulty). */
+  readonly timeBudgetSec: number;
+  /** Slot fill data for generated (parameterised) questions. */
+  readonly params?: Readonly<Record<string, string | number>>;
+  /** MCQ only. */
+  readonly choices?: readonly string[];
+  readonly correctChoiceIndex?: number;
+}
+
+export interface CodeQuestion extends Question {
+  readonly type: 'code';
+  readonly starterCode: string;
+  readonly language: string;
+  readonly numTestCases: number;
+  readonly testCases?: readonly {
+    readonly input: readonly unknown[];
+    readonly expected: unknown;
+    readonly description?: string;
+  }[];
+}
+
+export interface CandidateAnswer {
+  readonly questionId: string;
+  readonly text: string;
+  /** Student code for code questions. */
+  readonly code?: string;
+  readonly elapsedSec: number;
+  readonly selectedChoiceIndex?: number;
+  readonly timestamp: number;
+}
+
+// ---------------------------------------------------------------------------
+// Evaluation
+// ---------------------------------------------------------------------------
+
+export interface RubricCriteria {
+  readonly knowledgeDepth: number; // conceptual correctness & depth 0..10
+  readonly recallPrecision: number; // accuracy & specificity 0..10
+  readonly reasoning: number; // logical structure & trade-offs 0..10
+  readonly appliedEvidence: number; // concrete examples / demonstrated practice 0..10
+  readonly communication: number; // clarity, structure, jargon control 0..10
+}
+
+export type CriterionName = keyof RubricCriteria;
+
+export const CRITERION_NAMES: readonly CriterionName[] = [
+  'knowledgeDepth',
+  'recallPrecision',
+  'reasoning',
+  'appliedEvidence',
+  'communication',
+];
+
+/** Graded outcome for one question. */
+export interface QuestionEvaluation {
+  readonly questionId: string;
+  readonly skillId: string;
+  /** Holistic grade derived from criteria (0..10). */
+  readonly grade: number;
+  readonly criteria: RubricCriteria;
+  /** Justification text (from grader / synthesized). */
+  readonly rationale: string;
+  /** Whether the evaluator respected the explicit rubric hints. */
+  readonly rubricCompliance: number; // 0..1
+}
+
+// ---------------------------------------------------------------------------
+// UNDERSTAND: enriched candidate profile model
+// ---------------------------------------------------------------------------
+
+/** A precise, line-bound reference to where a claim appears in the source resume. */
+export interface ResumeSourceRef {
+  /** Resume line number (1-based) where the supporting evidence appears. */
+  readonly line: number;
+  /** Verbatim snippet from that line / range. */
+  readonly excerpt: string;
+  /** Human-readable section label when known (e.g. "experience", "projects"). */
+  readonly section?: string;
+}
+
+export interface ExperienceEntry {
+  readonly role: string;
+  readonly company: string;
+  readonly period: string;
+  readonly employmentType?: 'employment' | 'internship';
+  /** Bullet responsibilities exactly as written on the resume. */
+  readonly bullets: readonly string[];
+  readonly source: ResumeSourceRef;
+}
+
+export interface EducationEntry {
+  readonly level: string;
+  readonly field: string;
+  readonly institution: string;
+  readonly source?: ResumeSourceRef;
+}
+
+/**
+ * Candidate-level estimate as an explicit hypothesis — never a fact.
+ *
+ * It is derived from weak signals (years, titles) and MUST be validated through
+ * interview evidence before it is treated as anything more than a guess. The
+ * assessment loop flips `evidenceOverride` when observed evidence disagrees.
+ */
+export interface CandidateLevelHypothesis {
+  readonly band: LevelBand;
+  /** Why this band was guessed (the weak signals behind the estimate). */
+  readonly basis: string;
+  readonly status: 'hypothesis' | 'validated' | 'refuted';
+  /** Set to true once interview evidence has overridden the initial guess. */
+  readonly evidenceOverride: boolean;
+}
+
+/**
+ * A topic the interview should probe in order to validate a resume claim.
+ *
+ * Topics are interrogative *agendas*, never assertions about the candidate.
+ * For a claim like "Built a machine-learning recommendation system" the engine
+ * emits probes for architecture, algorithms, data, model selection, evaluation,
+ * deployment and the candidate's actual contribution — none of which assume the
+ * candidate actually understands any of them.
+ */
+export interface InterviewTopic {
+  readonly topic: string;
+  /** Why this topic matters for the claim it interrogates. */
+  readonly rationale: string;
+  /** Source reference that raised this topic. */
+  readonly source: ResumeSourceRef;
+  /** Specific probe dimensions to interrogate (e.g. "architecture", "data", "model selection"). */
+  readonly probes: readonly string[];
+  /** Skill ids this topic can interrogate, when determinable. */
+  readonly skillIds?: readonly string[];
+}
+
+// ---------------------------------------------------------------------------
+// Session & reports
+// ---------------------------------------------------------------------------
+
+export interface CandidateProfile {
+  readonly candidateName: string;
+  /** Skills the resume explicitly claims. Note: these are claims, not validated proficiencies. */
+  readonly skills: readonly { readonly skillId: string; readonly claim: string }[];
+  /** Years of hands-on experience claimed. */
+  readonly experienceYears: number;
+  readonly levelBand: LevelBand;
+  /** Education entries extracted from resume. */
+  readonly education: readonly EducationEntry[];
+  /** Structured work history with line-bound source references. */
+  readonly experience: readonly ExperienceEntry[];
+  readonly projects: readonly string[];
+  /** Certification names found in resume. */
+  readonly certifications: readonly string[];
+  /** Technology tokens mentioned in resume. */
+  readonly technologies: readonly string[];
+  /** Responsibility descriptions extracted from experience/projects. */
+  readonly responsibilities: readonly string[];
+  readonly claims: readonly Claim[];
+  /** Verbose research notes kept for the evidence log. */
+  readonly notes: readonly string[];
+  /** Candidate-level estimate as a falsifiable hypothesis (evidence will override). */
+  readonly candidateLevelHypothesis: CandidateLevelHypothesis;
+  /** Interrogation agenda: topics to probe so resume claims can be validated. */
+  readonly potentialInterviewTopics: readonly InterviewTopic[];
+  /** Line-bound evidence/source references that support the profile. */
+  readonly evidenceSourceReferences: readonly ResumeSourceRef[];
+}
+
+export interface RoleRequirement {
+  readonly title: string;
+  readonly teamSizes?: string;
+  readonly stackNotes?: string;
+  /** Weighted required skills; weight = importance to the role. */
+  readonly skills: readonly {
+    readonly skillId: string;
+    readonly weight: number;
+    readonly requiredLevel: LevelBand;
+    /** Whether the role requires this skill or merely prefers it. */
+    readonly kind?: JobRequirementKind;
+  }[];
+  readonly softRequirements: readonly string[];
+}
+
+export type JobRequirementKind = 'required' | 'preferred';
+
+/** Company expectations including culture values, work style, leadership principles, etc. */
+export interface CompanyExpectations {
+  readonly cultureValues?: readonly string[];
+  readonly workStyle?: readonly string[];
+  readonly leadershipExpectations?: readonly string[];
+  readonly notes?: readonly string[];
+}
+
+/** Input object for JobRequirementIntelligence allowing flexible combinations of raw text or structured inputs. */
+export interface JobRequirementInput {
+  readonly jobDescription?: string;
+  readonly roleRequirements?: RoleRequirement | readonly RoleSkill[];
+  readonly companyExpectations?: CompanyExpectations | string | readonly string[];
+  readonly title?: string;
+  readonly expectedLevel?: LevelBand;
+}
+
+// ---------------------------------------------------------------------------
+// Job Requirement Intelligence
+// ---------------------------------------------------------------------------
+
+/** Deterministic extraction of the raw signals in a job description. */
+export interface JobDescriptionAnalysis {
+  readonly title: string;
+  readonly requiredSkills: readonly string[];
+  readonly preferredSkills: readonly string[];
+  readonly responsibilities: readonly string[];
+  readonly expectedLevel: LevelBand | undefined;
+  readonly relevantTechnologies: readonly string[];
+  readonly problemSolvingExpectations: readonly string[];
+  readonly domainKnowledge: readonly string[];
+  readonly companyExpectations: readonly string[];
+  /** Raw section text so downstream layers have the source. */
+  readonly sections: readonly { readonly label: string; readonly notes: readonly string[] }[];
+}
+
+/** A single role skill after JD → role matching. */
+export interface RoleSkill {
+  readonly skillId: string;
+  readonly label: string;
+  readonly requiredLevel: LevelBand;
+  readonly weight: number;
+  readonly kind: JobRequirementKind;
+  /** Source evidence for this requirement (JD section / excerpt). */
+  readonly source: string;
+}
+
+/**
+ * A gap the interview should focus on. Enough shape for the adaptive system: it
+ * carries the skill, required level, candidate estimate (where available), gap
+ * severity, requirement weight, required-vs-preferred, confidence, a priority
+ * (higher = address first) and the evidence behind it.
+ */
+export interface HighPriorityGap {
+  readonly id: string;
+  readonly skillId: string;
+  readonly label: string;
+  readonly requiredLevel: LevelBand;
+  readonly kind: JobRequirementKind;
+  /** Candidate estimate on 0..10 where a state exists; null when never probed. */
+  readonly candidateEstimate: number | null;
+  /** 0..1 distance from the required band (missing = 1). */
+  readonly gapSeverity: number;
+  readonly requirementWeight: number;
+  /** Confidence in the estimate (0..1); 0 when unprobed/unknown. */
+  readonly confidence: number;
+  /** Deterministic priority — higher should be probed first. */
+  readonly priority: number;
+  readonly evidence: string;
+}
+
+/** A skill/topic the interview should intentionally gather more evidence about. */
+export interface InterviewTarget {
+  readonly skillId: string;
+  readonly label: string;
+  readonly reason: string;
+  /** 0..1 priority — higher first. */
+  readonly priority: number;
+  readonly kind: JobRequirementKind;
+  readonly weight: number;
+}
+
+/** Outcome of comparing the candidate profile against role requirements. */
+export interface JobRoleComparison {
+  readonly roleTitle: string;
+  readonly matchedSkills: readonly RoleSkill[];
+  readonly missingSkills: readonly RoleSkill[];
+  readonly weakSkills: readonly RoleSkill[];
+  /** Candidate-level gaps, sorted by priority (most important first). */
+  readonly highPriorityGaps: readonly HighPriorityGap[];
+  /** Skills/topics the interview should gather evidence about, prioritized. */
+  readonly interviewTargets: readonly InterviewTarget[];
+}
+
+export interface InterviewRoundConfig {
+  readonly questionBudget: number;
+  /** Rotate so no skill monopolises a round. */
+  readonly maxSameSkillInRow: number;
+}
+
+export interface SessionConfig {
+  /** Historical practice priorities; never counted as current-session evidence. */
+  readonly practicePriorities?: readonly { readonly skillId: string; readonly priority: number; readonly sourceSessionId: string }[];
+  readonly evaluationProviderName?: string;
+  readonly detectedRole?: { readonly title: string; readonly confidence: string; readonly rationale: string };
+  readonly interviewPlan?: InterviewPlan;
+  readonly role: RoleRequirement;
+  readonly profile: CandidateProfile;
+  readonly numRounds: number;
+  readonly roundConfig: InterviewRoundConfig;
+  /** Standalone questions served by the question bank. */
+  readonly customQuestions?: readonly Question[];
+  readonly adaptationParams?: {
+    /** How strongly requirement weight drives topic selection (0..1). */
+    readonly requirementBias: number;
+    /** How strongly low-confidence/gaps drive topic selection (0..1). */
+    readonly gapBias: number;
+  };
+}
+
+export interface AssessmentReport {
+  readonly roleTitle: string;
+  readonly candidatePriority: number; // 0..1
+  readonly overallScore: number; // 0..10
+  readonly skillSummary: readonly {
+    readonly skillId: string;
+    readonly estimate: number;
+    readonly confidence: number;
+    readonly verdict: 'meets' | 'partially_meets' | 'gap' | 'unverified';
+  }[];
+  readonly claimsResolved: readonly Claim[];
+  readonly gaps: readonly KnowledgeGap[];
+  readonly roadmap: readonly RoadmapStep[];
+  readonly roundsPerformed: number;
+  readonly questionsAsked: number;
+  /**
+   * The structured candidate intelligence model (per-skill score / confidence /
+   * evidence / gaps / related topics) derived entirely from the interview.
+   */
+  readonly candidateIntelligence: CandidateIntelligenceModel;
+}
+
+export interface KnowledgeGap {
+  readonly skillId: string;
+  readonly currentEstimate: number;
+  readonly requiredLevel: LevelBand;
+  readonly severity: number; // 0..1 based on distance from requirement
+  readonly confidence: number; // confidence the gap is real (0..1)
+  readonly reason: string; // human-readable explanation
+  readonly concept: string; // the specific concept/skill the gap concerns
+  readonly evidence: readonly string[]; // traceable evidence references (excerpts or claimIds)
+}
+
+export interface RoadmapStep {
+  readonly skillId: string;
+  readonly category: SkillCategory;
+  readonly priority: number; // 1 = highest priority
+  readonly action: string;
+  readonly rationale: string;
+  readonly effort: 'short' | 'medium' | 'long';
+}
+
+// ---------------------------------------------------------------------------
+// Module 6: Interview Planner Types
+// ---------------------------------------------------------------------------
+
+export type BuiltInRoundType =
+  | 'hr_intro'
+  | 'technical'
+  | 'logic_problem_solving'
+  | 'behavioral_out_of_box';
+
+export type RoundType = BuiltInRoundType | (string & {});
+
+/** Blueprint for an interview round type. */
+export interface RoundTemplate {
+  readonly type: RoundType;
+  readonly name: string;
+  readonly description: string;
+  readonly defaultQuestionTypes: readonly QuestionType[];
+  readonly evaluationCriteria: readonly string[];
+  readonly defaultDifficultyRange: { readonly min: Difficulty; readonly max: Difficulty };
+  readonly defaultTargetCategories?: readonly SkillCategory[];
+}
+
+/** A single concrete round planned by InterviewPlanner. */
+export interface PlannedRound {
+  readonly roundNumber: number;
+  readonly type: RoundType;
+  readonly name: string;
+  readonly description: string;
+  readonly targetSkills: readonly string[];
+  readonly difficultyRange: { readonly min: Difficulty; readonly max: Difficulty };
+  readonly questionTypes: readonly QuestionType[];
+  readonly evaluationCriteria: readonly string[];
+  readonly candidateSpecificTopics: readonly string[];
+  readonly roleSpecificTopics: readonly string[];
+  readonly areasRequiringValidation: readonly string[];
+  readonly questionBudget: number;
+}
+
+/** The complete interview plan produced by InterviewPlanner. */
+export interface InterviewPlan {
+  readonly roleTitle: string;
+  readonly candidateName: string;
+  readonly rounds: readonly PlannedRound[];
+  readonly totalQuestionBudget: number;
+  readonly requiredRoundsCount: number;
+  readonly summary: string;
+}
+
+export interface PlannerOptions {
+  readonly requiredRounds?: readonly RoundType[];
+  readonly customTemplates?: readonly RoundTemplate[];
+  readonly questionsPerRound?: number;
+  readonly targetDifficulty?: Difficulty;
+}
+
+// ---------------------------------------------------------------------------
+// Module 7: Question Generation Engine Types
+// ---------------------------------------------------------------------------
+
+/** Strict structured JSON output required for every generated question. */
+export interface StructuredQuestionPayload {
+  readonly question: string;
+  readonly topic: string;
+  readonly subtopic: string;
+  readonly difficulty: number; // 1..10 or Difficulty scale
+  readonly question_type: QuestionType | string;
+  readonly target_skill: string;
+  readonly expected_answer_points: readonly string[];
+  readonly purpose: string;
+}
+
+export interface DynamicQuestionInput {
+  readonly candidateProfile: CandidateProfile;
+  readonly roleRequirements: RoleRequirement | JobDescriptionAnalysis | { readonly roleRequirement: RoleRequirement };
+  readonly currentRound?: PlannedRound | RoundType | number;
+  readonly rollingSkillState?: readonly SkillState[] | SkillState;
+  readonly questionHistory?: readonly (Question | { readonly question: Question })[];
+  readonly currentDifficulty: Difficulty;
+  readonly targetSkill: string;
+  readonly recentEvaluation?: QuestionEvaluation | null;
+  readonly interviewConstraints?: {
+    readonly timeBudgetSec?: number;
+    readonly allowedTypes?: readonly QuestionType[];
+    readonly preferredTypes?: readonly QuestionType[];
+    readonly maxSameSkillInRow?: number;
+  };
+}
+
+export interface DynamicQuestionResult {
+  readonly structuredOutput: StructuredQuestionPayload;
+  readonly question: Question;
+  readonly isFollowUp: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Generic scoring helpers
+// ---------------------------------------------------------------------------
+
+export interface Norm {
+  /** Clamp 0..1 inclusive. */
+  clamp01(value: number): number;
+  clamp10(value: number): number;
+  /** Convert a 0..10 value to 0..1. */
+  to01(value: number): number;
+  /** Convert a 0..1 value to 0..10. */
+  to10(value: number): number;
+  lerp(a: number, b: number, t: number): number;
+}
