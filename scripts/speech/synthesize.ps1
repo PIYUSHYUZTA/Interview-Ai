@@ -13,7 +13,10 @@ public static class InterviewSpeech {
    synth.SelectVoiceByHints(VoiceGender.Female,VoiceAge.Adult,0,new System.Globalization.CultureInfo("en-US"));
    synth.Rate = -1;
    var cues = new List<Cue>();
-   synth.VisemeReached += (sender,e) => { lock(cues) cues.Add(new Cue {time=e.AudioPosition.TotalSeconds,id=e.Viseme}); };
+   // AudioPosition drifts later by ~35 ms per event (about 1.25-1.3x by the end of a question).
+   // Viseme durations sum exactly to the WAV length, so cue times are their running total.
+   double position = 0;
+   synth.VisemeReached += (sender,e) => { lock(cues) { cues.Add(new Cue {time=position,id=e.Viseme}); position += e.Duration.TotalSeconds; } };
    synth.SetOutputToWaveStream(stream);
    synth.Speak(text);
    synth.SetOutputToNull();

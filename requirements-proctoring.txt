@@ -1,6 +1,8 @@
-fastapi==0.138.1
-uvicorn==0.49.0
+# Vision service (proctoring/worker.py) — installed into .venv-proctoring by `npm run setup:vision`.
+# Python 3.10–3.13; tested on CPython 3.13.17 (Windows x64). Python 3.14 is not supported here:
+# the pinned NumPy 2.2.6 has no 3.14 wheel and a source build fails without GCC >= 8.4.
+# Exact versions of every transitive package: requirements-proctoring.lock.txt.
 mediapipe==0.10.35
+# MediaPipe itself depends on the contrib build; keep exactly one OpenCV distribution installed.
 opencv-contrib-python==4.12.0.88
-
 numpy==2.2.6

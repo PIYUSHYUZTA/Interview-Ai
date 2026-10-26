@@ -2,6 +2,22 @@
 
 The existing `motion/react` library coordinates the landing page. No animation dependency was added.
 
+## Section motion (current)
+
+| Element | Motion | Reduced motion |
+| --- | --- | --- |
+| Navigation | Sticky; condenses from 88 to 68 px after 12 px of scroll. The current section (*How it works / Features / About*) is marked with `aria-current="location"` and a Cerulean underline. Hover draws a half underline. | No transitions; marking still updates |
+| Phone menu | 240 ms fade and 8 px slide in and out | Appears and disappears instantly |
+| How-it-works cards | Once-only reveal. Interview types stagger in at 80 ms. Hover brightens the border and visual, and the step number turns Neon Rose (no layout movement). | Content shown immediately; hover colour only |
+| Practice step | Illustrative turn-taking cycle (speaking → listening → evaluating) every 2.2 s, only while ≥40% visible | Static on *Interviewer speaking* |
+| Review step | Example skill bars fill once over 900 ms using `scaleX`. The track is observed because a zero-width bar is ignored by viewport observers. | Bars full immediately |
+| Anchor navigation | Smooth scroll with `scroll-margin-top: 84px` under the sticky nav | Instant |
+
+All new motion uses `transform`, `opacity` and colour, never layout properties.
+`scripts/verify-cinematic-landing.ts` checks: sticky and condensed position, the
+current-section marker, the cycle advancing while visible, the bars reaching full
+scale, and in a reduced-motion context the cycle and bars staying still.
+
 ## Blender camera movement
 
 The core's perspective camera settles from 6.35 to 5.8 scene units, with an

@@ -1,27 +1,27 @@
 {
   "generator": "scripts/blender/generate_assets.py",
-  "blender": "5.4.0 Alpha",
+  "blender": "5.2.3 LTS",
   "palette": {
-    "ink": "031211",
-    "ivory": "E8E4D3",
-    "teal": "00AEBB",
-    "charcoal": "090907",
-    "earth": "6C5636",
-    "amber": "B99D73"
+    "ink": "0a0a0a",
+    "ivory": "EDEDED",
+    "teal": "007BA7",
+    "charcoal": "081c23",
+    "earth": "007BA7",
+    "amber": "FF2D95"
   },
   "assets": [
     {
       "file": "/models/intelligence-core.glb",
-      "bytes": 363252,
+      "bytes": 363228,
       "triangles": 16688,
-      "sha256": "35ee34f6b8c400cf2a8aee0617426853981a960c88e96045ce89d977b1e338f1",
+      "sha256": "cf54841be0490c841598db5905949efaefe45ed1e9e72c6ff02e90291e0b560e",
       "source": "assets/blender/intelligence-core.blend"
     },
     {
       "file": "/models/interview-studio.glb",
-      "bytes": 235076,
+      "bytes": 235044,
       "triangles": 11400,
-      "sha256": "05b1e332f5c441ac31bff467493d43e623ef56d28973e1335cab99d86a3db94d",
+      "sha256": "5e986cba82f24e20b567d86231a0cd848777ff07cac1d32956a7bee15de7580e",
       "source": "assets/blender/interview-studio.blend"
     }
   ]

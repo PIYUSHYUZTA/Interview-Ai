@@ -5,7 +5,7 @@ export function captureSettings(env: Record<string, unknown>) {
     return Number.isFinite(value) && value >= low && value <= high ? Math.round(value) : fallback;
   };
   return {
-    intervalMs: bounded('VITE_PROCTORING_INTERVAL_MS', 2000, 1500, 3000),
+    intervalMs: bounded('VITE_PROCTORING_INTERVAL_MS', 400, 250, 3000),
     maxEdge: bounded('VITE_PROCTORING_MAX_EDGE', 640, 320, 640),
   };
 }

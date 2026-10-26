@@ -31,5 +31,9 @@ describe('audio synchronized avatar speech', () => {
     expect(result.visemes.length).toBeGreaterThan(8);
     expect(result.visemes.some(cue=>cue.id!==0)).toBe(true);
     expect(result.visemes.every((cue,i)=>!i||cue.time>=result.visemes[i-1].time)).toBe(true);
+    // Cues must share the WAV's timeline: the last cue starts before the audio ends.
+    const seconds=(wav.length-44)/wav.readUInt32LE(28);
+    expect(result.visemes.at(-1)!.time).toBeLessThan(seconds);
+    expect(result.visemes.at(-1)!.time).toBeGreaterThan(seconds*.8);
   },30000);
 });

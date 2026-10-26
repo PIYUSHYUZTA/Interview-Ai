@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { InterviewerVisual } from './InterviewerVisual';
 import { LandingReveal as Reveal } from './LandingReveal';
 import { landingMotion, useLandingReducedMotion } from './landing-motion';
 import { Meter } from './ui';
@@ -39,8 +38,8 @@ export function RoomPreview() {
   return <Reveal className="c-room-preview">
     <div className="c-demo-caption"><span>INTERVIEWAI / INTERVIEW ROOM</span><span>PRODUCT PREVIEW · NOT LIVE</span></div>
     <div className="c-room-demo-grid">
-      <div className="c-room-interviewer"><div className="c-room-stage"><span className="c-signal" /> PROJECT EXPERIENCE <span>03 / 08 · EXAMPLE</span></div><InterviewerVisual size={105} state="idle" /><p className="c-step">YOUR AI INTERVIEWER</p><h3>Tell me about a technical decision you made on your most recent project.</h3><VoiceWave /><span className="c-room-disclosure">Illustrative question and waveform · no audio playing</span></div>
-      <div className="c-room-candidate"><div className="c-camera-illustration"><svg viewBox="0 0 240 200" fill="none" aria-hidden="true"><ellipse cx="120" cy="205" rx="92" ry="77" fill="url(#candidate-fill)" /><circle cx="120" cy="82" r="39" fill="url(#candidate-fill)" /><path d="M20 46V20h26m148 0h26v26M20 154v26h26m148 0h26v-26" stroke="#b99d73" strokeOpacity=".35" /><defs><linearGradient id="candidate-fill" x1="75" y1="30" x2="170" y2="200" gradientUnits="userSpaceOnUse"><stop stopColor="#6c5636" /><stop offset="1" stopColor="#031211" /></linearGradient></defs></svg><span>CAMERA PREVIEW · ILLUSTRATION</span></div><div className="c-preview-controls" aria-label="Illustrative interview controls"><span><MicIcon size={12} /> Microphone</span><span><VideoIcon size={12} /> Camera</span><span><ArrowRightIcon size={12} /> Exit</span></div><p>No camera or microphone is active in this preview.</p><div className="c-demo-warning">INTEGRITY STATUS <span>Preview only</span></div></div>
+      <div className="c-room-interviewer"><div className="c-room-stage"><span className="c-signal" /> PROJECT EXPERIENCE <span>03 / 08 · EXAMPLE</span></div><span className="c-portrait" aria-hidden="true" /><p className="c-step">YOUR AI INTERVIEWER</p><h3>Tell me about a technical decision you made on your most recent project.</h3><VoiceWave /><span className="c-room-disclosure">Illustrative question and waveform · no audio playing</span></div>
+      <div className="c-room-candidate"><div className="c-camera-illustration"><svg viewBox="0 0 240 200" fill="none" aria-hidden="true"><ellipse cx="120" cy="205" rx="92" ry="77" fill="url(#candidate-fill)" /><circle cx="120" cy="82" r="39" fill="url(#candidate-fill)" /><path d="M20 46V20h26m148 0h26v26M20 154v26h26m148 0h26v-26" stroke="#ff2d95" strokeOpacity=".35" /><defs><linearGradient id="candidate-fill" x1="75" y1="30" x2="170" y2="200" gradientUnits="userSpaceOnUse"><stop stopColor="#007ba7" /><stop offset="1" stopColor="#0a0a0a" /></linearGradient></defs></svg><span>CAMERA PREVIEW · ILLUSTRATION</span></div><div className="c-preview-controls" aria-label="Illustrative interview controls"><span><MicIcon size={12} /> Microphone</span><span><VideoIcon size={12} /> Camera</span><span><ArrowRightIcon size={12} /> Exit</span></div><p>No camera or microphone is active in this preview.</p><div className="c-demo-warning">INTEGRITY STATUS <span>Preview only</span></div></div>
     </div>
   </Reveal>;
 }

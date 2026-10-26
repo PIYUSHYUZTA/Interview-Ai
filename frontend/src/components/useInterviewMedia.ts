@@ -2,9 +2,11 @@ import { LocalRecognition } from './LocalRecognition';
 
 import { getInterviewSpeech, ApiError } from '../api';
 
-import type { AvatarSpeechClock } from './avatar-speech';
+import { speechEnvelope, type AvatarSpeechClock } from './avatar-speech';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+const LOST_CAMERA_MESSAGE = 'The camera disconnected. Reconnecting automatically; you can also turn the camera on again or continue without it.';
 
 
 
@@ -51,6 +53,7 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
   const [micPending, setMicPending] = useState(false);
 
   const [speaking, setSpeaking] = useState(false);
+  const [speechPaused, setSpeechPaused] = useState(false);
 
   const [inputLevel,setInputLevel]=useState(0);
 
@@ -107,6 +110,9 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
   const video = useRef<HTMLVideoElement>(null);
 
   const cameraGeneration = useRef(0);
+  /** Set when the camera stopped without the candidate asking (unplugged, taken by another app); cleared on a
+   * deliberate turn-off or a successful start. While set, the camera is reopened automatically. */
+  const cameraLost = useRef(false);
 
   const cameraStream = useRef<MediaStream | null>(null);
 
@@ -142,7 +148,24 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
 
 
-  const stopSpeaking = useCallback(() => { speechAbort.current?.abort(); speechAbort.current=null; if(speechAudio.current) { speechAudio.current.onplaying=null; speechAudio.current.onended=null; speechAudio.current.onerror=null; speechAudio.current.pause(); speechAudio.current.removeAttribute('src'); speechAudio.current.load(); speechAudio.current=null; } if(speechUrl.current) URL.revokeObjectURL(speechUrl.current); speechUrl.current=null; avatarSpeech.current={audio:null,cues:[]}; if (playbackStartTimer.current) clearTimeout(playbackStartTimer.current); if (playbackEndTimer.current) clearTimeout(playbackEndTimer.current); playback.current = null; playbackGeneration.current++; window.speechSynthesis?.cancel(); setSpeaking(false); }, []);
+  const stopSpeaking = useCallback(() => { speechAbort.current?.abort(); speechAbort.current=null; if(speechAudio.current) { speechAudio.current.onplaying=null; speechAudio.current.onended=null; speechAudio.current.onerror=null; speechAudio.current.pause(); speechAudio.current.removeAttribute('src'); speechAudio.current.load(); speechAudio.current=null; } if(speechUrl.current) URL.revokeObjectURL(speechUrl.current); speechUrl.current=null; avatarSpeech.current={audio:null,cues:[]}; if (playbackStartTimer.current) clearTimeout(playbackStartTimer.current); if (playbackEndTimer.current) clearTimeout(playbackEndTimer.current); playback.current = null; playbackGeneration.current++; window.speechSynthesis?.cancel(); setSpeaking(false); setSpeechPaused(false); }, []);
+  // Pausing keeps the WAV position and cues, so resuming continues the same synchronized playback.
+  const pauseSpeaking = useCallback(() => {
+    const audio = speechAudio.current;
+    const browserVoice = !audio && window.speechSynthesis?.speaking && !window.speechSynthesis.paused;
+    if (!(audio && !audio.paused) && !browserVoice) return false;
+    if (playbackEndTimer.current) clearTimeout(playbackEndTimer.current);
+    if (audio) audio.pause(); else window.speechSynthesis.pause();
+    setSpeaking(false); setSpeechPaused(true);
+    return true;
+  }, []);
+  const resumeSpeaking = useCallback(() => {
+    const audio = speechAudio.current;
+    setSpeechPaused(false);
+    if (audio && audio.paused && !audio.ended) { void audio.play().catch(() => { stopSpeaking(); setError('Question audio could not resume. Replay the question to retry.'); }); return true; }
+    if (!audio && window.speechSynthesis?.paused) { window.speechSynthesis.resume(); setSpeaking(true); callbacks.current?.onPlaybackStart?.(); return true; }
+    return false;
+  }, [stopSpeaking]);
 
   const stopMicrophone = useCallback(() => {
 
@@ -180,6 +203,28 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
   useEffect(() => { stopMicrophone(); stopSpeaking(); }, [questionId, stopMicrophone, stopSpeaking]);
 
+  // Reopen a lost camera without asking again (permission was already granted): every 3 s and on any device
+  // change, at most 20 attempts. The interview continues meanwhile; the outage is reported as technical, not a warning.
+  const toggleCameraRef = useRef<() => Promise<boolean | undefined>>(async () => false);
+  const reconnectNow = useRef<(() => void) | null>(null);
+  const reconnectAttempts = useRef(0);
+  useEffect(() => {
+    if (camera || cameraPending || !cameraLost.current) { reconnectNow.current = null; if (camera) reconnectAttempts.current = 0; return; }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const attempt = async () => {
+      timer = undefined; reconnectNow.current = null;
+      if (!cameraLost.current || !mounted.current) return;
+      if (reconnectAttempts.current >= 20) { cameraLost.current = false; reconnectAttempts.current = 0; setError('The camera could not be reconnected. Turn it on again when it is available, or continue without it.'); return; }
+      const attemptNumber = ++reconnectAttempts.current;
+      const ok = await toggleCameraRef.current();
+      // A failed start leaves cameraPending false again, which re-runs this effect and schedules the next attempt.
+      if (!ok && mounted.current && cameraLost.current) setError(`${LOST_CAMERA_MESSAGE} (attempt ${attemptNumber} of 20)`);
+    };
+    reconnectNow.current = () => { if (timer) clearTimeout(timer); void attempt(); };
+    timer = setTimeout(() => void attempt(), 3000);
+    return () => { if (timer) clearTimeout(timer); };
+  }, [camera, cameraPending]);
+
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; stopMicrophone(); stopSpeaking(); stopCamera(); releaseMicrophone(); }; }, [stopMicrophone, stopSpeaking, stopCamera, releaseMicrophone]);
 
   useEffect(() => {
@@ -188,11 +233,13 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
       if (cameraStream.current && cameraStream.current.getVideoTracks().every((track) => track.readyState !== 'live')) {
 
-        stopCamera();
+        stopCamera(); cameraLost.current = true;
 
-        setError('The camera disconnected. Reconnect it and enable the camera again, or continue without it.');
+        setError(LOST_CAMERA_MESSAGE);
 
       }
+      // A device came back: try at once instead of waiting for the next retry.
+      if (cameraLost.current && !cameraStream.current) reconnectNow.current?.();
 
       if (audioStream.current && audioStream.current.getAudioTracks().every((track) => track.readyState !== 'live')) {
 
@@ -218,7 +265,7 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
     setError(null);
 
-    if (camera) { stopCamera(); return false; }
+    if (camera) { cameraLost.current = false; stopCamera(); return false; }
 
     const cameraToken = ++cameraGeneration.current;
 
@@ -247,14 +294,15 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
           if (cameraToken !== cameraGeneration.current) return;
 
-          stopCamera();
+          stopCamera(); cameraLost.current = true;
 
-          setError('The camera disconnected. Reconnect it and enable the camera again, or continue without it.');
+          setError(LOST_CAMERA_MESSAGE);
 
         };
 
       });
 
+      cameraLost.current = false;
       setCamera(true); return true;
 
     } catch (e) {
@@ -525,7 +573,7 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
         const url=URL.createObjectURL(new Blob([bytes],{type:speech.mimeType}));speechUrl.current=url;
 
-        const audio=new Audio(url);speechAudio.current=audio;avatarSpeech.current={audio,cues:speech.visemes};
+        const audio=new Audio(url);speechAudio.current=audio;avatarSpeech.current={audio,cues:speech.visemes,envelope:speechEnvelope(bytes)};
 
         playbackStartTimer.current=setTimeout(()=>{if(token===playbackGeneration.current&&mounted.current){stopSpeaking();setError('Question audio did not start. Replay the question to retry.');}},10000);
 
@@ -567,7 +615,8 @@ export function useInterviewMedia(questionId: string | undefined, appendTranscri
 
   };
 
-  return { prepareMicrophone, releaseMicrophone, inputLevel, avatarSpeech, speechMode, speechNotice, finishMicrophone, video, camera, cameraPending, listening, micPending, speaking, interim, error, toggleCamera, toggleMicrophone, speak, stopMicrophone, stopSpeaking, stopCamera };
+  toggleCameraRef.current = toggleCamera; // always the current render's version for automatic reconnection
+  return { prepareMicrophone, releaseMicrophone, inputLevel, avatarSpeech, speechMode, speechNotice, finishMicrophone, video, camera, cameraPending, listening, micPending, speaking, speechPaused, interim, error, toggleCamera, toggleMicrophone, speak, stopMicrophone, stopSpeaking, pauseSpeaking, resumeSpeaking, stopCamera };
 
 }
 

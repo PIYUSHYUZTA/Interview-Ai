@@ -13,6 +13,7 @@ export const MovementObservationSchema = z.object({
     reliable: z.boolean(), landmarkConfidence: z.null(), position,
     landmarks: z.array(position).length(21), movement: z.number().nonnegative().nullable(),
     relativeToFace: z.array(z.number().finite()).length(2).nullable(),
+    nearFace: z.boolean().optional(), faceDistance: z.number().nonnegative().nullable().optional(),
     gesture: z.enum(['open_fingers','curled_fingers','mixed_fingers','unavailable']), ...pattern,
   })).max(2),
   lostHands: z.array(z.object({trackId:z.number().int().positive(),handedness,state:z.enum(['tracking_lost','not_visible']),missingForMs:z.number().nonnegative()})).max(4),
@@ -24,6 +25,9 @@ export const MovementObservationSchema = z.object({
     shoulderTiltDegrees:z.number().min(-180).max(180).nullable(), outsideUsefulArea:z.boolean(),
     visibility:z.number().min(0).max(1).nullable(),unreliableForMs:z.number().nonnegative(),...pattern,
   }),
+  headRegionSource: z.enum(['face','pose']).nullable().optional(),
+  handNearFace: z.boolean().optional(), handNearFaceSource: z.enum(['hand-landmarks','pose-wrist']).nullable().optional(), handNearFaceMs: z.number().nonnegative().optional(),
+  handPatterns: z.object({ windowSeconds: z.number().int().positive(), handToFaceEpisodes: z.number().int().nonnegative(), sideReaches: z.number().int().nonnegative(), repeated: z.boolean(), patterns: z.array(z.enum(['hand_to_face','side_reach'])).max(2) }).optional(),
   visiblePoseCount:z.number().int().min(0).max(3),additionalPersonObserved:z.boolean(),
   coordinateSystem:z.literal('unmirrored-camera'),method:z.literal('sampled-landmark-movement'),interpretation:z.literal('neutral-observation'),
 });

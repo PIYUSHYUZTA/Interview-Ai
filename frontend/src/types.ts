@@ -178,6 +178,9 @@ export interface PublicInterviewState {
 
     warningCount: number;
 
+    /** Camera warnings: counted per incident, never end the interview. */
+    visionWarningCount?: number;
+
     maximumWarnings: number;
 
     terminatedAt: string | null;
@@ -384,11 +387,13 @@ export interface MovementPattern {
 export interface MovementObservation {
   handTracks: (MovementPattern & {trackId:number;handedness:'left'|'right'|'unknown';handednessScore:number|null;
     state:'visible'|'partial';transition:'entered'|'continued'|'recovered';reliable:boolean;landmarkConfidence:null;
-    position:number[];landmarks:number[][];movement:number|null;relativeToFace:number[]|null;gesture:string})[];
+    position:number[];landmarks:number[][];movement:number|null;relativeToFace:number[]|null;gesture:string;nearFace?:boolean;faceDistance?:number|null})[];
   lostHands: {trackId:number;handedness:string;state:'tracking_lost'|'not_visible';missingForMs:number}[];
   rejectedHands:number;body: MovementPattern & {state:string;reliable:boolean;center:number[]|null;
     landmarks:{index:number;position:number[];visibility:number}[];movement:number|null;positionShift:number|null;
     shoulderTiltDegrees:number|null;outsideUsefulArea:boolean;visibility:number|null;unreliableForMs:number};
+  headRegionSource?:'face'|'pose'|null;handNearFace?:boolean;handNearFaceSource?:'hand-landmarks'|'pose-wrist'|null;handNearFaceMs?:number;
+  handPatterns?:{windowSeconds:number;handToFaceEpisodes:number;sideReaches:number;repeated:boolean;patterns:('hand_to_face'|'side_reach')[]};
   visiblePoseCount:number;additionalPersonObserved:boolean;coordinateSystem:'unmirrored-camera';
   method:'sampled-landmark-movement';interpretation:'neutral-observation';
 }
@@ -397,7 +402,12 @@ export interface VisionEvent {
   details:{source:'vision';signal:string;trackingState:string;phase:'observed'|'recovered'|'technical'};
 }
 export interface VisionObservation {
-  moduleStatus?: { face: 'ready'; pose: 'ready' | 'disabled' | 'unavailable'; hands: 'ready' | 'disabled' | 'unavailable' };
+  moduleStatus?: { face: 'ready'; pose: 'ready' | 'disabled' | 'unavailable'; hands: 'ready' | 'disabled' | 'unavailable'; phone?: 'ready' | 'disabled' | 'unavailable' };
+  /** As decoded by Python: confirms the browser's sample arrived with the expected format and size. */
+  frame?: { format: 'jpeg'; width: number; height: number; bytes: number; processingMs: number; stagesMs?: Record<string, number> };
+  runtime?: { acceleration: { requested: 'auto' | 'gpu' | 'cpu'; delegates: Record<string, 'gpu' | 'cpu'>; active: 'gpu' | 'cpu' | 'mixed' | 'none'; gpuUnavailableReason: string | null }; modelLoadMs: number };
+  frameQuality?: { brightness: number; contrast: number; usable: boolean };
+  phoneObservation?: { status: 'not_scanned' | 'not_seen' | 'candidate' | 'seen'; positiveScans: number; recentScans: number; requiredScans: number; score: number | null; box: number[] | null; heldInHand: boolean; seenForMs: number; scoreThreshold: number; method: 'efficientdet-lite0-coco-cell-phone'; calibrated: false };
   events?: VisionEvent[];
   movementObservation?: MovementObservation;
 
@@ -409,13 +419,15 @@ export interface VisionObservation {
 
     headChangeDegrees: number | null; unreliableForMs: number; gazeUnreliableForMs: number; reliabilityReason: string; validSamples: number;
 
+    eyesClosed?: boolean; blinkHeld?: boolean; gazeOffset?: { horizontal: number; vertical: number } | null; recentHeadTurns?: number; headTurnWindowSeconds?: number; repeatedHeadTurns?: boolean;
+
     method: 'landmark-geometric-estimate'; coordinateSystem: 'unmirrored-camera'; calibrated: false;
 
   };
 
   faceState?: 'FACE_PRESENT' | 'FACE_NOT_DETECTED' | 'TRACKING_LOST' | 'MULTIPLE_FACES' | 'QUALITY_LOW';
 
-  faceQuality?: { checks: { singleFace: boolean; largeEnough: boolean; wellLit: boolean; sharpEnough: boolean; forwardFacing: boolean }; score: number; method: 'image-and-geometry-checks'; detectorConfidence: null };
+  faceQuality?: { checks: { singleFace: boolean; largeEnough: boolean; wellLit: boolean; sharpEnough: boolean; forwardFacing: boolean }; score: number; method: 'image-and-geometry-checks'; detectorConfidence: null; lowLight?: boolean; recovery?: 'none' | 'low-light' | 'pose-guided' | 'zoomed' | 'person-scan' };
 
   faceTracks?: { trackId: number; center: number[]; bounds: number[]; landmarks?: number[][] }[];
 
@@ -447,7 +459,9 @@ export interface FaceReadinessStatus {
 
 }
 
-export interface VisionFrameResponse { observedAt?:string; faceReadiness?: FaceReadinessStatus; observation: VisionObservation; notices: string[]; publicState: PublicInterviewState }
+/** Set by the backend only when this sample's incident was counted under the three-warning policy. */
+export interface IntegrityWarningOutcome { warningCount: number; maximumWarnings: number; terminated: boolean; message: string }
+export interface VisionFrameResponse { observedAt?:string; faceReadiness?: FaceReadinessStatus; observation: VisionObservation; notices: string[]; warning?: IntegrityWarningOutcome | null; publicState: PublicInterviewState }
 
 
 
@@ -621,9 +635,13 @@ export interface RoadmapStep {
 
 
 
+export interface IntegrityReviewItem { eventType: string; tier: 'warning' | 'review'; counted: boolean; warningNumber?: number; startedAtMs: number; durationMs: number; occurrences: number; confidence: number | null; ongoingAtEnd: boolean; explanation: string }
+
 export interface InterviewResultsResponse {
 
   details: DetailedInterviewReport;
+
+  integrityReview?: { totalWarnings?: number; tabWarnings: number; cameraWarnings: number; incidents: IntegrityReviewItem[]; note: string };
 
   readiness?: { score: number | null; coverage: number; assessedSkills: number; totalSkills: number; methodology: string };
 

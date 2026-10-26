@@ -134,6 +134,18 @@ class RealModelTests(unittest.TestCase):
 
         self.assertLess(repeat['handMovement'], 0.02)
 
+    def test_hand_movement_does_not_depend_on_sample_rate(self):
+        # The same physical shift scores alike when samples arrive 0.5 s or 2 s apart.
+        frame = self.image('right_hands.jpg')
+        shifted = np.roll(frame, 24, axis=1)
+        scores = {}
+        for label, gap in (('fast', .5), ('slow', 2.)):
+            with patch('worker.time.monotonic', side_effect=[300., 300. + gap]):
+                self.analyze(frame, 'rate-' + label)
+                scores[label] = self.analyze(shifted, 'rate-' + label)['handMovement']
+        self.assertIsNotNone(scores['fast']); self.assertIsNotNone(scores['slow'])
+        self.assertLess(abs(scores['fast'] - scores['slow']), .5 * max(scores['fast'], scores['slow']))
+
 
 
     def test_invalid_samples_fail_without_an_observation(self):
@@ -258,20 +270,45 @@ class RealModelTests(unittest.TestCase):
                     with patch('worker.time.monotonic', return_value=tick):
                         result = analyzer.analyze({'sessionId': 'face-only', 'image': base64.b64encode(encoded).decode()})
                 self.assertEqual(result['faceCount'], 1)
-                self.assertEqual(result['moduleStatus'], dict(face='ready', pose='unavailable', hands='unavailable'))
+                self.assertEqual(result['moduleStatus'], dict(face='ready', pose='unavailable', hands='unavailable', phone='unavailable'))
+                self.assertNotIn('phoneObservation', result)
                 self.assertFalse(any(e['details']['signal'] in ('hands', 'pose', 'people') for e in result['events']))
             finally:
                 analyzer.close()
 
     def test_optional_models_can_be_disabled_without_loading_them(self):
-        with patch.dict('os.environ', PROCTORING_POSE_ENABLED='false', PROCTORING_HANDS_ENABLED='false'), patch('worker.mp.tasks.vision.HandLandmarker.create_from_options') as hand, patch('worker.mp.tasks.vision.PoseLandmarker.create_from_options') as pose:
+        with patch.dict('os.environ', PROCTORING_POSE_ENABLED='false', PROCTORING_HANDS_ENABLED='false', PROCTORING_PHONE_ENABLED='false'), patch('worker.mp.tasks.vision.HandLandmarker.create_from_options') as hand, patch('worker.mp.tasks.vision.PoseLandmarker.create_from_options') as pose, patch('worker.mp.tasks.vision.ObjectDetector.create_from_options') as phone:
             analyzer = Analyzer()
             try:
-                self.assertEqual(analyzer.module_status, dict(face='ready', pose='disabled', hands='disabled'))
+                self.assertEqual(analyzer.module_status, dict(face='ready', pose='disabled', hands='disabled', phone='disabled'))
                 hand.assert_not_called()
                 pose.assert_not_called()
+                phone.assert_not_called()
             finally:
                 analyzer.close()
+
+    def phone_status(self, name, frames=4):
+        # Same encoding as the live browser sample (640 px, JPEG 85); a scan on every frame.
+        frame = cv2.imread(str(Path(__file__).parent / 'fixtures' / name))
+        scale = 640 / max(frame.shape[:2])
+        _, encoded = cv2.imencode('.jpg', cv2.resize(frame, (int(frame.shape[1]*scale), int(frame.shape[0]*scale))), [cv2.IMWRITE_JPEG_QUALITY, 85])
+        with patch.object(self.analyzer.phones, 'interval', 0):
+            for _ in range(frames):
+                result = self.analyzer.analyze({'sessionId': 'phone-' + name, 'image': base64.b64encode(encoded).decode()})
+        return result['phoneObservation']
+
+    def test_real_phones_are_detected_and_confirmed_over_scans(self):
+        self.assertEqual(self.phone_status('phones/iphone-cc0.jpg', frames=1)['status'], 'candidate')  # one scan is never enough
+        for name in ('phones/iphone-cc0.jpg', 'phones/call-parking-lot.jpg'):
+            with self.subTest(name=name):
+                phone = self.phone_status(name)
+                self.assertEqual(phone['status'], 'seen'); self.assertTrue(phone['heldInHand'])
+                self.assertGreaterEqual(phone['score'], .3); self.assertEqual(len(phone['box']), 4)
+
+    def test_hands_holding_other_things_are_not_phones(self):
+        for name in ('phones/no-phone-glasses.jpg', 'phones/no-phone-gestures.jpg', 'portrait.jpg', 'right_hands.jpg'):
+            with self.subTest(name=name):
+                self.assertEqual(self.phone_status(name)['status'], 'not_seen')
 
     def test_oversized_dimensions_are_rejected(self):
 

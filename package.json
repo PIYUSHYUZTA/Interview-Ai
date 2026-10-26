@@ -1,7 +1,7 @@
 {
   "name": "ai-mock-interview-core",
   "version": "0.1.0",
-  "description": "Adaptive AI mock interview intelligence core: UNDERSTAND \u00e2\u2020\u2019 ASSESS \u00e2\u2020\u2019 ADAPT \u00e2\u2020\u2019 IMPROVE",
+  "description": "Adaptive AI mock interview intelligence core: UNDERSTAND â†’ ASSESS â†’ ADAPT â†’ IMPROVE",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -15,7 +15,10 @@
     "start:api": "tsx src/api/server.ts",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
-    "migrate:sqlite": "tsx scripts/migrate-storage.ts"
+    "migrate:sqlite": "tsx scripts/migrate-storage.ts",
+    "setup:vision": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-vision.ps1",
+    "check:vision": "tsx scripts/check-vision.ts",
+    "test:vision": "tsx scripts/test-vision.ts"
   },
   "engines": {
     "node": ">=20"

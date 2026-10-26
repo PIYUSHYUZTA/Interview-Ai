@@ -11,6 +11,228 @@ runtime cleanup, commands and verification limits are documented in
 [`BLENDER_WORKFLOW.md`](BLENDER_WORKFLOW.md). The earlier shader implementation
 remains in the repository as prior work; it is no longer the active hero.
 
+## Part 11 — nine-colour identity, cinematic film, shader particles and GSAP
+
+### Palette hierarchy
+All nine brand colours are CSS tokens on `.cinema` (`--ink`, `--ivory`, `--teal`,
+`--charcoal`, `--earth`, `--amber`, `--jet`, `--cerulean`, `--rose`). Each colour's
+role is set by measured contrast:
+
+| Role | Colours | Notes |
+| --- | --- | --- |
+| Grounds | Jet Black (page, hero), Ink Black (how it works, film, method, closing), Charcoal Black (features, footer) | Full-bleed bands behind centred containers |
+| Typography | Warm Ivory; muted Ivory at ≥ 62% | ≈16:1 |
+| Interactive | Electric Teal (eyebrows, links, primary button fill with Ink Black text, ≈7:1); Cerulean (rings, lines, glows, rails, 3D rim light) | Cerulean is 4.1:1, so never small text |
+| Warm detail | Burnt Amber (step numbers, labels, film note, ≈7.3:1); Earth Brown (hairlines, card borders, footer rule, halo core metal) | Earth Brown is 2.5:1, so never text |
+| Highlight | Neon Rose: the current step, the speaking state, the caption mic glyph, one halo lip, the 3D kicker light | — |
+
+The earlier non-palette tint `#248DB3` is gone: Electric Teal meets AA on its own.
+
+### 3D hero
+- The bust and halo were regenerated in the full palette (see `BLENDER_WORKFLOW.md`).
+- The live scene adds a Warm Ivory key and a Burnt Amber bounce light.
+- 520 shader particles (Three.js `Points` + `ShaderMaterial`, additive, palette-
+  weighted Teal/Cerulean/Amber/Rose) drift behind the bust. Motion runs in the vertex
+  shader; time only advances while motion is allowed.
+
+### Cinematic film interlude (`LandingFilm.tsx`, `#the-interviewer`)
+- A 10 s seamless loop rendered in Blender Cycles on the GPU (`render_hero_film.py`).
+- The video is requested only within 600 px of the section, plays only while ≥ 25%
+  visible with the tab visible, and never autoplays under reduced motion or data
+  saver.
+- There is always a real Pause/Play film control. The visitor's choice persists
+  while scrolling.
+- If the film fails, the poster frame remains with the note *Film unavailable ·
+  showing a still frame*.
+- On phones the film is a framed shot above the copy.
+- The copy states the film is pre-rendered and that the room draws the character
+  live.
+
+### GSAP (3.15.0, the one new dependency, explicitly requested)
+- Loaded through `landing-gsap.ts` as separate lazy chunks (gsap 27 KB and
+  ScrollTrigger 17.5 KB gzipped), only when a scroll scene is near and motion is
+  allowed. Under reduced motion it is never downloaded.
+- **Film:** the clip-path opens from an inset rounded frame to full bleed (scrubbed),
+  the footage moves with scrubbed parallax, and the headline lines rise in.
+- **How it works:** a scroll-drawn Teal→Cerulean→Amber rail on wide screens, plus a
+  current-step state (Amber border, Rose numeral).
+- Everything else keeps using the existing `motion/react` system.
+
+### Verification (26 October 2026)
+- **Film:** 1.76 MB H.264, 240 frames at 24 fps, 1280×720, Cycles on the RTX 4060
+  (about 4.7 s per frame). `--seam-check` shows frame 241 vs frame 1 differ by
+  0.02/255 on average, so the loop is seamless. `validate-3d-assets.py` checks the MP4
+  container, SHA-256 receipt, a 6 MB budget and the WebP poster.
+- **`verify-cinematic-landing.ts`:**
+  - All nine tokens are present and used by role.
+  - 520 particles.
+  - A fresh page does not request the film.
+  - The film plays on screen, GSAP opens the frame fully, and Pause holds when
+    scrolling back.
+  - Reduced motion: no autoplay, GSAP never downloaded, Play/Pause work.
+  - A missing film falls back to the still frame with an honest note.
+  - First contentful paint 392 ms with the 3D after it; CLS 0.0027; 210 text
+    elements meet WCAG AA.
+- **Real GPU (browser pane, RTX 4060):** the hero holds the 30 fps cap with particles,
+  and the film plays.
+- **Regression:** 245 tests and `verify-avatar-turns.ts` pass; the room is untouched.
+- **Fixed during testing:**
+  - The phone film sat behind its text, so it is now stacked above the copy.
+  - The film headline wrapped mid-phrase.
+  - The first headline line inherited the muted subtitle colour.
+  - `vite preview` had packaged the placeholder MP4 from before the render finished;
+    a rebuild picked up the real film.
+
+## Part 10 — implementation-rules audit
+
+- **Controls:** an automated crawl found 27 real controls on the landing page, and
+  every in-page link resolves to an existing section. The one fake affordance (step 1
+  drew radio options with a selected state, plus role chips, that did nothing) is now
+  a read-only list labelled *Options on the setup screen*. The landing page cannot
+  preselect those choices without changing the setup screen, which is out of scope.
+- **Maintainability:** removed 145 dead rules (177 selectors, 44 unused classes) from
+  `LandingPage.css` (67 KB → 52 KB) with a PostCSS pass that keeps any selector whose
+  `c-*` classes appear in source. Deterministic full-page captures at 1440, 390 and
+  820 px were pixel-identical before and after.
+
+## Part 9 — responsiveness, performance and accessibility (measured)
+
+Measured in headless Edge (software WebGL) before and after this pass:
+
+| Measure | Before | After |
+| --- | --- | --- |
+| First contentful paint | 876 ms | 372–436 ms |
+| Largest contentful paint | 3,732 ms | 1,012–1,052 ms |
+| Cumulative layout shift | 0.006 (0.014 after the sticky nav) | 0.0025–0.0028 (font swap only) |
+| Text groups failing WCAG AA contrast | 21 | 0 (204 visible text elements checked) |
+| Tap targets under 24 px | 9–11 per viewport | 0 at all 8 sizes |
+| Horizontal overflow (320–1920 px) | none | none |
+
+Changes:
+- **Render path:** fonts load from `<link>` tags with preconnect in `index.html`
+  instead of a CSS `@import` chain. The hero waits for browser idle (≤1.2 s) before
+  starting Three.js and fetching the GLB. The Cycles poster is the loading state, and
+  the 3D region is `aria-busy` while loading. Three.js, the GLTF loader and the model
+  stay in separate lazy chunks.
+- **Layout stability:** the sticky nav condenses visually (background and border),
+  not by height, which had shifted the page.
+- **Contrast:** Cerulean `#007BA7` is 4.14:1 on Jet Black, below AA for text. Text
+  and button fills now use the 14% tint `#248DB3` (5.2:1 on Jet Black, 4.6:1 on
+  panels, 5.2:1 for Jet Black text on it). Pure Cerulean remains for rings, lines,
+  borders and glows. Faint neutral labels were raised to at least 62% opacity, and the
+  disabled motion control is no longer dimmed below AA.
+- **Readability:** the minimum text size is 9 px (previously 5–8 px in places).
+- **Tap targets:** navigation, footer and standalone links are at least 32 px tall
+  (44 px for text CTAs).
+- **Dependencies:** removed the unused `@radix-ui/react-switch` and the vendored switch.
+- **Shared button:** `vendor.css` moved onto the palette (it still had the old teal
+  border and ivory focus ring).
+- **Bottom edge of the hero art:** the disclosure and the motion control no longer
+  overlap at any size, and on ≤380 px the caption lifts so the note stays clear.
+
+`scripts/verify-cinematic-landing.ts` now asserts: Three.js chunks and the model start
+after first contentful paint, CLS < 0.05, zero AA contrast failures
+(`scripts/contrast-audit.js`), the real sign-up form (short password rejected, a valid
+account created and signed in), and 768×1024 and 1024×768 tablets (no overflow in any
+section, CTA in the first viewport, navigation visible).
+
+## Part 8 — page structure (navigation → hero → how it works → features → CTA → footer)
+
+- **A. Navigation:** logo; *How it works*, *Features*, *About*; *Sign in* (or
+  *Workspace* when the app already has a session, via the new `signedIn` prop from
+  `App.tsx`); *Start practicing*. Phones get a real menu: a toggle with
+  `aria-expanded`, an opaque panel with the three links and both actions, Escape to
+  close with focus returned, and it closes on navigation. Previously the links were
+  simply hidden on phones.
+- **B. Hero:** unchanged; *Explore the Platform* now leads to *How it works*.
+- **C. How it works (`#how-it-works`):** three visually distinct step cards with
+  alternating layouts, each marked *Available now*, replacing the five-tab chapter
+  widget and the separate resume section:
+  1. *Choose an interview type* shows the real types from `/interviews/options`
+     (Complete interview, Technical deep dive, Behavioral & communication) and the
+     role presets.
+  2. *Practice with the AI interviewer* shows the interviewer portrait and the three
+     real room states.
+  3. *Review feedback and improve* shows skill bars labelled **EXAMPLE DATA** and a
+     next-practice item.
+- **D. Features (`#capabilities`):** four implemented capabilities only: voice-based
+  practice, technical and behavioral preparation, feedback and performance analysis,
+  and history and progress tracking (dashboard history, progress chart, skill
+  profile, repeated weaknesses). An *Availability* note separates what depends on
+  configuration: an AI provider (otherwise the labeled deterministic demo mode) and
+  Windows speech for lip sync (otherwise the browser voice without it). No planned
+  features are presented as available.
+- **About:** the adaptive-question demo section (`#approach`), followed by the room
+  preview and the report preview, which show the implemented product in more depth.
+- **E. Final CTA:** unchanged.
+- **F. Footer:** Product / About / Account groups and a product information line.
+  The app has no legal or support pages, so none are linked.
+
+`scripts/verify-cinematic-landing.ts` now checks the three steps and their real
+interview types, the four feature titles and the availability note, *Sign in* →
+account screen, and the phone menu (open, links, Escape with focus return,
+navigate).
+
+## Part 7 — visual identity pass
+
+Audited the full page against the brief (premium, cinematic, no floating cards,
+excess neon or template look) and changed the parts that failed:
+- **Hero:** removed the "Candidate context" glass card, the connector lines (one
+  dot landed on the face), the in-art "THE AI INTERVIEWER · 01/03" caption and the
+  duplicated UNDERSTAND/ADAPT/DEVELOP row. The bust and halo are the subject. The
+  conversation is one centred caption beneath it, styled like live subtitles, with
+  the waveform and a single Neon Rose mic glyph. The camera was eased back so the
+  halo stays fully framed down to 1366×768.
+- **Interviewer portrait:** the generic magenta "AI orb" in the room preview and the
+  "Meet your AI interviewer" chapter is replaced with a circular crop of the
+  Cycles-rendered interviewer (`.c-portrait`), so the page shows one consistent,
+  realistic interviewer.
+- **Closing section:** the outlined ellipse is replaced with soft Cerulean light.
+- **Room and hero fabric:** the suit normal map is softened at runtime because it
+  read as blotches under the rim light. This was confirmed on an RTX 4060, not only
+  in software rendering.
+
+Neon Rose remains limited to the halo arc, the caption's mic glyph, hover and
+active states, and a few labels.
+
+## Part 4 — human hero and three-color identity
+
+The palette is now Jet Black `#0A0A0A` (dominant), Cerulean Blue `#007BA7`
+(structure, light and interaction) and Neon Rose `#FF2D95` (selective emphasis).
+Text uses neutral `#EDEDED`; borders and raised surfaces are tints of the two
+darker colors. All Blender assets were regenerated with this palette.
+
+The hero now shows `hero-bust.glb`: the CC0 interviewer cropped and capped as a
+portrait bust inside an original orbital halo (alloy orbits, Cerulean inlays, one
+Neon Rose lip). Blender authors the crop in the relaxed pose, removes the unseen
+mouth interior and keeps only blink and smile shapes. The browser frames the
+camera from the rig's `Head` joint and lights it with a soft neutral key, a strong
+Cerulean rim and a restrained Neon Rose kicker (AgX tone mapping). Pointer
+movement turns the bust slightly; the halo's exported animation, idle blinks,
+camera drift and pause/reduced-motion rules match the earlier core.
+
+Low-power fallback: devices reporting data saver, ≤2 GB memory or ≤2 CPU cores
+show the Cycles-rendered poster (`hero-bust-poster.webp`, ~94 KB) and never
+create WebGL or download the GLB. If a device that does load the scene renders
+slower than roughly 12 fps after warm-up, the scene releases its GPU resources
+and settles on the same poster. Missing WebGL and failed downloads use it too.
+
+Copy changes: headline "Interview practice that feels real.", a voice-first
+supporting line, and a three-card feature section (`#capabilities`) for realistic
+voice interaction, adaptive questions and actionable feedback. No testimonials,
+user counts or performance claims were added.
+
+Regenerate the bust and poster:
+
+```powershell
+.\scripts\generate-3d-assets.ps1 -HeroBust -Render
+```
+
+Verification (25 October 2026, Blender 5.2.3 LTS): `scripts/verify-cinematic-landing.ts`
+passed, including a new low-power check that asserts the poster renders with no
+canvas and no GLB request. Screenshots use software WebGL (SwiftShader); a physical
+GPU renders hair and skin with more detail.
+
 ## Part 2 — six-color product experience
 
 The hero uses the requested headline and supporting copy, with working candidate

@@ -153,5 +153,88 @@ class DirectionTests(unittest.TestCase):
 
 
 
+    # Scenario tests at the live cadence (~2 analysed samples per second).
+
+    def closed(self, ratio=.5):
+        points = test_worker.GeometryTests().eyes(ratio)
+        points[159], points[386] = points[145], points[374]
+        return points
+
+    def play(self, frames, state=None):
+        results = []
+        for time, kwargs in frames:
+            result, state = self.sample(time, state, **kwargs)
+            results.append(result)
+        return results, state
+
+    def test_blink_holds_gaze_instead_of_resetting_it(self):
+        side = test_worker.GeometryTests().eyes(.9)
+        results, state = self.play([(0, dict(points=side)), (.5, dict(points=side))])
+        self.assertEqual(results[-1]['gazeDirections'], ['right'])
+        blink, state = self.sample(1.0, state, points=self.closed(.9))
+        self.assertTrue(blink['eyesClosed']); self.assertTrue(blink['blinkHeld'])
+        self.assertTrue(blink['gazeReliable']); self.assertEqual(blink['gazeDirections'], ['right'])
+        reopened, state = self.sample(1.5, state, points=side)
+        self.assertEqual(reopened['gazeDirections'], ['right']); self.assertFalse(reopened['blinkHeld'])
+        # Eyes kept closed beyond the hold are not a gaze estimate any more.
+        results, _ = self.play([(t, dict(points=self.closed(.9))) for t in (2.0, 2.5, 3.0)], state)
+        self.assertTrue(results[0]['blinkHeld'])
+        self.assertFalse(results[-1]['gazeReliable']); self.assertEqual(results[-1]['gazeDirections'], ['unavailable'])
+
+    def test_blinking_while_centred_never_reports_a_direction(self):
+        centre = test_worker.GeometryTests().eyes(.5)
+        frames = [(i*.5, dict(points=self.closed() if i % 6 == 5 else centre)) for i in range(40)]
+        results, _ = self.play(frames)
+        self.assertTrue(all(r['gazeDirections'] in ([], ['unavailable']) for r in results))
+        self.assertTrue(all(r['gazeReliable'] for r in results[1:]))
+
+    def test_brief_glance_is_smoothed_away(self):
+        centre, glance = (test_worker.GeometryTests().eyes(r) for r in (.5, .95))
+        frames = [(i*.5, dict(points=glance if i in (12, 13) else centre)) for i in range(24)]
+        results, _ = self.play(frames)
+        self.assertTrue(all(r['gazeDirections'] == [] for r in results[1:]))
+
+    def test_sustained_gaze_deviation_is_reported_after_several_frames(self):
+        centre, side = (test_worker.GeometryTests().eyes(r) for r in (.5, .9))
+        frames = [(i*.5, dict(points=side if i >= 10 else centre)) for i in range(30)]
+        results, _ = self.play(frames)
+        flagged = [i for i, r in enumerate(results) if r['gazeDirections'] == ['right']]
+        self.assertTrue(flagged)
+        self.assertGreaterEqual(flagged[0], 14)  # not on the first deviating frames
+        self.assertEqual(flagged, list(range(flagged[0], 30)))
+
+    def test_repeated_head_turns_are_counted_but_quick_glances_are_not(self):
+        # Quick glances: one sample turned, then forward again.
+        frames = [(i*.5, dict(yaw=45 if i % 6 == 3 else 0)) for i in range(48)]
+        results, _ = self.play(frames)
+        self.assertEqual(results[-1]['recentHeadTurns'], 0); self.assertFalse(results[-1]['repeatedHeadTurns'])
+        # Held turns: 1.5 s turned, 3 s forward, four times.
+        frames = [(i*.5, dict(yaw=(-45 if (i//9) % 2 else 45) if i % 9 < 3 else 0)) for i in range(36)]
+        results, state = self.play(frames)
+        self.assertEqual(results[-1]['recentHeadTurns'], 4); self.assertTrue(results[-1]['repeatedHeadTurns'])
+        self.assertEqual(max(r['recentHeadTurns'] for r in results[:27]), 3)
+        self.assertFalse(any(r['repeatedHeadTurns'] for r in results[:27]))
+        # One long turn counts once; turns leave the window after it elapses.
+        later, _ = self.play([(t, dict(yaw=0)) for t in (60, 61, 80)], state)
+        self.assertLess(later[-1]['recentHeadTurns'], 4); self.assertFalse(later[-1]['repeatedHeadTurns'])
+
+    def test_one_long_turn_counts_once(self):
+        results, _ = self.play([(i*.5, dict(yaw=45)) for i in range(30)])
+        self.assertEqual(results[-1]['recentHeadTurns'], 1)
+
+    def test_turn_and_blink_settings_are_configurable(self):
+        with patch.dict('os.environ', {'PROCTORING_REPEATED_HEAD_TURNS': '2', 'PROCTORING_BLINK_HOLD_SECONDS': '0'}):
+            self.estimator = DirectionEstimator()
+        frames = [(i*.5, dict(yaw=45 if i % 9 < 3 else 0)) for i in range(18)]
+        results, _ = self.play(frames)
+        self.assertTrue(results[-1]['repeatedHeadTurns'])
+        side = test_worker.GeometryTests().eyes(.9)
+        _, state = self.play([(100, dict(points=side)), (100.5, dict(points=side))])
+        blink, _ = self.sample(101, state, points=self.closed(.9))
+        self.assertFalse(blink['blinkHeld']); self.assertFalse(blink['gazeReliable'])
+        with patch.dict('os.environ', {'PROCTORING_HEAD_TURN_MIN_SECONDS': '0'}):
+            with self.assertRaises(ValueError): DirectionEstimator()
+
+
 if __name__ == '__main__': unittest.main()
 

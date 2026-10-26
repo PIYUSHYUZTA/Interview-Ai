@@ -1,13 +1,29 @@
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ProctoringWorker } from './ProctoringWorker.js';
+import { ProctoringWorker, VISION_WORKER, visionPython } from './ProctoringWorker.js';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 const spawn = vi.hoisted(() => vi.fn());
 vi.mock('node:child_process', () => ({ spawn }));
 function child() { return Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); }
 const blank = { faceCount: 0, headOrientation: 'unavailable', gazeDirection: 'unavailable', upperBodyVisible: false, upperBodyMovement: null, handCount: 0, handPositions: [], handMovement: null };
 afterEach(() => { spawn.mockReset(); vi.useRealTimers(); });
 describe('Python worker lifecycle', () => {
+  it('queues frames from concurrent interviews in order instead of failing them, and bounds the queue', async () => {
+    const process = child(); spawn.mockReturnValue(process); const worker = new ProctoringWorker();
+    const lines: string[] = []; process.stdin.on('data', (chunk: Buffer) => lines.push(...chunk.toString().trim().split('\n')));
+    const first = worker.analyze('interview-a', 'frameA');
+    const queued = ['interview-b', 'interview-c', 'interview-d', 'interview-e'].map((id) => worker.analyze(id, `frame-${id}`));
+    await expect(worker.analyze('interview-f', 'frameF')).rejects.toMatchObject({ code: 'WORKER_BUSY' }); // queue of 4 is full
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(lines.map((line) => JSON.parse(line).sessionId)).toEqual(['interview-a']); // one frame in Python at a time
+    for (let i = 0; i < 5; i++) { process.stdout.write(JSON.stringify({ ok: true, observation: { ...blank, handMovement: i } }) + '\n'); await new Promise((resolve) => setTimeout(resolve, 5)); }
+    expect(await first).toMatchObject({ handMovement: 0 });
+    expect((await Promise.all(queued)).map((o) => o.handMovement)).toEqual([1, 2, 3, 4]); // each answer reaches its own request
+    expect(lines.map((line) => JSON.parse(line).sessionId)).toEqual(['interview-a', 'interview-b', 'interview-c', 'interview-d', 'interview-e']);
+    worker.close();
+  });
   it('releases the final session immediately instead of waiting for idle cleanup',async()=>{
     const process=child();spawn.mockReturnValue(process);const worker=new ProctoringWorker();
     const pending=worker.analyze('ending','frame');process.stdout.write(JSON.stringify({ok:true,observation:blank})+'\n');await pending;
@@ -60,4 +76,19 @@ describe('Python worker lifecycle', () => {
     await vi.advanceTimersByTimeAsync(60000);expect(process.kill).toHaveBeenCalled();worker.close();
   });
 
+});
+
+describe('vision interpreter discovery', () => {
+  it('resolves the worker and project environment from the project, not the working directory', () => {
+    expect(path.isAbsolute(VISION_WORKER)).toBe(true);
+    expect(existsSync(VISION_WORKER)).toBe(true);
+    const saved = process.env.PROCTORING_PYTHON; delete process.env.PROCTORING_PYTHON;
+    try {
+      const python = visionPython();
+      if (python.source === 'project-venv') { expect(path.isAbsolute(python.command)).toBe(true); expect(python.command.startsWith(path.dirname(path.dirname(VISION_WORKER)))).toBe(true); }
+      else expect(python).toEqual({ command: 'python', source: 'system-fallback' });
+      process.env.PROCTORING_PYTHON = 'C:/custom/python.exe';
+      expect(visionPython()).toEqual({ command: 'C:/custom/python.exe', source: 'environment' });
+    } finally { if (saved === undefined) delete process.env.PROCTORING_PYTHON; else process.env.PROCTORING_PYTHON = saved; }
+  });
 });

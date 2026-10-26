@@ -19,7 +19,7 @@ import { EvidenceTracer } from '../assessment/EvidenceTracer.js';
 import { AdaptiveEngine } from '../adaptation/AdaptiveEngine.js';
 import { QuestionGenerator } from '../adaptation/QuestionGenerator.js';
 import { norm, round } from '../utils/norm.js';
-import { INTERVIEW_INTEGRITY_POLICY, type IntegrityEventInput, type IntegrityEventRecord, type TabIncident, transitionTabIncident, validateIntegrityEvent } from './IntegrityPolicy.js';
+import { INTERVIEW_INTEGRITY_POLICY, terminationReason, type IntegrityEventInput, type IntegrityEventRecord, type TabIncident, transitionTabIncident, validateIntegrityEvent } from './IntegrityPolicy.js';
 
 export enum InterviewState {
   CREATED = 'CREATED',
@@ -102,6 +102,7 @@ export interface PublicInterviewState {
   }[];
   readonly integrity: {
     readonly warningCount: number;
+    readonly visionWarningCount: number;
     readonly maximumWarnings: number;
     readonly terminatedAt: string | null;
     readonly terminationReason: string | null;
@@ -156,6 +157,8 @@ export interface SerializedStateMachine {
   readonly askedIds: readonly string[];
   readonly integrity?: {
     readonly warningCount: number;
+    readonly visionWarningCount?: number;
+    readonly integrityTokenHash?: string | null;
     readonly tabIncident?: TabIncident | null;
     readonly lastWarningAt?: number | null;
     readonly events: readonly IntegrityEventRecord[];
@@ -228,6 +231,9 @@ export class InterviewStateMachine {
   private readonly _askedIds = new Set<string>();
   private _recentSkills: string[] = [];
   private _integrityWarningCount = 0;
+  private _visionWarningCount = 0;
+  /** SHA-256 of the per-interview integrity token (never the token itself); survives API restarts. */
+  private _integrityTokenHash: string | null = null;
   private _integrityEvents: IntegrityEventRecord[] = [];
   private _tabIncident: TabIncident | null = null;
   private _lastIntegrityWarningAt: number | null = null;
@@ -310,6 +316,9 @@ export class InterviewStateMachine {
     return this._questionHistory;
   }
 
+  get integrityTokenHash(): string | null { return this._integrityTokenHash; }
+  set integrityTokenHash(hash: string | null) { this._integrityTokenHash = hash; }
+
   get integrityEvents(): readonly IntegrityEventRecord[] {
     return this._integrityEvents;
   }
@@ -345,6 +354,15 @@ export class InterviewStateMachine {
         incidentSuppressed = ['same_incident','cooldown'].includes(policyDecision);
       } else incidentSuppressed = true;
     }
+    if (event.details?.source === 'vision' && event.tier === 'warning' && event.details.phase === 'observed') {
+      // Camera incidents arrive once per incident, already sustained past the recovery prompt. They count
+      // toward the same three-warning limit unless they qualify inside the cooldown after the last counted
+      // warning of any source (one moment tripping several signals must not count several times).
+      const last = this._lastIntegrityWarningAt;
+      policyDecision = last !== null && event.occurredAt < last + INTERVIEW_INTEGRITY_POLICY.visionWarningCooldownMs ? 'cooldown' : 'confirmed_violation';
+      incidentSuppressed = policyDecision === 'cooldown';
+      if (policyDecision === 'confirmed_violation') this._visionWarningCount += 1;
+    }
     const warningEligible = policyDecision === 'confirmed_violation';
     if (warningEligible) {this._integrityWarningCount += 1;this._lastIntegrityWarningAt=event.occurredAt;}
     this._integrityEvents.push({ ...event, policyDecision, warningNumber: warningEligible ? this._integrityWarningCount : 0 });
@@ -355,7 +373,7 @@ export class InterviewStateMachine {
       this._state = InterviewState.TERMINATED_FOR_INTEGRITY;
       this._currentQuestion = null;
       this._terminatedAt = new Date().toISOString();
-      this._terminationReason = `Three distinct sustained hidden-tab incidents reached the warning limit. Each met the ${INTERVIEW_INTEGRITY_POLICY.minimumTabHiddenDurationMs / 1000}-second duration rule, with visible recovery and cooldown between incidents. This is a policy outcome, not a determination of intent.`;
+      this._terminationReason = terminationReason(this._integrityEvents.filter((record) => record.warningNumber > 0));
     }
     return {
       warningCount: this._integrityWarningCount,
@@ -605,6 +623,7 @@ export class InterviewStateMachine {
       })),
       integrity: {
         warningCount: this._integrityWarningCount,
+        visionWarningCount: this._visionWarningCount,
         maximumWarnings: INTERVIEW_INTEGRITY_POLICY.maximumWarnings,
         terminatedAt: this._terminatedAt,
         terminationReason: this._terminationReason,
@@ -655,6 +674,8 @@ export class InterviewStateMachine {
       askedIds: [...this._askedIds],
       integrity: {
         warningCount: this._integrityWarningCount,
+        visionWarningCount: this._visionWarningCount,
+        integrityTokenHash: this._integrityTokenHash,
         tabIncident: this._tabIncident ? {...this._tabIncident} : null,
         lastWarningAt: this._lastIntegrityWarningAt,
         events: this._integrityEvents.map((event) => ({ ...event })),
@@ -717,6 +738,8 @@ export class InterviewStateMachine {
     sm._recentSkills = [...snapshot.recentSkills];
     for (const id of snapshot.askedIds) sm._askedIds.add(id);
     sm._integrityWarningCount = snapshot.integrity?.warningCount ?? 0;
+    sm._visionWarningCount = snapshot.integrity?.visionWarningCount ?? 0;
+    sm._integrityTokenHash = snapshot.integrity?.integrityTokenHash ?? null;
     sm._integrityEvents = (snapshot.integrity?.events ?? []).map((event) => ({ ...event }));
     const lastWarning = [...sm._integrityEvents].reverse().find(event=>event.warningNumber>0);
     sm._lastIntegrityWarningAt = snapshot.integrity?.lastWarningAt ?? lastWarning?.occurredAt ?? null;

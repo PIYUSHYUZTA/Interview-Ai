@@ -1,4 +1,5 @@
 import { synthesizeInterviewSpeech, recognizeInterviewSpeech } from './InterviewSpeech.js';
+import { summarizeIntegrityIncidents, updateVisionIntegrity, VISION_REVIEW_TYPES, VISION_WARNING_TYPES, type VisionEngineState } from '../core/session/VisionIntegrityEngine.js';
 import { VISION_TRANSITION_TYPES } from '../core/session/IntegrityPolicy.js';
 import { eligibleVisionEvent, technicalVisionEvent } from './VisionEvent.js';
 import { FaceReadiness } from './FaceReadiness.js';
@@ -47,7 +48,7 @@ import { extractResumeInsights } from '../core/understanding/ResumeInsights.js';
 
 import * as http from 'node:http';
 
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual, createHash } from 'node:crypto';
 
 import * as path from 'node:path';
 
@@ -88,6 +89,7 @@ import {
   type RoleRequirement,
 
   INTERVIEW_INTEGRITY_POLICY,
+  warningMessage,
 
   validateIntegrityEvent,
 
@@ -253,7 +255,11 @@ export class ApiServer {
 
   private readonly visionPending = new Set<string>();
 
-  private readonly visionSamples = new Map<string, { at: number; absentSince: number | null; multipleSince: number | null; headSince: number | null; gazeSince: number | null; positionSince: number | null }>();
+  private readonly visionSamples = new Map<string, { at: number }>();
+  /** Camera incident state per interview (VisionIntegrityEngine); survives single failed samples. */
+  private readonly visionIncidents = new Map<string, VisionEngineState>();
+  /** Consecutive failed camera samples per interview, for rate-limited server logs. */
+  private readonly visionFailureRuns = new Map<string, number>();
 
   private readonly server: http.Server;
 
@@ -675,7 +681,7 @@ export class ApiServer {
 
         const session = await this.store.load(id); if (!session) { this.sendError(res, 404, 'Interview not found.'); return; }
 
-        this.sendValidated(res, 200, InterviewDiagnosticsSchema, { python: this.visionDiagnostics.get(id) ?? { framesReceived: 0, framesAnalyzed: 0, failures: 0, service: 'not_started', lastFrameAt: null, lastObservationAt: null, lastDecision: 'Python starts on the first consented camera sample.' }, events: session.integrityEvents.slice(-30).map((event) => ({ eventType: event.eventType, occurredAt: event.occurredAt, durationMs: event.durationMs, warningNumber: event.warningNumber, policyDecision:event.policyDecision, eventId: event.eventId, sessionId: event.sessionId, confidence: event.confidence, severity: event.severity, details: event.details })), warningCount: session.toPublicState().integrity.warningCount, state: session.state, policy: { visualNoticeMs: this.config.visionNoticeMs, hiddenTabMs: INTERVIEW_INTEGRITY_POLICY.minimumTabHiddenDurationMs, graceMs: INTERVIEW_INTEGRITY_POLICY.monitoringGracePeriodMs, penaltySignals: ['tab_hidden'], contextualSignals: ['window_unfocused', 'fullscreen_exited', 'camera_interrupted', 'microphone_interrupted', 'connection_interrupted', 'face_absent', 'multiple_faces', 'head_turned', 'gaze_away', 'position_changed', 'tab_visible', ...VISION_TRANSITION_TYPES] } }); return;
+        this.sendValidated(res, 200, InterviewDiagnosticsSchema, { python: this.visionDiagnostics.get(id) ?? { framesReceived: 0, framesAnalyzed: 0, failures: 0, service: 'not_started', lastFrameAt: null, lastObservationAt: null, lastDecision: 'Python starts on the first consented camera sample.' }, events: session.integrityEvents.slice(-30).map((event) => ({ eventType: event.eventType, occurredAt: event.occurredAt, durationMs: event.durationMs, warningNumber: event.warningNumber, policyDecision:event.policyDecision, eventId: event.eventId, sessionId: event.sessionId, confidence: event.confidence, severity: event.severity, details: event.details, tier: event.tier, explanation: event.explanation, occurrences: event.occurrences, incidentId: event.incidentId, samples: event.samples, visionWarningNumber: event.visionWarningNumber })), warningCount: session.toPublicState().integrity.warningCount, visionWarningCount: session.toPublicState().integrity.visionWarningCount, state: session.state, policy: { visualNoticeMs: this.config.visionNoticeMs, hiddenTabMs: INTERVIEW_INTEGRITY_POLICY.minimumTabHiddenDurationMs, graceMs: INTERVIEW_INTEGRITY_POLICY.monitoringGracePeriodMs, penaltySignals: ['tab_hidden', ...VISION_WARNING_TYPES], visionWarningSignals: [...VISION_WARNING_TYPES], visionWarningCooldownMs: INTERVIEW_INTEGRITY_POLICY.visionWarningCooldownMs, contextualSignals: ['window_unfocused', 'fullscreen_exited', 'camera_interrupted', 'microphone_interrupted', 'connection_interrupted', ...VISION_REVIEW_TYPES, 'tab_visible', ...VISION_TRANSITION_TYPES] } }); return;
 
       }
 
@@ -1228,6 +1234,7 @@ export class ApiServer {
     const integrityToken = randomBytes(32).toString('base64url');
 
     this.integrityTokens.set(sm.sessionId, integrityToken);
+    sm.integrityTokenHash = createHash('sha256').update(integrityToken).digest('hex');
 
     await this.store.save(sm);
 
@@ -1798,7 +1805,8 @@ export class ApiServer {
 
 
 
-    const report = InterviewResultsResponseSchema.parse({ ...responsePayload, details: buildDetailedReport(sm, result.gaps, result.roadmap, result.overallScore) });
+    const integrityReview = this.integrityReview(sm);
+    const report = InterviewResultsResponseSchema.parse({ ...responsePayload, integrityReview, details: buildDetailedReport(sm, result.gaps, result.roadmap, result.overallScore) });
 
     this.reports.save(report);
 
@@ -1810,20 +1818,26 @@ export class ApiServer {
 
   private releaseVision(sessionId: string): void {
     if (this.visionPending.has(sessionId)) this.visionRevoked.add(sessionId);
-    this.faceReadiness.clear(sessionId); this.visionSamples.delete(sessionId);
+    this.faceReadiness.clear(sessionId); this.visionSamples.delete(sessionId); this.visionIncidents.delete(sessionId);
     this.vision.releaseSession(sessionId);
     const diagnostic=this.visionDiagnostics.get(sessionId);
     if (diagnostic) {diagnostic.service='stopped';diagnostic.lastDecision='Monitoring stopped for this session; Python state released.';}
   }
 
-  private validIntegrityToken(sessionId: string, req: http.IncomingMessage): boolean {
-
-    const expected = Buffer.from(this.integrityTokens.get(sessionId) ?? '');
-
-    const supplied = Buffer.from(req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1] ?? '');
-
-    return expected.length > 0 && expected.length === supplied.length && timingSafeEqual(expected, supplied);
-
+  /** Constant-time check of the bearer integrity token: the in-memory token, or after an API restart the
+   * hash persisted with the interview (the running browser keeps its token, so monitoring continues). */
+  private validIntegrityToken(sessionId: string, req: http.IncomingMessage, sm?: InterviewStateMachine | null): boolean {
+    const supplied = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1] ?? '';
+    const known = this.integrityTokens.get(sessionId);
+    if (known !== undefined) {
+      const expected = Buffer.from(known), given = Buffer.from(supplied);
+      return expected.length > 0 && expected.length === given.length && timingSafeEqual(expected, given);
+    }
+    const hash = sm?.integrityTokenHash;
+    if (!hash || !supplied || sm?.state === InterviewState.TERMINATED_FOR_INTEGRITY) return false;
+    const matches = timingSafeEqual(Buffer.from(createHash('sha256').update(supplied).digest('hex')), Buffer.from(hash));
+    if (matches) this.integrityTokens.set(sessionId, supplied); // re-learn after a restart
+    return matches;
   }
 
 
@@ -1838,7 +1852,7 @@ export class ApiServer {
 
     if (this.rejectTerminated(sm, res)) return;
     if (sm.state === InterviewState.COMPLETED) { this.releaseVision(sessionId); this.sendError(res,409,'Interview completed. Visual monitoring has stopped.',{code:'INTERVIEW_COMPLETED',publicState:sm.toPublicState()}); return; }
-    if (!this.validIntegrityToken(sessionId, req)) { this.sendError(res, 401, 'Vision monitoring is not authorized for this session.'); return; }
+    if (!this.validIntegrityToken(sessionId, req, sm)) { this.sendError(res, 401, 'Vision monitoring is not authorized for this session.'); return; }
 
 
 
@@ -1862,9 +1876,9 @@ export class ApiServer {
 
     const previous = this.visionSamples.get(sessionId);
 
-    if (previous && now - previous.at < 1_500) { this.sendError(res, 429, 'Camera samples are limited to one every two seconds.'); return; }
+    if (previous && now - previous.at < this.config.visionMinFrameMs) { this.sendError(res, 429, `Camera samples are limited to one every ${this.config.visionMinFrameMs} ms.`); return; }
 
-    const sample = previous && now - previous.at < 6_000 ? previous : { at: 0, absentSince: null, multipleSince: null, headSince: null, gazeSince: null, positionSince: null };
+    const sample = previous ?? { at: 0 };
 
     sample.at = now;
 
@@ -1888,10 +1902,11 @@ export class ApiServer {
       diagnostic.service = 'analyzing';
 
       const observation = await this.vision.analyze(sessionId, input.image);
-
+      const failedBefore = this.visionFailureRuns.get(sessionId);
+      if (failedBefore) { console.info(`[vision] Frame analysis recovered for interview …${sessionId.slice(-8)} after ${failedBefore} failed sample(s).`); this.visionFailureRuns.delete(sessionId); }
       diagnostic.framesAnalyzed++; diagnostic.lastObservationAt = new Date().toISOString(); diagnostic.service = 'connected';
 
-      diagnostic.lastDecision = `Frame analyzed: ${observation.faceCount} face(s), ${observation.handCount} hand(s). Visual observations are contextual and do not add automatic warnings.`;
+      diagnostic.lastDecision = `Frame analyzed: ${observation.faceCount} face(s), ${observation.handCount} hand(s), Python ${Math.round(observation.frame?.processingMs ?? 0)} ms. Warnings come only from sustained qualifying incidents under the three-warning policy.`;
 
       // Inference runs outside the session lock, so urgent warnings/answers are not blocked.
 
@@ -1930,37 +1945,36 @@ export class ApiServer {
           sm.recordIntegrityWarning(event);
         }
 
-        const eligibleAt = (sm.timing.sessionStartedAt ?? now) + INTERVIEW_INTEGRITY_POLICY.monitoringGracePeriodMs;
-
-        for (const [condition, key, eventType, notice] of [
-
-          [observation.faceCount === 0, 'absentSince', 'face_absent', 'A face has not been visible for a sustained period. Check lighting and camera framing. This is a notice, not a cheating finding.'],
-
-          [observation.faceCount > 1, 'multipleSince', 'multiple_faces', 'More than one face has been visible for a sustained period. Please check your surroundings. This observation adds no automatic warning.'],
-
-          [this.config.visualDirectionReviewEnabled && observation.directionEstimate?.headReliable === true && observation.headOrientation === 'turned', 'headSince', 'head_turned', 'Sustained head turn observed. This is not proof of outside assistance and adds no automatic warning.'],
-
-          [this.config.visualDirectionReviewEnabled && observation.directionEstimate?.gazeReliable === true && observation.gazeReliable && observation.gazeDirection === 'possibly_sideways', 'gazeSince', 'gaze_away', 'Sustained approximate eye-direction change observed. This is not calibrated gaze tracking and adds no automatic warning.'],
-
-          [observation.movementObservation?.body.reliable !== false && observation.positionShift !== null && observation.positionShift >= this.config.visionPositionThreshold, 'positionSince', 'position_changed', 'A sustained change from the initial upper-body position was observed. This adds no automatic warning.'],
-
-        ] as const) {
-
-          sample[key] = condition ? Math.max(sample[key] ?? now, eligibleAt) : null;
-
-          if (sample[key] !== null && now - sample[key]! >= this.config.visionNoticeMs) {
-
-            notices.push(notice);
-
-            sm.recordIntegrityWarning({ sessionId, eventId: `vision-${eventType}-${sample[key]}`, eventType, occurredAt: now, durationMs: now - sample[key]!, confidence: null, severity: 'info', details: {source:'vision',signal:eventType,trackingState:'sustained',phase:'observed'} });
-
+        // All camera integrity concerns go through one engine: incidents with sustain, gap bridging and
+        // one record when an incident qualifies plus one when it ends — never one per frame.
+        const recorded = sm.integrityEvents;
+        const engine = updateVisionIntegrity({
+          sessionId, now, observation, state: this.visionIncidents.get(sessionId),
+          eligibleAt: (sm.timing.sessionStartedAt ?? now) + INTERVIEW_INTEGRITY_POLICY.monitoringGracePeriodMs,
+          config: { noticeMs: this.config.visionNoticeMs, handFaceMs: this.config.visionHandFaceNoticeMs, phoneMs: this.config.visionPhoneNoticeMs,
+            interruptionMs: this.config.visionInterruptionMs, clearMs: this.config.visionClearMs, gapMs: 6_000, recoveryMs: INTERVIEW_INTEGRITY_POLICY.cameraWarningRecoveryMs,
+            directionReview: this.config.visualDirectionReviewEnabled, positionThreshold: this.config.visionPositionThreshold },
+          lastRecordedAt: (type) => [...recorded].reverse().find(event => event.eventType === type)?.occurredAt ?? null,
+        });
+        this.visionIncidents.set(sessionId, engine.state);
+        if (this.visionIncidents.size > 1000) this.visionIncidents.delete(this.visionIncidents.keys().next().value!);
+        // Counting happens only in the state machine (the single three-warning policy); this endpoint just
+        // reports the outcome, worded by the policy, so the room shows the same message as the tab path.
+        let warning: { warningCount: number; maximumWarnings: number; terminated: boolean; message: string } | null = null;
+        for (const event of engine.events) {
+          const outcome = sm.recordIntegrityWarning(event);
+          const counted = sm.integrityEvents.at(-1);
+          if (!outcome.duplicate && counted?.eventId === event.eventId && counted.warningNumber > 0) {
+            warning = { warningCount: outcome.warningCount, maximumWarnings: INTERVIEW_INTEGRITY_POLICY.maximumWarnings, terminated: outcome.terminated, message: warningMessage(counted, outcome.warningCount) };
           }
-
+          if (outcome.terminated) break;
         }
+        if (warning?.terminated) { this.integrityTokens.delete(sessionId); this.releaseVision(sessionId); }
+        notices.push(...engine.notices);
 
         await this.store.save(sm);
 
-        this.sendJson(res, 200, { observedAt:new Date(Math.min(Date.parse(input.capturedAt),now)).toISOString(), observation, notices, publicState: sm.toPublicState(), faceReadiness });
+        this.sendJson(res, 200, { observedAt:new Date(Math.min(Date.parse(input.capturedAt),now)).toISOString(), observation, notices, warning, publicState: sm.toPublicState(), faceReadiness });
 
       });
 
@@ -1971,8 +1985,14 @@ export class ApiServer {
       if (latest?.state === InterviewState.COMPLETED) { this.releaseVision(sessionId); this.sendError(res,409,'Interview completed.',{code:'INTERVIEW_COMPLETED',publicState:latest.toPublicState()}); return; }
 
       // A failed sample resets continuity; model/device failures never create warnings.
-
       this.visionSamples.delete(sessionId); this.faceReadiness.unavailable(sessionId);
+      const failedRun = (this.visionFailureRuns.get(sessionId) ?? 0) + 1;
+      this.visionFailureRuns.set(sessionId, failedRun);
+      if (this.visionFailureRuns.size > 1000) this.visionFailureRuns.delete(this.visionFailureRuns.keys().next().value!);
+      if (failedRun === 1 || failedRun % 20 === 0) {
+        const cause = error instanceof VisionError ? error.code : `VISION_PROCESSING_FAILED (${(error as Error)?.message?.slice(0, 160) ?? 'unknown error'})`;
+        console.warn(`[vision] Frame analysis failed for interview …${sessionId.slice(-8)}: ${cause}. Consecutive failures: ${failedRun}. No warning added; the browser retries automatically.`);
+      }
 
       diagnostic.failures++; diagnostic.service = 'unavailable'; diagnostic.lastDecision = `${error instanceof VisionError ? error.code : 'VISION_PROCESSING_FAILED'}: continuity reset; no warning added.`;
 
@@ -1998,32 +2018,14 @@ export class ApiServer {
 
   private async handleIntegrityEvent(sessionId: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
 
-    const expectedToken = this.integrityTokens.get(sessionId);
-
-    const suppliedToken = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1] ?? '';
-
-    const expectedBytes = Buffer.from(expectedToken ?? '');
-
-    const suppliedBytes = Buffer.from(suppliedToken);
-
-    if (!expectedToken || expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
-
-      this.sendError(res, 401, 'This integrity event is not authorized for the interview session.', { code: 'INTEGRITY_UNAUTHORIZED' });
-
-      return;
-
-    }
-
-
-
     const sm = await this.store.load(sessionId);
-
-    if (!sm) {
-
-      this.sendError(res, 404, `Interview session "${sessionId}" not found.`);
-
+    if (!this.validIntegrityToken(sessionId, req, sm)) {
+      this.sendError(res, 401, 'This integrity event is not authorized for the interview session.', { code: 'INTEGRITY_UNAUTHORIZED' });
       return;
-
+    }
+    if (!sm) {
+      this.sendError(res, 404, `Interview session "${sessionId}" not found.`);
+      return;
     }
 
     if (this.rejectTerminated(sm, res)) return;
@@ -2086,29 +2088,14 @@ export class ApiServer {
 
     if (outcome.terminated) { this.integrityTokens.delete(sessionId); this.releaseVision(sessionId); }
 
+    const counted = sm.integrityEvents.at(-1);
     const message = event.eventType !== 'tab_hidden'
-
       ? 'Technical or contextual observation recorded. No integrity warning was added.'
-
       : outcome.duplicate
-
       ? `This event was already recorded. Warning count remains ${outcome.warningCount} of ${INTERVIEW_INTEGRITY_POLICY.maximumWarnings}.`
-
-      : outcome.suppressed
-
+      : outcome.suppressed || !counted || counted.eventId !== event.eventId || counted.warningNumber === 0
         ? `This event was part of the same recent incident. Warning count remains ${outcome.warningCount} of ${INTERVIEW_INTEGRITY_POLICY.maximumWarnings}.`
-
-      : outcome.terminated
-
-          ? 'Third confirmed incident â€” interview terminated after two warnings. This records repeated sustained periods with the interview tab hidden; it is not a determination of intent.'
-
-          : outcome.warningCount === 2
-
-            ? 'Warning 2 of 2 â€” Final warning. Another confirmed sustained period with the interview tab hidden will end this interview.'
-
-            : `Warning 1 of ${INTERVIEW_INTEGRITY_POLICY.maximumWarnings} â€” Interview integrity notice. The interview tab was hidden for a sustained period. Return to the interview tab to continue.`;
-
-
+        : warningMessage(counted, outcome.warningCount);
 
     this.sendValidated(res, 200, IntegrityEventResponseSchema, {
 
@@ -2140,6 +2127,15 @@ export class ApiServer {
 
 
 
+  /** The integrity record for reports and terminated sessions: counted warnings and camera incidents. */
+  private integrityReview(sm: InterviewStateMachine) {
+    const integrity = sm.toPublicState().integrity;
+    const camera = integrity.visionWarningCount ?? 0;
+    return { totalWarnings: integrity.warningCount, tabWarnings: integrity.warningCount - camera, cameraWarnings: camera,
+      incidents: summarizeIntegrityIncidents(sm.integrityEvents, sm.timing.sessionStartedAt ?? 0).slice(0, 200),
+      note: `Warnings follow one three-warning policy: ${INTERVIEW_INTEGRITY_POLICY.maximumWarnings} warnings are allowed and a third qualifying incident ends the interview. Camera observations are approximate, technical problems are never counted, and warnings did not affect the score.` };
+  }
+
   private rejectTerminated(sm: InterviewStateMachine, res: http.ServerResponse): boolean {
 
     if (sm.state !== InterviewState.TERMINATED_FOR_INTEGRITY) return false;
@@ -2151,6 +2147,9 @@ export class ApiServer {
       publicState: sm.toPublicState(),
 
       details: sm.toPublicState().integrity,
+
+      // No assessment report exists for a terminated interview; its integrity record is returned here instead.
+      integrityReview: this.integrityReview(sm),
 
     });
 

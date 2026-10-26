@@ -8,12 +8,12 @@ const capture = captureSettings(import.meta.env);
 /** Consented snapshots, bounded in size and time. No recording or frame storage. */
 export function useVisionMonitoring(input: {
   video: RefObject<HTMLVideoElement | null>; enabled: boolean; active: boolean;
-  interviewId: string; token: string; preflight?: boolean; onReadiness?: (status: FaceReadinessStatus) => void; onState?: (state:PublicInterviewState) => void; onUnavailable?: (message:string) => void;
+  interviewId: string; token: string; preflight?: boolean; onReadiness?: (status: FaceReadinessStatus) => void; onState?: (state:PublicInterviewState) => void; onUnavailable?: (message:string) => void; onWarning?: (message: string) => void;
 }) {
   const [faceReadiness, setFaceReadiness] = useState<FaceReadinessStatus | null>(null);
   const callback = useRef(input.onReadiness);
-  const stateCallback=useRef(input.onState), unavailableCallback=useRef(input.onUnavailable);
-  useEffect(()=>{stateCallback.current=input.onState;unavailableCallback.current=input.onUnavailable;},[input.onState,input.onUnavailable]);
+  const stateCallback=useRef(input.onState), unavailableCallback=useRef(input.onUnavailable), warningCallback=useRef(input.onWarning);
+  useEffect(()=>{stateCallback.current=input.onState;unavailableCallback.current=input.onUnavailable;warningCallback.current=input.onWarning;},[input.onState,input.onUnavailable,input.onWarning]);
   useEffect(() => { callback.current = input.onReadiness; }, [input.onReadiness]);
   useEffect(() => {
     if (!faceReadiness?.ready || !faceReadiness.expiresAt) return;
@@ -29,6 +29,8 @@ export function useVisionMonitoring(input: {
   const [notice, setNotice] = useState('');
   const [status, setStatus] = useState('Off');
   const [diagnostics, setDiagnostics] = useState({ captured: 0, submitted: 0, analyzed: 0, failures: 0 });
+  /** Last round trip: what was sent, what Python decoded, and how long each stage took. */
+  const [transport, setTransport] = useState<{ sent: { width: number; height: number; bytes: number }; decoded: VisionObservation['frame'] | null; roundTripMs: number; matches: boolean } | null>(null);
   useEffect(() => {
     if (!input.enabled || !input.active) return;
     let cancelled = false;
@@ -52,6 +54,8 @@ export function useVisionMonitoring(input: {
           if (!context) throw new Error('Camera frame capture is unavailable in this browser.');
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
           const image = await encodeCameraFrame(canvas);
+          const sent = { width: canvas.width, height: canvas.height, bytes: Math.floor(image.length * 3 / 4) - (image.endsWith('==') ? 2 : image.endsWith('=') ? 1 : 0) };
+          const requestedAt = performance.now();
           if (cancelled) return;
           if (document.hidden) { timer = setTimeout(() => void sample(), capture.intervalMs); return; }
           setDiagnostics(d => ({ ...d, captured: d.captured + 1, submitted: d.submitted + 1 }));
@@ -62,15 +66,18 @@ export function useVisionMonitoring(input: {
           const result = await submitVisionFrame(input.interviewId, input.token, image, request.signal, input.preflight);
           if (!cancelled) {
             stateCallback.current?.(result.publicState);
+            if (result.warning) warningCallback.current?.(result.warning.message);
             if (['COMPLETED','TERMINATED_FOR_INTEGRITY'].includes(result.publicState.state)) { halted=true;setObservation(null);setStatus('Interview ended · visual monitoring stopped');return; }
             if (result.faceReadiness) { setFaceReadiness(result.faceReadiness); callback.current?.(result.faceReadiness); }
             setFrameSize({ width: canvas.width, height: canvas.height }); setObservationSession(input.interviewId); setObservation(result.observation); setObservedAt(result.observedAt?Date.parse(result.observedAt):null); setNotice([...result.notices, ...Object.entries(result.observation.moduleStatus ?? {}).filter(([, value]) => value !== 'ready').map(([name, value]) => `${name} tracking ${value}. Face presence remains available.`)].join(' '));
             setDiagnostics(d => ({ ...d, analyzed: d.analyzed + 1 }));
-            setStatus(input.preflight ? 'Face-readiness sample analyzed' : `Connected · sampled every ${capture.intervalMs / 1000} seconds`);
+            const decoded = result.observation.frame ?? null;
+            setTransport({ sent, decoded, roundTripMs: Math.round(performance.now() - requestedAt), matches: !!decoded && decoded.width === sent.width && decoded.height === sent.height && decoded.bytes === sent.bytes });
+            setStatus(input.preflight ? 'Face-readiness sample analyzed' : `Connected · about ${Math.round(1000 / (capture.intervalMs + 150))} samples per second`);
           }
         } catch (error) {
           if (!cancelled) {
-            if (error instanceof ApiError && [400,401,403,404,409,410].includes(error.status)) {
+            if (error instanceof ApiError && [401,403,404,409,410].includes(error.status)) {
               halted=true;setObservation(null);setStatus('Visual monitoring stopped · session unavailable');setNotice(error.message);
               if (error.publicState) stateCallback.current?.(error.publicState);
               else unavailableCallback.current?.(error.message);
@@ -90,5 +97,5 @@ export function useVisionMonitoring(input: {
     void sample();
     return () => { cancelled = true; clearTimeout(timer); request?.abort(); document.removeEventListener('visibilitychange', visibility); canvas.width = 0; canvas.height = 0; };
   }, [input.enabled, input.active, input.interviewId, input.token, input.video, input.preflight]);
-  return { observation: input.enabled && observationSession===input.interviewId && (input.active || input.preflight) ? observation : null, notice: input.enabled && input.active ? notice : '', status: input.enabled && input.active ? status : 'Off', diagnostics, frameSize, faceReadiness, observedAt:observationSession===input.interviewId?observedAt:null, invalidate };
+  return { observation: input.enabled && observationSession===input.interviewId && (input.active || input.preflight) ? observation : null, notice: input.enabled && input.active ? notice : '', status: input.enabled && input.active ? status : 'Off', diagnostics, transport, frameSize, faceReadiness, observedAt:observationSession===input.interviewId?observedAt:null, invalidate };
 }

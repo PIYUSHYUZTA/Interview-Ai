@@ -1,0 +1,799 @@
+{
+ "source": "human-interview-studio.glb",
+ "camera": {
+  "distanceMetres": 0.62,
+  "lensMm": 35,
+  "size": [
+   480,
+   600
+  ]
+ },
+ "axes": {
+  "headYaw": 1,
+  "headPitch": 0,
+  "eyeYaw": 2
+ },
+ "convention": "degrees relative to the rest pose. headYawDeg < 0: the face turns toward image right (the subject own left); headPitchDeg < 0: looking down; eyeYawRelativeToHeadDeg: pupil rotation measured on the eye mesh (about half the bone input, the eyes are half-weighted)",
+ "frames": [
+  {
+   "file": "000.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "001.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -7.9,
+   "headPitchDeg": 0.1,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 8,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "002.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -15.8,
+   "headPitchDeg": 0.3,
+   "eyeYawRelativeToHeadDeg": -0.1,
+   "boneInput": {
+    "headYaw": 16,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "003.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -23.8,
+   "headPitchDeg": 0.6,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 24,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "004.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -31.7,
+   "headPitchDeg": 1.1,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 32,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "005.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -39.7,
+   "headPitchDeg": 1.7,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 40,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "006.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -39.7,
+   "headPitchDeg": 1.7,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 40,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "007.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -39.7,
+   "headPitchDeg": 1.7,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 40,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "008.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -31.7,
+   "headPitchDeg": 1.1,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 32,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "009.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -23.8,
+   "headPitchDeg": 0.6,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 24,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "010.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -15.8,
+   "headPitchDeg": 0.3,
+   "eyeYawRelativeToHeadDeg": -0.1,
+   "boneInput": {
+    "headYaw": 16,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "011.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -7.9,
+   "headPitchDeg": 0.1,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 8,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "012.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "013.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "014.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 7.9,
+   "headPitchDeg": 0.1,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": -8,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "015.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 15.8,
+   "headPitchDeg": 0.3,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": -16,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "016.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 23.8,
+   "headPitchDeg": 0.6,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": -24,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "017.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 31.7,
+   "headPitchDeg": 1.1,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": -32,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "018.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 39.7,
+   "headPitchDeg": 1.7,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": -40,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "019.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 39.7,
+   "headPitchDeg": 1.7,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": -40,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "020.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 39.7,
+   "headPitchDeg": 1.7,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": -40,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "021.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 31.7,
+   "headPitchDeg": 1.1,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": -32,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "022.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 23.8,
+   "headPitchDeg": 0.6,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": -24,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "023.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 15.8,
+   "headPitchDeg": 0.3,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": -16,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "024.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": 7.9,
+   "headPitchDeg": 0.1,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": -8,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "025.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "026.jpg",
+   "segment": "head-yaw",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "027.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "028.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": -10.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 10,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "029.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": -20.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 20,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "030.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.1,
+   "headPitchDeg": -30.0,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 30,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "031.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.1,
+   "headPitchDeg": -30.0,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 30,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "032.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.1,
+   "headPitchDeg": -30.0,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 30,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "033.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": -20.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 20,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "034.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": -10.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 10,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "035.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "036.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 10.0,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -10,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "037.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 20.0,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -20,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "038.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 30.0,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -30,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "039.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 30.0,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -30,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "040.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 30.0,
+   "eyeYawRelativeToHeadDeg": 0.1,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -30,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "041.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 20.0,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -20,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "042.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": 0.0,
+   "headPitchDeg": 10.0,
+   "eyeYawRelativeToHeadDeg": 0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": -10,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "043.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "044.jpg",
+   "segment": "head-pitch",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "045.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "046.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "047.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -4.5,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 10
+   }
+  },
+  {
+   "file": "048.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -9.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 20
+   }
+  },
+  {
+   "file": "049.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -11.3,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 25
+   }
+  },
+  {
+   "file": "050.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -11.3,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 25
+   }
+  },
+  {
+   "file": "051.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -11.3,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 25
+   }
+  },
+  {
+   "file": "052.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -9.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 20
+   }
+  },
+  {
+   "file": "053.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -4.5,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 10
+   }
+  },
+  {
+   "file": "054.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "055.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "056.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 4.5,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -10
+   }
+  },
+  {
+   "file": "057.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 9.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -20
+   }
+  },
+  {
+   "file": "058.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 11.3,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -25
+   }
+  },
+  {
+   "file": "059.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 11.3,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -25
+   }
+  },
+  {
+   "file": "060.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 11.3,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -25
+   }
+  },
+  {
+   "file": "061.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 9.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -20
+   }
+  },
+  {
+   "file": "062.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": 4.5,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": -10
+   }
+  },
+  {
+   "file": "063.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  },
+  {
+   "file": "064.jpg",
+   "segment": "eyes",
+   "headYawDeg": -0.0,
+   "headPitchDeg": 0.0,
+   "eyeYawRelativeToHeadDeg": -0.0,
+   "boneInput": {
+    "headYaw": 0,
+    "headPitch": 0,
+    "eyeYaw": 0
+   }
+  }
+ ]
+}

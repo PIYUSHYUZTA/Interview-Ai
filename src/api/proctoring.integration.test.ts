@@ -7,7 +7,7 @@ import { STRONG_RESUME } from '../testSupport/fixtures.js';
 
 describe('integrated Python vision and backend integrity policy', () => {
   afterEach(() => vi.restoreAllMocks());
-  it('analyzes real JPEGs through Python, gates access, and records sustained absence without penalties', async () => {
+  it('analyzes real JPEGs through Python, gates access, and treats a blank camera image as technical, never a warning', async () => {
     const provider = new DeterministicProvider();
     const store = new InMemorySessionStore({ provider });
     const api = new ApiServer({ provider, store, authenticationRequired: false });
@@ -35,7 +35,8 @@ describe('integrated Python vision and backend integrity policy', () => {
         const result = await response.json() as any;
         expect(result.observation).toMatchObject({ faceCount: 0, handCount: 0, upperBodyVisible: false });
         expect(result.publicState.integrity.warningCount).toBe(0);
-        if (index === 8) expect(result.notices[0]).toContain('not a cheating finding');
+        // A black frame cannot show a face: technical (camera_obstructed), never face absence or a warning.
+        if (index === 8) expect(result.notices[0]).toMatch(/too dark or uniform to analyse .*Treated as a technical problem\. Recorded as a review note only; no warning is counted\.$/);
       }
       const event = { eventId: crypto.randomUUID(), eventType: 'camera_interrupted', occurredAt: new Date(Date.now()).toISOString(), durationMs: 5000 };
       const technical = await fetch(`${base}/interviews/${session.sessionId}/integrity-events`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.integrityToken}` }, body: JSON.stringify(event) });
@@ -47,11 +48,12 @@ describe('integrated Python vision and backend integrity policy', () => {
       expect((await sample(session.integrityToken, Date.now())).status).toBe(200);
       const diagnostics = await (await fetch(`${base}/interviews/${session.sessionId}/diagnostics`)).json() as any;
       expect(diagnostics.python).toMatchObject({ service: 'connected', framesReceived: 10, framesAnalyzed: 10, failures: 0 });
-      expect(diagnostics.policy.penaltySignals).toEqual(['tab_hidden']);
+      expect(diagnostics.policy.penaltySignals).toEqual(['tab_hidden', 'multiple_faces', 'face_absent', 'phone_visible']);
       expect(diagnostics.events.map((event: any) => event.eventType)).toContain('camera_interrupted');
       expect(JSON.stringify(diagnostics)).not.toContain(image);
       const restored = await store.load(session.sessionId);
-      expect(restored!.integrityEvents.map((item) => item.eventType)).toEqual(['face_absent', 'camera_interrupted', 'camera_recovered']);
+      expect(restored!.integrityEvents.map((item) => item.eventType)).toEqual(['camera_obstructed', 'camera_interrupted', 'camera_recovered']);
+      expect(restored!.integrityEvents.every((item) => !item.warningNumber)).toBe(true);
       expect(JSON.stringify(restored!.serialize())).not.toContain(image);
     } finally { await server.close(); }
   }, 45_000);

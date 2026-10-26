@@ -95,7 +95,7 @@ export {
   type StateMachineDeps,
   type SerializedStateMachine,
 } from './core/session/InterviewStateMachine.js';
-export { INTERVIEW_INTEGRITY_POLICY, validateIntegrityEvent, type IntegrityEventType, type IntegrityEventInput, type IntegrityEventRecord } from './core/session/IntegrityPolicy.js';
+export { INTERVIEW_INTEGRITY_POLICY, validateIntegrityEvent, warningMessage, terminationReason, type IntegrityEventType, type IntegrityEventInput, type IntegrityEventRecord } from './core/session/IntegrityPolicy.js';
 export {
   type InterviewSessionStore,
   InMemorySessionStore,

@@ -1,0 +1,12 @@
+{
+  "source": "assets/avatar-source/mpfb.glb",
+  "sourceSha256": "63c645a2a863b9972e9a9c2ed576a1de4c390b8475508e1473e69c87a3ee299c",
+  "license": "CC0-1.0",
+  "preparedSource": "assets/blender/hero-bust.blend",
+  "file": "/models/hero-bust.glb",
+  "poster": "/models/hero-bust-poster.webp",
+  "blender": "5.2.3 LTS",
+  "triangles": 61533,
+  "bytes": 3226344,
+  "sha256": "fd93300cd71251c3194834d390b4071dcd4703356228bcf33db5601fb74fee07"
+}

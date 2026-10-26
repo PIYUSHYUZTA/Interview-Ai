@@ -20,7 +20,9 @@ SOURCES = ROOT / 'assets' / 'blender'
 OUTPUT = ROOT / 'frontend' / 'public' / 'models'
 SOURCES.mkdir(parents=True, exist_ok=True)
 OUTPUT.mkdir(parents=True, exist_ok=True)
-PALETTE = {'ink': '031211', 'ivory': 'E8E4D3', 'teal': '00AEBB', 'charcoal': '090907', 'earth': '6C5636', 'amber': 'B99D73'}
+# The complete nine-colour brand palette (sRGB hex); scripts pick colours by their real names.
+PALETTE = {'ink': '031211', 'ivory': 'E8E4D3', 'teal': '00AEBB', 'charcoal': '090907', 'earth': '6C5636', 'amber': 'B99D73',
+           'jet': '0A0A0A', 'cerulean': '007BA7', 'rose': 'FF2D95'}
 
 
 def linear(hex_color):
@@ -199,6 +201,8 @@ def camera_and_lights(position, target):
 
 
 if __name__ == '__main__':
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from web_assets import organize, is_camera_or_light
     manifest = {'generator': 'scripts/blender/generate_assets.py', 'blender': bpy.app.version_string, 'palette': PALETTE, 'assets': []}
     for name, build in [('intelligence-core', core), ('interview-studio', studio)]:
         position, target = build()
@@ -210,6 +214,7 @@ if __name__ == '__main__':
         scene.render.resolution_x = 640
         scene.render.resolution_y = 640 if name == 'intelligence-core' else 480
         scene.render.resolution_percentage = 100
+        organize(scene, {'Camera and lights': is_camera_or_light, name.replace('-', ' ').title(): lambda obj: True})
         bpy.ops.wm.save_as_mainfile(filepath=str(SOURCES / f'{name}.blend'))
         output = OUTPUT / f'{name}.glb'
         bpy.ops.export_scene.gltf(filepath=str(output), export_format='GLB', export_apply=True, export_animations=True, export_cameras=False, export_lights=False, export_texcoords=False)

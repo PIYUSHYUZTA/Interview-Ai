@@ -79,5 +79,6 @@ export function useInterviewIntegrity(input: {
       window.removeEventListener('online', tick); window.removeEventListener('offline', tick);
     };
   }, [active, input.interviewId, input.token, input.policy.monitoringGracePeriodMs, input.policy.minimumTabHiddenDurationMs, input.policy.minimumTabVisibleDurationMs, input.state.timing.sessionStartedAt]);
-  return { message, error, sending, windowBlurred, clearMessage: () => setMessage(null) };
+  // Camera warnings arrive on frame responses; they share this panel. The count itself always comes from the server.
+  return { message, error, sending, windowBlurred, clearMessage: () => setMessage(null), showWarning: setMessage };
 }

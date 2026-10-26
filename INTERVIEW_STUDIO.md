@@ -1,5 +1,103 @@
 # Live human interview studio — Part 3
 
+## Part 6 — full facial rig, turn-taking and room controls
+
+Level-by-level verification (model → rig → rendered → audio-driven → integrated)
+and the SAPI cue-timing fix are documented in [AVATAR_VERIFICATION.md](AVATAR_VERIFICATION.md).
+Cue times are now the running total of SAPI viseme durations, which match the WAV
+exactly; the reported `AudioPosition` drifted about 25–30% late.
+
+### Avatar preparation (Blender, offline)
+`prepare_interviewer.py` now keeps, besides the 15 Oculus visemes, the ARKit shapes
+`jawOpen`, `mouthClose`, `mouthFunnel`, `mouthPucker`, `mouthStretchLeft/Right`,
+`mouthPressLeft/Right`, blinks, smile and `browInnerUp`. Gaze uses the rig's
+`LeftEye`/`RightEye` bones; head motion uses `Head`. Textures export as WebP, so
+the room GLB fell from 14.5 MB to 8.7 MB despite the extra shapes. The validator
+now requires the jaw and lip shapes.
+
+### Runtime pipeline (browser)
+1. The engine's current question → authenticated `/speech` → Windows SAPI WAV plus
+   timestamped visemes from the same synthesis (`scripts/speech/synthesize.ps1`).
+2. The WAV plays in an `HTMLAudioElement`; `audio.currentTime` is the only clock.
+3. `avatar-speech.ts` blends the cues (handover and anticipation) and computes a
+   10 ms loudness envelope from the WAV's PCM samples.
+4. `avatar-face.ts` layers jaw opening (viseme openness × loudness), lip rounding
+   (O/U), stretching (E/I) and pressing (PP) on the visemes.
+5. When audio ends, pauses or is interrupted, mouth shapes ease to rest over 400 ms.
+6. Idle life: blinks at random 1.8–5.8 s intervals with occasional doubles, eye
+   saccades that mostly return to the candidate, and layered head drift with
+   incommensurate frequencies. All of it is authored behaviour, not a reading of
+   the candidate. Reduced motion stops idle head and eye motion; speech articulation
+   continues.
+
+Blender prepares assets only. Live lip sync runs in Three.js in the browser.
+**External dependency:** synchronized speech needs Windows with System.Speech
+(SAPI) voices on the API host. Elsewhere the browser-voice fallback plays without
+lip sync, and the room says so.
+
+### Room controls and truthful state
+The avatar comes first, then the live state and the question caption, then one
+control bar:
+- Microphone: Start / Pause microphone. While the interviewer speaks this becomes
+  **Interrupt and answer**: question audio and mouth animation stop before the
+  microphone opens.
+- **Pause / Resume interview**: pausing mid-question keeps the WAV position, and
+  resuming continues the same synchronized playback. Pausing while listening stops
+  capture.
+- **Replay question** is always available outside processing.
+- End: **Exit interview** in the toolbar, with confirmation.
+- Progress: the toolbar's round and answer count plus a thin progress bar.
+- An optional **Conversation so far** panel lists evaluated questions and answers.
+- State labels: "AI Speaking" only after the audio's `playing` event; "Listening"
+  or "You are speaking" only while capture is active (the latter from measured
+  input level); "Processing" only during transcription or evaluation; "Interview
+  paused" only after the candidate pauses.
+
+Voice barge-in (interrupting by speaking over the interviewer) is not enabled. The
+microphone stays closed during playback so the interviewer's own voice is never
+transcribed. Interrupting is an explicit control.
+
+Verification (25 October 2026): `scripts/verify-avatar-turns.ts` passed with real SAPI
+audio. Jaw opening reached 0.17 during speech; pausing froze audio at 1.67 s and
+resuming continued at 1.76 s; interrupting stopped audio and mouth within 54 ms;
+replay restarted from the beginning; the mouth returned to rest after the natural
+end; gaze varied. `verify-voice-room.ts` and the landing verifier passed, and 245
+unit/integration tests passed.
+
+## Part 5 — cinematic room and coarticulated lip sync
+
+Framing: the room camera is now framed from the rig's `Head` joint as a
+conversational medium close-up (head to upper chest, 28° lens), so the
+synchronized mouth is readable. The camera still offsets slightly with the pointer.
+
+Room: architecture uses dark titanium and charcoal ceramic instead of bright
+metal. Cerulean appears only as emissive reveals and a fine halo behind the head,
+with one Neon Rose arc, echoing the landing hero. Human scenes use AgX tone
+mapping with a soft neutral key (with shadows), a Cerulean rim and a Neon Rose
+kicker. Regenerate with `generate-3d-assets.ps1 -HumanStudio -Render`.
+
+Lip sync (`frontend/src/components/avatar-speech.ts`), still driven by the SAPI
+WAV's own viseme cues against `audio.currentTime`:
+- Coarticulation: each cue fades in over 60 ms while the previous shape fades out,
+  and the next shape is anticipated at up to 40% in the 45 ms before its cue.
+- Loudness: the browser computes a 10 ms RMS envelope from the same 16-bit PCM WAV
+  bytes it plays (no Web Audio routing, so playback cannot be muted by it). Open
+  vowels (aa, E, I, O, U) scale with loudness; closures (PP, FF, TH…) keep full
+  weight so lips still meet on quiet consonants. Non-PCM audio skips the envelope.
+- `data-viseme` still reports the active cue for the room verifier.
+This is approximate viseme blending against real synthesis timing, not a
+physically simulated face.
+
+Phones: during an active interview the room is one column and the candidate
+self-view floats bottom-right as a video-call picture-in-picture, so it stays
+visible while monitoring details read in flow.
+
+Verification (25 October 2026): `scripts/verify-voice-room.ts` passed with real SAPI
+audio and visemes; 243 unit/integration tests passed, including
+`src/api/avatarSpeech.test.ts` (envelope, handover, anticipation and loudness
+shaping). Screenshots use software WebGL; physical-GPU rendering and live human
+listening were not evaluated.
+
 
 
 ## What changed

@@ -1,0 +1,15 @@
+{
+  "generator": "scripts/blender/render_hero_film.py",
+  "blender": "5.2.3 LTS",
+  "device": "GPU",
+  "frames": 240,
+  "fps": 24,
+  "size": [
+    1280,
+    720
+  ],
+  "poster": "/media/hero-film-poster.webp",
+  "file": "/media/hero-film.mp4",
+  "bytes": 1757955,
+  "sha256": "f523df008106022a45c142cfee1080efc4e8d6a32d06ba808a027800ef7d7299"
+}

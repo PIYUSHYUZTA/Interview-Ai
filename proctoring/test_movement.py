@@ -103,4 +103,96 @@ class MovementTests(unittest.TestCase):
         self.assertIsNone(result['body']['movement'])
 
 
+class HandPatternTests(unittest.TestCase):
+    """Scenarios at the live cadence (~2 samples/s). Face box [.3,.2,.7,.6]; hand() spans ~.045 x .06."""
+    NEAR, AWAY = (.45, .3), (.05, .85)
+
+    def setUp(self): self.model = MovementEstimator()
+
+    def play(self, frames, state=None, face=(.3,.2,.7,.6)):
+        results = []
+        for now, hands, poses in frames:
+            result, state = self.model.update(now, hands, [side('Right')]*len(hands), poses, list(face) if face else None, state)
+            results.append(result)
+        return results, state
+
+    def at(self, place):
+        return [hand(*place)]
+
+    def test_near_face_versus_away(self):
+        results, _ = self.play([(0, self.at(self.NEAR), []), (.5, self.at(self.AWAY), [])])
+        self.assertTrue(results[0]['handNearFace']); self.assertEqual(results[0]['handTracks'][0]['faceDistance'], 0)
+        self.assertEqual(results[0]['handNearFaceSource'], 'hand-landmarks'); self.assertEqual(results[0]['headRegionSource'], 'face')
+        self.assertFalse(results[1]['handNearFace']); self.assertGreater(results[1]['handTracks'][0]['faceDistance'], .3)
+
+    def test_brief_touch_is_not_an_episode(self):
+        frames = [(i*.5, self.at(self.NEAR if i == 6 else self.AWAY), []) for i in range(20)]
+        results, _ = self.play(frames)
+        self.assertTrue(results[6]['handNearFace'])
+        self.assertEqual(results[-1]['handPatterns']['handToFaceEpisodes'], 0)
+        self.assertEqual(results[-1]['handNearFaceMs'], 0)
+
+    def test_sustained_near_face_survives_missed_detections(self):
+        # 20 s with the hand at the face; the hand model misses it on every fifth sample.
+        frames = [(i*.5, [] if i % 5 == 4 else self.at(self.NEAR), []) for i in range(41)]
+        results, _ = self.play(frames)
+        self.assertGreaterEqual(results[-1]['handNearFaceMs'], 19500)
+        self.assertEqual(results[-1]['handPatterns']['handToFaceEpisodes'], 1)
+        # A longer absence ends the streak.
+        later, _ = self.play([(t, self.at(self.AWAY), []) for t in (21, 21.5, 22, 22.5)], _)
+        self.assertEqual(later[-1]['handNearFaceMs'], 0)
+
+    def test_repeated_hand_to_face_is_a_pattern_but_three_times_is_not(self):
+        cycle = lambda n: [(i*.5, self.at(self.NEAR if i % 9 < 3 else self.AWAY), []) for i in range(9*n)]
+        three, _ = self.play(cycle(3))
+        self.assertEqual(three[-1]['handPatterns']['handToFaceEpisodes'], 3); self.assertFalse(three[-1]['handPatterns']['repeated'])
+        self.model = MovementEstimator()
+        four, _ = self.play(cycle(4))
+        self.assertEqual(four[-1]['handPatterns']['patterns'], ['hand_to_face'])
+
+    def test_ordinary_gesturing_is_not_an_unusual_pattern(self):
+        # A minute of large hand movement while talking, below the face.
+        frames = [(i*.5, [hand(.15+.12*((i//2) % 3), .75)], []) for i in range(120)]  # move, pause, move ...
+        results, _ = self.play(frames)
+        self.assertTrue(any(t['repeatedMovement'] for r in results for t in r['handTracks']))  # moving a lot...
+        self.assertFalse(any(r['handPatterns']['repeated'] or r['handNearFace'] for r in results))  # ...is not unusual
+
+    def test_side_reaches_counted_but_resting_hands_below_frame_are_not(self):
+        def reaches(place, n):
+            frames, t = [], 0.
+            for _ in range(n):
+                frames += [(t, self.at(place), []), (t+.5, self.at(place), []), (t+1, [], []), (t+1.5, [], []), (t+2, [], [])]
+                t += 3
+            return self.play(frames)[0][-1]['handPatterns']
+        self.assertEqual(reaches((.96, .5), 4)['patterns'], ['side_reach'])
+        self.model = MovementEstimator()
+        bottom = reaches((.5, .95), 4)
+        self.assertEqual(bottom['sideReaches'], 0); self.assertFalse(bottom['repeated'])
+        self.model = MovementEstimator()
+        flicker = self.play([(i*.5, [] if i % 4 == 3 else self.at((.96, .5)), []) for i in range(40)])[0][-1]['handPatterns']
+        self.assertEqual(flicker['sideReaches'], 0)  # single missed detections are not reaches
+
+    def test_pose_wrist_and_pose_head_cover_a_hand_hiding_the_face(self):
+        body = pose()
+        body[0].x, body[0].y = .5, .3
+        body[7].x, body[8].x = .44, .56; body[7].y = body[8].y = .3
+        body[15].x, body[15].y = .52, .34
+        for i in (16, 19, 20): body[i].visibility = .1
+        results, _ = self.play([(0, [], [body])], face=None)
+        self.assertEqual(results[0]['headRegionSource'], 'pose')
+        self.assertTrue(results[0]['handNearFace']); self.assertEqual(results[0]['handNearFaceSource'], 'pose-wrist')
+        body[15].y = .8
+        results, _ = self.play([(1, [], [body])], face=None)
+        self.assertFalse(results[0]['handNearFace'])
+
+    def test_pattern_settings_are_configurable(self):
+        from unittest.mock import patch
+        with patch.dict('os.environ', {'PROCTORING_REPEATED_HAND_PATTERN': '2', 'PROCTORING_HAND_FACE_DISTANCE': '0'}):
+            self.model = MovementEstimator()
+        results, _ = self.play([(i*.5, self.at(self.NEAR if i % 9 < 3 else self.AWAY), []) for i in range(18)])
+        self.assertTrue(results[-1]['handPatterns']['repeated'])
+        with patch.dict('os.environ', {'PROCTORING_HAND_PATTERN_WINDOW_SECONDS': '5'}):
+            with self.assertRaises(ValueError): MovementEstimator()
+
+
 if __name__ == '__main__': unittest.main()

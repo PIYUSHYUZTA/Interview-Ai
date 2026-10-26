@@ -37,7 +37,7 @@ describe('fair, atomic integrity enforcement',()=>{
       expect(committed.toPublicState().integrity.warningCount).toBe(3);
       expect(committed.integrityEvents.filter(e=>e.warningNumber>0)).toHaveLength(3);
       expect(committed.integrityEvents.filter(e=>e.eventId===third)).toHaveLength(1);
-      expect(committed.toPublicState().integrity.terminationReason).toContain('Three distinct');
+      expect(committed.toPublicState().integrity.terminationReason).toMatch(/^The interview ended after three separate qualifying incidents: 1\) the interview tab was hidden for \d+ s; 2\) the interview tab was hidden for \d+ s; 3\) the interview tab was hidden for \d+ s\. .*not a determination of intent\.$/);
       for(const path of ['start','next-question','answer','complete'])expect((await fetch(`${base}/interviews/${created.sessionId}/${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'local state cannot bypass termination'})})).status).toBe(410);
     }finally{save?.mockRestore();clock?.mockRestore();await running.close();}
   });

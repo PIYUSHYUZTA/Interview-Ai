@@ -83,6 +83,7 @@ export const PublicInterviewStateSchema = z.object({
   ),
   integrity: z.object({
     warningCount: z.number().int().min(0).max(3),
+    visionWarningCount: z.number().int().nonnegative().optional(),
     maximumWarnings: z.number().int().min(1).max(3),
     terminationViolationCount: z.number().int().min(3).max(3).optional(),
     terminatedAt: z.string().datetime().nullable(),
@@ -316,8 +317,18 @@ export const InterviewCompleteResponseSchema = z.object({
 // 7. /interviews/:id/results
 // ---------------------------------------------------------------------------
 
+export const IntegrityReviewSchema = z.object({
+  totalWarnings: z.number().int().nonnegative().optional(), tabWarnings: z.number().int().nonnegative(), cameraWarnings: z.number().int().nonnegative(),
+  incidents: z.array(z.object({
+    eventType: z.string(), tier: z.enum(['warning', 'review']), counted: z.boolean(), warningNumber: z.number().int().nonnegative().optional(), startedAtMs: z.number().nonnegative(), durationMs: z.number().nonnegative(),
+    occurrences: z.number().int().nonnegative(), confidence: z.number().min(0).max(1).nullable(), ongoingAtEnd: z.boolean(), explanation: z.string(),
+  })).max(200),
+  note: z.string(),
+});
+
 export const InterviewResultsResponseSchema = z.object({
   details: DetailedReportSchema,
+  integrityReview: IntegrityReviewSchema.optional(),
   providerName: z.string(),
   readiness: z.object({ score: z.number().min(0).max(100).nullable(), coverage: z.number().min(0).max(100), assessedSkills: z.number(), totalSkills: z.number(), methodology: z.string() }),
   comparisonKey: z.string(),
@@ -373,6 +384,7 @@ export const ErrorResponseSchema = z.object({
   error: z.string(),
   details: z.any().optional(),
   code: z.string().optional(),
+  integrityReview: IntegrityReviewSchema.optional(),
 });
 
 export const ResumeFileRequestSchema = z.object({
@@ -408,7 +420,8 @@ export const InterviewDiagnosticsSchema = z.object({
     service: z.enum(['not_started', 'analyzing', 'connected', 'unavailable', 'stopped']),
     lastFrameAt: z.string().datetime().nullable(), lastObservationAt: z.string().datetime().nullable(), lastDecision: z.string(),
   }),
-  events: z.array(z.object({ policyDecision:z.string().optional(), eventId:z.string().optional(), sessionId:z.string().optional(), confidence:z.number().min(0).max(1).nullable().optional(), severity:z.enum(['info','technical']).optional(), details:z.object({source:z.enum(['vision','browser','backend']),signal:z.string(),trackingState:z.string(),phase:z.enum(['observed','recovered','technical'])}).optional(), eventType: z.string(), occurredAt: z.number(), durationMs: z.number().nonnegative(), warningNumber: z.number().int().nullable() })).max(30),
-  warningCount: z.number().int().nonnegative(), state: InterviewStateEnum,
-  policy: z.object({ visualNoticeMs: z.number().positive(), hiddenTabMs: z.number().positive(), graceMs: z.number().nonnegative(), penaltySignals: z.array(z.string()), contextualSignals: z.array(z.string()) }),
+  events: z.array(z.object({ policyDecision:z.string().optional(), eventId:z.string().optional(), sessionId:z.string().optional(), confidence:z.number().min(0).max(1).nullable().optional(), severity:z.enum(['info','technical']).optional(), details:z.object({source:z.enum(['vision','browser','backend']),signal:z.string(),trackingState:z.string(),phase:z.enum(['observed','recovered','technical'])}).optional(), eventType: z.string(), occurredAt: z.number(), durationMs: z.number().nonnegative(), warningNumber: z.number().int().nullable(),
+    tier: z.enum(['warning','review']).optional(), explanation: z.string().optional(), occurrences: z.number().int().nonnegative().optional(), incidentId: z.string().optional(), samples: z.object({ positive: z.number().int().nonnegative(), total: z.number().int().nonnegative() }).optional(), visionWarningNumber: z.number().int().positive().optional() })).max(30),
+  warningCount: z.number().int().nonnegative(), visionWarningCount: z.number().int().nonnegative().optional(), state: InterviewStateEnum,
+  policy: z.object({ visualNoticeMs: z.number().positive(), hiddenTabMs: z.number().positive(), graceMs: z.number().nonnegative(), penaltySignals: z.array(z.string()), visionWarningSignals: z.array(z.string()).optional(), visionWarningCooldownMs: z.number().nonnegative().optional(), contextualSignals: z.array(z.string()) }),
 });

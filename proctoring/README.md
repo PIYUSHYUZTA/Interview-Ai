@@ -1,4 +1,416 @@
-# Interview integrity and local vision
+# Proctoring vision service
+
+## Environment (current — 26 October 2026)
+
+The vision worker runs in its own environment, `.venv-proctoring`, and never uses
+global packages.
+
+```powershell
+npm run setup:vision            # create/repair .venv-proctoring, install exact versions, verify models, self-check
+npm run setup:vision -- -Dev    # same, plus pytest for the test suite
+npm run check:vision            # self-check through the API's own launcher, using real photos
+npm run test:vision             # the Python test suite with pytest
+```
+
+### Performance and reliability (current, measured 26 October 2026)
+
+**GPU (NVIDIA RTX 4060 Laptop, 8 GB, driver 610.62).** The installed MediaPipe 0.10.35 Windows wheel
+is built without GPU support: creating any model with the GPU delegate fails with *"GPU processing is
+disabled in build flags"* (tested for the face landmarker and the object detector). Pose, hands and
+face are about 85% of the work and exist only in MediaPipe here, so on this laptop they run on the CPU.
+Decision (26 October 2026): no extra GPU runtime; CPU-optimise and be GPU-ready.
+
+- `acceleration.py` / `PROCTORING_ACCELERATION=auto|gpu|cpu`: each model tries the GPU delegate when
+  allowed and falls back to CPU; a build without GPU support is detected on the first model and not
+  retried. GPU is never required. The API logs one line per Python start, e.g. *"[vision] Python worker
+  ready: models loaded in 335 ms; acceleration cpu (requested auto; face=cpu, pose=cpu, hands=cpu,
+  phone=cpu); GPU not used: this MediaPipe build has no GPU support (official Windows wheels are
+  CPU-only)."* Each observation carries `runtime.acceleration`. On a Linux/macOS MediaPipe build with GPU
+  support, `auto` uses it without code changes (not tested here — no such machine).
+
+**Where CPU time goes** (per frame, this laptop, `frame.stagesMs` reports it live): pose ~40 ms, hands
+~37 ms, face ~16 ms; once a second a person scan (~64 ms) and a phone scan (~62 ms); our own logic < 1 ms.
+MediaPipe's tracking (VIDEO) mode was measured and rejected: pose +16%, hands −13%, face ±0, while
+needing one model instance per interview.
+
+**Optimisation.** The two once-a-second scans no longer land on the same frame (the phone scan waits one
+frame after a person scan, unless already a full interval late): worst-case frame time 226 → 167 ms
+(p90, offline profile); live median 227 → 155 ms and 1.6 → 1.8 results/s in the end-to-end check.
+
+**Model reuse and resources.** Models are created once per Python process (≈ 340 ms) and reused for
+every frame and interview; the process stays up while any interview samples and closes after 60 s idle.
+Soak test (30 interviews × 60 frames, real protocol, release after each): 10.1 frames/s sequential;
+committed memory ≈ 840 MB after model load, +7–10 MB over the first 10 interviews, then flat (−1.9 MB
+over the last 10) — no leak.
+
+**Bounded queues and state** (audited): Python processes one frame at a time; Node queues at most 4
+waiting frames (`WORKER_BUSY` beyond that); the browser keeps one request in flight; per-interview maps
+(samples, incidents, failure runs, diagnostics) are capped at 1,000 entries and cleared on release;
+Python keeps per-interview state for at most 256 interviews and drops it on release; event history 500,
+phone scans 4–20, hand patterns 40, head turns bounded by their 60 s window.
+
+**Restarts and disconnections**
+- *Python worker crash/restart*: detected, logged, and restarted on the next sample (verified live,
+  both between and during frames; the in-flight sample fails with 503 and adds no warning).
+- *API restart*: previously every running interview's monitoring token was lost (kept only in memory),
+  so frames and tab events got 401 and the room stopped. A SHA-256 hash of the token is now saved with
+  the interview (never the token), and a restarted API accepts the browser's existing token
+  (`serviceRestart.integration.test.ts`; requires the persistent store used with authentication).
+- *Camera disconnection*: the room now reconnects by itself (every 3 s and on any device change, at most
+  20 attempts, no new permission prompt) instead of waiting for the candidate to turn the camera back on.
+  Verified live: reconnected 3.0 s after the track ended, face tracked again 3.7 s after, no warning.
+
+### Camera-to-Python connection (traced and verified, 26 October 2026)
+
+Python never touches the camera. The candidate grants camera permission in the browser; everything
+after that is the existing HTTP API (no WebSocket was needed — one request per sample, one in flight):
+
+| Stage | Where | What happens |
+|---|---|---|
+| Capture | `useVisionMonitoring.ts` | the live `getUserMedia` stream in the preview `<video>` is drawn to a canvas, longest edge ≤ 640 px, aspect kept |
+| Encode | `visionCapture.ts` | `canvas.toBlob('image/jpeg')` (asynchronous, off the main thread), ≤ 180 KB, base64 |
+| Transport | `POST /interviews/:id/proctoring-frame` | bearer integrity token, consent flag, capture time; one sample in flight per interview, ≥ 300 ms apart |
+| Hand-off | `ProctoringWorker.ts` | JSON line on the Python process's stdin; interviews share one process and **queue** (up to 4 waiting) |
+| Decode + analyse | `worker.py` | base64 → JPEG check → OpenCV decode → MediaPipe face/pose/hands, object detector, direction/movement/phone |
+| Report back | `observation.frame` | what Python decoded: format, width, height, bytes, processing time |
+| Events | `VisionIntegrityEngine` → `InterviewStateMachine` | incidents, prompts, the three-warning policy |
+| Display | room | badge, overlay, monitoring panel, warning panel; *Technical details* shows the transport check |
+
+**Defects found and fixed in the trace**
+- *Concurrent interviews failed each other's frames.* The single Python process rejected any frame
+  that arrived while another was being analysed (`WORKER_BUSY` → 503). Frames now wait in a bounded
+  FIFO (4) and run in order.
+- *Failed frames were not logged.* Only an in-memory counter changed. The API now logs the first and
+  every 20th consecutive failure with its cause, and logs recovery:
+  `[vision] Frame analysis failed for interview …7eabffa7: WORKER_START_OR_EXIT_FAILED …` /
+  `[vision] Frame analysis recovered … after 1 failed sample(s).` A killed worker is reported as
+  `terminated by SIGTERM` instead of `exit code null`.
+- *No end-to-end check of the image.* Python now reports the decoded frame; the room compares it with
+  what it sent (*Last sample: sent 480×600 JPEG, 35 KB → Python decoded 480×600, 35 KB (matches) ·
+  analysed in 227 ms · round trip … ms*).
+- *One malformed sample stopped monitoring and the interview.* A 400 for a single frame was treated
+  like a lost session. It is now a failed sample that is retried; only session-level errors
+  (401/403/404/409/410) stop monitoring.
+
+**Verified live** (`npx tsx scripts/verify-vision-pipeline.ts`; camera is a controllable fixture
+stream through the real permission path, not a physical webcam): 13 samples in 8 s, every one a JPEG
+whose header size, Python-decoded size and byte count match exactly; 1.6 results/s, longest gap
+776 ms; switching the scene between two faces, nobody and one face changes Python's answer and the
+badge and overlay show exactly that answer; while sampling, the camera preview and the interviewer's
+audio both advance at 1.00× real time, animation frames p95 14 ms, no long tasks; killing Python
+between samples loses nothing (next sample starts a new process), killing it mid-analysis fails that
+one sample with 503, logs stopped/failed/recovered, shows *retrying* in the room, recovers in ~2.7 s
+and adds no warning; after leaving the frame, tracking resumes 0.6 s after the face returns.
+Python analysis takes a median ~227 ms per frame on this CPU with all modules on.
+
+### Live face detection pipeline (current)
+
+**Pipeline.** The browser video is drawn to a canvas (≤ 640 px edge), encoded as JPEG,
+and posted to `POST /interviews/:id/proctoring-frame`. The Node API passes it to the
+Python worker over stdin; MediaPipe runs Face, Pose and Hand Landmarker. The result goes
+back to the room, which shows a live status and overlay on the camera preview. There is
+no separate demo pipeline.
+
+| Measure | Before | Now |
+| --- | --- | --- |
+| Analysed samples | ~0.5 per second (2 s sampling, 1.5 s server gate) | ~1.8 per second measured (`VITE_PROCTORING_INTERVAL_MS=400`, `PROCTORING_MIN_FRAME_MS=300`, one request in flight) |
+| Status change after the scene changes | up to ~2–4 s | 0.4–0.7 s (measured live) |
+| Face status on the preview | none | always visible while monitoring is on (`faceStatus()`): facing forward, head turned, head tilted, move closer, add more light, hold still, face the camera, no face, face lost, N faces |
+| Landmark and box overlay | hidden by default | shown by default while monitoring is on; still optional |
+
+**Robustness (measured on real photo variants):**
+- **Detection held up with no change:** dark scenes (down to 13/255 average
+  brightness), low contrast, backlight, ±20° roll, motion blur, sensor noise and a
+  half-hidden face.
+- **Distant faces:** missed by the full frame. The worker now zooms on the head of each
+  person the pose model sees (falling back to the centre), and reports *move closer*
+  because head and gaze are not measured reliably at that size.
+- **A second, smaller person:** the full frame found only the candidate. A person scan
+  (each pose head, left/right tiles, centre) runs whenever the full frame finds nothing
+  and about once a second otherwise, and caught the second person at 28–45% of frame
+  height.
+- **Very dark frames:** the face was found but marked low quality, which disabled head
+  and gaze. Quality is now judged on a contrast-enhanced copy (CLAHE) and flagged
+  `lowLight`. A contrast-enhanced full-frame retry runs when a dark frame finds no face.
+- **Detection confidence:** stays at 0.7. Lowering it to 0.5 found nothing more in
+  these tests.
+
+**Movement at any sample rate.** Hand and body movement thresholds were calibrated
+to ~2 s between samples. `MovementEstimator.per_reference()` scales displacement to
+that window, so the same motion scores the same at 0.5 s or 2 s (tested). Tracks,
+presence and lost/recovered state update on every frame.
+
+**Verify:**
+```powershell
+npm run test:vision                    # 39 Python tests (incl. rate independence)
+npx tsx scripts/verify-face-tracking.ts
+```
+The second command runs browser → API → Python with a controllable camera fixture:
+face present, leaves, two faces, recovery, dark, distant, recovery, the measured
+sample rate and the overlay. It uses the fixture, not a live webcam.
+
+### Approximate eye and head direction (current)
+
+**What it is.** `direction.py` estimates where the head points (yaw/pitch from the face
+landmarker's transformation matrix) and where the irises sit inside each eye (iris
+landmarks 468/473 projected on the eye axis and the lid normal). It reports *left / right /
+up / down* in unmirrored camera coordinates, or nothing when centred.
+
+**Measured on recorded movement** (`fixtures/rendered-head`, rendered 3-D head with ground truth;
+`test_rendered_motion.py`): head yaw within 4° of truth over ±40° (correlation > 0.99); pitch follows
+the truth in sign and trend (down 30° → −33°, up 30° → +22°, with a ~−11° offset at rest from the camera
+height); with the head still, an ~11° eye turn moves the smoothed iris offset by about 0.05 eye widths each
+way — visible in `gazeOffset`, deliberately below the 0.25 off-centre threshold. **Fixed by this test:**
+pitch had the wrong sign at the source, so looking down was labelled *head tilted up*; positive pitch now
+means looking up. Convention: positive yaw = face turned toward image right (unmirrored camera).
+
+**What it is not.** An ordinary webcam with no per-person calibration cannot establish what a
+candidate is looking at. The estimate cannot tell a second screen from a notepad, a window, a
+pet or thinking with eyes averted; it degrades with glasses glare, heavy lids, low light, low
+resolution and large head angles (eye direction is not computed beyond the head thresholds).
+`calibrated` is always `false`, and every direction signal is a review note in the integrity
+engine (below), never a warning of any kind.
+
+**False-alert controls** (all configurable, see `.env.example`):
+
+| Behaviour | Handling |
+|---|---|
+| Brief glance (~1 s) | Exponential smoothing (`SMOOTHING_SECONDS`=3) keeps it under threshold; a strong sideways look (iris at 90% of the eye width) registers after its 6th sample, ~2.5–3 s. |
+| Blinking | Both lids shut → the previous gaze is held for `BLINK_HOLD_SECONDS` (0.8) instead of resetting; reported as `eyesClosed` / `blinkHeld`. |
+| Dropped or unreadable samples | The server keeps a sustained incident across unknown samples for up to `PROCTORING_GAZE_INTERRUPTION_MS` (1.5 s); only a confirmed centred/forward sample, or a longer gap, ends it. |
+| Natural movement | Head direction needs 2 consecutive valid samples, useful framing and quality; a single-frame spike is smoothed. |
+| Prolonged looking away | `gaze_away` / `head_turned` notice only after `PROCTORING_NOTICE_MS` (15 s) of sustained deviation, once per continuous incident, after the 30 s start grace. |
+| Repeated head turns | A turn counts when raw yaw exceeds `HEAD_TURN_YAW_DEG` (25°) for `HEAD_TURN_MIN_SECONDS` (1 s) and ends on return below 70% of that. `REPEATED_HEAD_TURNS` (4) within `HEAD_TURN_WINDOW_SECONDS` (60) → one `repeated_head_turns` notice per window. Quick glances and one long turn do not count repeatedly. |
+
+The room preview shows only *eyes off-centre* (never a direction or a target) and *frequent
+head turns*, as notices.
+
+**Verification.** `test_direction.py` covers blink hold, blinking while centred, a 1 s glance,
+sustained deviation (first reported on the 6th deviating sample at 2 samples/s, then continuously),
+repeated vs quick vs single long turns, and settings. `directionReview.integration.test.ts`
+covers the server timers (unknown samples tolerated, centred samples and long gaps reset) and
+the once-per-window repeated-turn notice with zero warnings. These use synthetic landmarks and
+controlled observations: a still-image camera fixture cannot rotate a head or move irises, so
+the live browser check only confirms that a forward-facing real face gets no direction cue.
+Thresholds have not been tuned on recorded webcam sessions of real candidates.
+
+### Hands near the face and unusual hand patterns (current)
+
+**Models.** The existing MediaPipe Hand Landmarker (21 landmarks per hand, up to two hands) and
+Pose Landmarker lite (shoulders, wrists, nose, ears) feed `movement.py`. No new model or package.
+
+**Near the face.** A hand is *near the face* when any of its landmarks is within
+`HAND_FACE_DISTANCE` (0.3) face-box widths of the face box. Pose is used where it helps:
+- when a hand covers the face and the face landmarker loses it, a head box is built from the
+  pose nose/ears (sized by the shoulders), reported as `headRegionSource: 'pose'`;
+- when the hand model misses a hand pressed to the face, the pose wrist/index points are used
+  instead (`handNearFaceSource: 'pose-wrist'`).
+A streak survives missed detections shorter than `HAND_FACE_GAP_SECONDS` (1.5 s). The server
+adds a `hand_near_face` notice only after `PROCTORING_HAND_FACE_NOTICE_MS` (30 s) — longer than
+the other vision notices because resting a chin on a hand or touching the face is common.
+
+**Unusual patterns.** Moving the hands while talking is ordinary and is *not* counted
+(`repeatedMovement` on a hand track just means "moved several times" and drives nothing).
+Counted within `HAND_PATTERN_WINDOW_SECONDS` (120):
+- *hand-to-face*: separate approaches each held at least `HAND_PATTERN_MIN_SECONDS` (1 s);
+  a quick touch does not count;
+- *side reach*: a hand that disappears at the left/right edge (`HAND_EDGE_MARGIN`, 6%) and
+  stays gone for 1 s; single missed detections and hands lowered below the frame do not count.
+`REPEATED_HAND_PATTERN` (4) of either → one `repeated_hand_pattern` notice per window.
+
+**Policy.** Every hand signal is a review note (integrity engine, below) with no warning and no inference of
+intent: the gesture field is a coarse open/curled-fingers shape, not a meaning. Hand landmarks
+cannot recognise objects, so phones come only from the object detector below.
+
+**Room.** The preview badge adds *hand near face*; the overlay draws the near-face hand in amber.
+
+**Verification.** `test_movement.py` (`HandPatternTests`): near vs away, a brief touch, a 20 s
+streak with missed detections, 3 vs 4 hand-to-face cycles, a minute of ordinary gesturing,
+side reaches vs hands resting below the frame vs flicker, the pose fallbacks, settings.
+`handPatterns.integration.test.ts`: the 30 s threshold, incident end, one combined notice per
+window, zero warnings. `npx tsx scripts/verify-hand-tracking.ts` runs browser → API → Python on
+real detections: the hands-only photo (two hands, no head region, not near); the portrait,
+whose real hand rests 1.3 face widths away, is *not* near at the default distance
+(`--default-distance`) and *is* near with the distance widened to 1.5, which then shows the
+badge, the amber overlay and a recorded context-only `hand_near_face` event. The fixtures
+contain no hand at the face and no reach, so those patterns are verified with synthetic
+landmarks only; thresholds have not been tuned on real webcam sessions.
+
+### Phone detection (current)
+
+**Model.** MediaPipe Object Detector with **EfficientDet-Lite0** (float16, COCO-trained, from the
+official model bucket, SHA-256 pinned). Only its `cell phone` class is used
+(`category_allowlist`); every other COCO class is ignored. `phone.py` interprets the boxes; the
+worker runs the detector on the full frame every `PHONE_SCAN_SECONDS` (1 s), about 50 ms per scan
+on this CPU. It is an optional module (`PROCTORING_PHONE_ENABLED=false` disables it; a missing
+model reports `moduleStatus.phone: 'unavailable'` and face tracking continues).
+
+**Confirmation.** A box counts only at score ≥ `PHONE_SCORE_THRESHOLD` (0.3), and a phone is
+`seen` only when `PHONE_CONFIRM_SCANS` (3) of the last `PHONE_SCAN_WINDOW` (4) scans contain one
+(~2–3 s). One positive scan is a `candidate`, shown nowhere. `heldInHand` says whether a hand
+landmark touches the box. A `phone_visible` incident qualifies after `PROCTORING_PHONE_NOTICE_MS`
+(10 s) of `seen` plus the recovery window and is a **qualifying incident** under the three-warning policy (below); a sample without a phone
+result (detector off) is unknown, not "no phone". The room shows *possible phone in view* and a dashed box.
+
+**Measured on real photographs** (`scripts/measure-phone-detection.py`; fixtures and licences in
+`fixtures/phones/README.md`), through the real worker at the live sample size:
+
+| Image | Phone? | Result |
+|---|---|---|
+| Woman holding a phone up (CC0) | yes | seen, 0.60, in hand |
+| Man with a phone at his ear | yes | seen, 0.45, in hand |
+| Woman with phone over a laptop | yes | seen, 0.35 (borderline: 0.26–0.35 depending on resizing/JPEG) |
+| Phone low in the hand over a laptop, close-up | yes | **missed** |
+| Phone flat/edge-on in the hand at a café | yes | **missed** |
+| Hand holding glasses; two people making hand gestures; portrait; hands photo | no | not seen (raw `cell phone` scores up to 0.21 before the threshold) |
+
+So: **3 of 5 phones found, 0 false positives in 4 phone-free images** — far too few images to
+state an accuracy. Lite2 was 3× slower (~180 ms) and found no more; zooming on hands added false
+positives (0.30–0.34 on the gesture photo) and rescued no misses, so neither is used.
+
+**Honest limits.** COCO `cell phone` is trained on everyday photos, not webcam desk scenes. Phones
+seen edge-on, flat on a desk, partly covered by fingers, below the frame, in poor light or far from
+the camera are often missed; phone-shaped things (remotes, calculators, a dark card, glasses in a
+hand) can score near the threshold. A phone out of the camera's view is invisible to it. A
+detection means *an object the model scored as a phone was visible*, never that it was used, so
+it carries the caveat that camera observations are approximate and not a determination of intent. The live browser check streams a still photo, not a
+webcam; no measurement was made with a physical camera.
+
+### Integrity engine (current)
+
+All camera integrity concerns go through one module, `src/core/session/VisionIntegrityEngine.ts`,
+called once per analysed sample by the API. It replaces the per-signal timers that were spread
+through `server.ts`.
+
+**Signals and tiers** (26 October 2026: strong, sustained signals are qualifying incidents under the
+single three-warning policy; weaker ones are review notes and never count):
+
+| Event | Tier | Qualifies after | Evidence | Confidence |
+|---|---|---|---|---|
+| `multiple_faces` | qualifying | 15 s (`PROCTORING_NOTICE_MS`) prompt + 10 s recovery | face count > 1 | none (landmarker gives no score); peak face count |
+| `face_absent` | qualifying | 15 s prompt + 10 s recovery | no face in a *usable* frame | none |
+| `phone_visible` | qualifying | 10 s (`PROCTORING_PHONE_NOTICE_MS`) prompt + 10 s recovery | object detector, confirmed over scans | mean detector score |
+| `gaze_away` | review note | 15 s | smoothed iris offset | none (uncalibrated) |
+| `head_turned` | review note | 15 s | smoothed head pose | none |
+| `hand_near_face` | review note | 30 s (`PROCTORING_HAND_FACE_NOTICE_MS`) | hand / pose landmarks | none |
+| `position_changed` | review note | 15 s | upper-body position | none |
+| `repeated_head_turns` | review note | worker count ≥ 4 in 60 s | held turns | none; occurrence count |
+| `repeated_hand_pattern` | review note | worker count ≥ 4 in 120 s | hand-to-face / side reaches | none; occurrence count |
+| `camera_obstructed` | technical note | 15 s | frame too dark or uniform (`frameQuality.usable: false`) | none |
+
+**Incidents, not frames.** Each sample gives every signal *yes*, *no* or *can't tell*. An incident
+opens on *yes* (after the 30 s start grace), survives *can't tell* for `PROCTORING_GAZE_INTERRUPTION_MS`
+(1.5 s) and *no* for `PROCTORING_INCIDENT_CLEAR_MS` (2 s), and ends after that or when sampling stops
+for 6 s. It produces **at most two records**: one when it has lasted its threshold (`phase:
+observed`) and one when it ends (`phase: recovered`, final duration). Count signals produce one
+record per counting window. A ten-minute continuing incident at two samples a second is one
+record, not 1,200 (tested). The room keeps showing the ongoing incident's explanation while it
+lasts; that is display, not records.
+
+**Every record** carries: event type, timestamp (`occurredAt`), duration (`durationMs`) or
+occurrence count (`occurrences`), `confidence` where a model supplies a meaningful score (only
+the phone detector) and `null` otherwise, sample support (`samples: {positive, total}`), tier,
+incident id, and an `explanation` in plain language that ends with what the tier means.
+
+### Three-warning policy (current)
+
+One policy in `src/core/session/IntegrityPolicy.ts`, one counter in `InterviewStateMachine`
+(`warningCount`, persisted). Only the backend counts: the browser reports tab events and camera
+frames and displays what the server returns, so no client can increment its own counter.
+
+- **Qualifying incidents:** a hidden tab for 5 s (existing rule), or a qualifying camera incident:
+  `multiple_faces`, `face_absent` or `phone_visible`, sustained past its threshold *and* still
+  present after a recovery prompt (`cameraWarningRecoveryMs`, 10 s). Review notes never count.
+- **Warning 1** and **Warning 2 (final)** are shown in the room's warning panel with a message from
+  `warningMessage()`: what was observed and for how long, the caveat for camera observations, and
+  what happens next. The same function words tab and camera warnings.
+- **Third qualifying incident** ends the interview through the existing termination path
+  (`TERMINATED_FOR_INTEGRITY`, capture stopped, further answers and frames refused). The reason
+  from `terminationReason()` lists the three incidents, e.g. *"The interview ended after three
+  separate qualifying incidents: 1) more than one face was visible for 25 s; 2) no face was visible
+  for 25 s while the camera image was usable; 3) the interview tab was hidden for 6 s. …"*.
+- **One incident, one warning.** The engine emits one qualifying record per incident; records are
+  idempotent by id; a camera incident that qualifies within `visionWarningCooldownMs` (60 s) of the
+  last counted warning of any source is recorded as `cooldown`, not counted — so one moment that
+  trips several signals (someone walks in holding a phone) is one warning.
+- **Technical problems never count.** Camera, microphone and network interruptions (browser
+  events, `severity: technical`); vision pipeline errors; sampling gaps (incidents end, no record);
+  and unusable frames (dark, covered, blank — `frameQuality.usable` false, thresholds
+  `PROCTORING_FRAME_DARK_LEVEL` 20 and `PROCTORING_FRAME_FLAT_CONTRAST` 6), which make face absence
+  *can't tell* and are recorded only as the technical note `camera_obstructed`.
+- **Chance to recover.** Every qualifying camera incident shows a prompt first (*"We cannot see
+  your face. Please return to the camera view … If this continues for about 10 more seconds it
+  will count as an integrity warning."*); recovering within the window leaves no record.
+- `visionWarningCount` remains as the camera share of `warningCount` (shown as *1 / 2 · 1 from camera*).
+
+**Report.** The results report's *Integrity review* lists counted tab warnings and camera incidents
+with warning numbers, cooldown status, durations or counts, detector scores and explanations.
+Terminated interviews have no assessment report in this architecture (the results endpoint returns
+410); that response now carries the same `integrityReview`, and the termination reason is saved on
+the session.
+
+**Verification.** `VisionIntegrityEngine.test.ts` (14 tests: ten-minute event → one record, prompt
+then record, recovering in time leaves nothing, flicker bridging, unusable frames technical,
+gaps, grace, count windows, tiers; shared counter warning 1 → cooldown → warning 2 → tab incident
+ends the interview with the exact reason, persisted across restore; simultaneous signals and
+replays → one warning; technical problems → none; camera incident inside the cooldown after a tab
+warning). `handPatterns.integration.test.ts`: phone prompt at 42 s, warning 1 at 52 s with the
+policy message, cooldown repeat not counted, report lines; three camera incidents ending the
+interview through the frame path, frames refused afterwards, 410 with reason and record.
+`fairIntegrity.integration.test.ts`: the tab-only path with the new reason. Live:
+`scripts/verify-phone-detection.ts` (prompt, *Warning 1 of 2* panel, *1 / 2 · 1 from camera*).
+The full three-warning termination was verified at the API level, not driven live in the browser.
+
+### Package decisions (checked against the code, 26 October 2026)
+
+| Package | Status | Why |
+| --- | --- | --- |
+| `mediapipe==0.10.35` | Runtime | Face, hand and pose landmarkers (`worker.py`) |
+| `opencv-contrib-python==4.12.0.88` | Runtime | `cv2` frame decoding and quality checks. MediaPipe itself requires the contrib build, so `opencv-python` is **not** added: it would install a second, conflicting `cv2`. Only one OpenCV distribution is installed. |
+| `numpy==2.2.6` | Runtime | Frame buffers |
+| `fastapi`, `uvicorn` | Removed | Never imported. The browser posts frames to the Node API (`POST /interviews/:id/proctoring-frame`), and Node talks to Python over stdin/stdout JSON lines. |
+| `websockets` | Not used | No WebSocket anywhere in the frontend, API or worker |
+| `pytest==9.1.1` | Dev only (`requirements-proctoring-dev.txt`) | Runs the existing `unittest` suites unchanged: 38 tests and 5 subtests |
+
+`uv pip check` reports all installed packages compatible.
+
+### Model assets (official source, verified)
+The three `.task` files and the object detector come from Google's official MediaPipe model storage
+(`https://storage.googleapis.com/mediapipe-models/…/float16/latest/…`) and are pinned
+by SHA-256 in `scripts/install-proctoring-models.ps1`. They were re-downloaded from that
+source on 26 October 2026 and are byte-identical to the project copies:
+
+| Model | SHA-256 | Size | Loads in |
+| --- | --- | --- | --- |
+| `face_landmarker.task` | `64184e22…6e0bc9ff` | 3.6 MB | 118 ms |
+| `hand_landmarker.task` | `fbc2a300…3607cde1` | 7.5 MB | 38 ms |
+| `pose_landmarker_lite.task` | `59929e1d…690d574a` | 5.5 MB | 144 ms |
+| `efficientdet_lite0.tflite` (object detector, float16; added 26 October 2026) | `4b591000…e780993` | 7.3 MB | — |
+
+- **Python:** 3.10–3.13 (tested on CPython 3.13.17). 3.14 is unsupported: the pinned
+  NumPy 2.2.6 has no 3.14 wheel. `setup:vision` uses uv when present, which can
+  download a managed 3.13. Otherwise it uses `py -3.13`. On this machine
+  `py -3.13 -m venv` fails because Windows lists a Python 3.13 install whose files
+  were removed, so uv is the reliable path here.
+- **Dependencies:** `requirements-proctoring.txt` lists the top level (MediaPipe
+  0.10.35, OpenCV-contrib 4.12.0.88, which MediaPipe itself requires, and NumPy
+  2.2.6). `requirements-proctoring.lock.txt` pins all 20 packages. The previously
+  listed `fastapi` and `uvicorn` were unused (the worker speaks JSON lines over
+  stdin/stdout) and were removed.
+- **Interpreter selection** (`visionPython()` in `src/api/ProctoringWorker.ts`):
+  `PROCTORING_PYTHON`, else `.venv-proctoring` (Windows or POSIX layout) resolved
+  from the project, else the system `python`, which logs a one-time warning. The
+  worker path is resolved from the project too, so the API works from any working
+  directory. That was a real defect: started outside the project folder, every frame
+  failed with `WORKER_STOPPED`.
+- **Diagnostics:** the worker's stderr tail is no longer discarded. Start failures,
+  exits, `DEPENDENCY_LOAD_FAILED` and `MODEL_MISSING` are logged by the API with the
+  cause and the fix command. No frames or candidate data appear in these logs.
+- **Consent:** analysis only runs after the candidate ticks *Allow sampled Python
+  visual monitoring with my camera* before starting. Without it the camera preview
+  works but no frame is sent, so no face, gaze or hand data exists for that
+  interview.
+
 
 Current final verification: **234 application tests and 38 Python tests passed**;
 backend/frontend builds passed. The final JSON result is
@@ -70,10 +482,12 @@ transcription accuracy is not claimed.
 The existing policy remains: 30-second settling grace, five-second sustained
 hidden-tab threshold, warning 1, final warning 2, termination on the third distinct
 qualifying incident. These values live in the existing `IntegrityPolicy.ts` product
-policy. Only the observed hidden-tab rule is a penalty signal. Window focus,
-fullscreen, head/eye/hand/body observations, temporary face loss, lighting/quality
-failures, additional-person estimates and camera/model/network failures remain
-contextual or technical, regardless of an observation's numeric confidence.
+policy. Hidden-tab incidents and qualifying camera incidents (multiple faces, prolonged
+face absence in a usable frame, a confirmed phone — each sustained and past a recovery
+prompt) share this counter — see *Three-warning policy*.
+Window focus, fullscreen, head/eye/hand/body observations, brief face loss,
+lighting/quality failures and camera/model/network failures remain contextual or
+technical, regardless of an observation's numeric confidence.
 
 **Distinct incidents now require measured recovery:** after an incident, the browser
 must report at least two seconds continuously visible (`tab_visible`) before another

@@ -13,6 +13,11 @@ export const ServiceConfigSchema = z.object({
   faceReadinessRequired: z.boolean().default(false),
   visionTimeoutMs: z.coerce.number().int().min(1000).max(120000).default(20000),
   visionNoticeMs: z.coerce.number().int().min(5000).max(120000).default(15000),
+  visionMinFrameMs: z.coerce.number().int().min(200).max(3000).default(300),
+  visionInterruptionMs: z.coerce.number().int().min(0).max(10000).default(1500),
+  visionClearMs: z.coerce.number().int().min(0).max(30000).default(2000),
+  visionHandFaceNoticeMs: z.coerce.number().int().min(5000).max(300000).default(30000),
+  visionPhoneNoticeMs: z.coerce.number().int().min(0).max(300000).default(10000),
   visualDirectionReviewEnabled: z.boolean().default(true),
   visionPositionThreshold: z.coerce.number().min(.05).max(.8).default(.15),
   authAttemptsPerWindow: z.coerce.number().int().min(1).max(1000).default(30),
@@ -24,5 +29,5 @@ export function serviceConfig(env: NodeJS.ProcessEnv = process.env): ServiceConf
   return ServiceConfigSchema.parse({ port: env.PORT, host: env.API_HOST, storage: env.INTERVIEW_STORAGE,
     providerMode: env.INTERVIEW_PROVIDER, dataDirectory: path.resolve(env.INTERVIEW_DATA_DIR ?? '.data'),
     allowedOrigins: env.INTERVIEW_ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean),
-    visualDirectionReviewEnabled: env.PROCTORING_DIRECTION_REVIEW_ENABLED !== 'false', faceReadinessRequired: env.PROCTORING_FACE_CHECK_REQUIRED === 'true', visionNoticeMs: env.PROCTORING_NOTICE_MS, visionPositionThreshold: env.PROCTORING_POSITION_THRESHOLD, providerTimeoutMs: env.AI_HTTP_TIMEOUT_MS, visionTimeoutMs: env.PROCTORING_TIMEOUT_MS, authAttemptsPerWindow: env.AUTH_ATTEMPTS_PER_WINDOW, authWindowMs: env.AUTH_WINDOW_MS, trustProxy: env.TRUST_PROXY === 'true' });
+    visualDirectionReviewEnabled: env.PROCTORING_DIRECTION_REVIEW_ENABLED !== 'false', faceReadinessRequired: env.PROCTORING_FACE_CHECK_REQUIRED === 'true', visionNoticeMs: env.PROCTORING_NOTICE_MS, visionMinFrameMs: env.PROCTORING_MIN_FRAME_MS, visionInterruptionMs: env.PROCTORING_GAZE_INTERRUPTION_MS, visionClearMs: env.PROCTORING_INCIDENT_CLEAR_MS, visionHandFaceNoticeMs: env.PROCTORING_HAND_FACE_NOTICE_MS, visionPhoneNoticeMs: env.PROCTORING_PHONE_NOTICE_MS, visionPositionThreshold: env.PROCTORING_POSITION_THRESHOLD, providerTimeoutMs: env.AI_HTTP_TIMEOUT_MS, visionTimeoutMs: env.PROCTORING_TIMEOUT_MS, authAttemptsPerWindow: env.AUTH_ATTEMPTS_PER_WINDOW, authWindowMs: env.AUTH_WINDOW_MS, trustProxy: env.TRUST_PROXY === 'true' });
 }

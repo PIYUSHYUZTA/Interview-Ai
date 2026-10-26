@@ -75,7 +75,9 @@ try {
   await page.getByRole('button',{name:'Check face readiness',exact:true}).click();
   await page.getByText('Face readiness confirmed for this session. Identity has not been verified.',{exact:true}).waitFor().catch(async(error:Error)=>{console.error('Readiness UI',await page.locator('.face-readiness-panel').textContent());console.error('Readiness backend',await(await context.request.get(`${origin}/interviews/${session.sessionId}/face-check`,{headers:{Authorization:`Bearer ${session.integrityToken}`}})).json());throw error;});
   const readiness=await(await context.request.get(`${origin}/interviews/${session.sessionId}/face-check`,{headers:{Authorization:`Bearer ${session.integrityToken}`}})).json();assert.equal(readiness.ready,true);assert.equal(readiness.identityVerified,false);
-  assert.equal(await page.locator('.vision-overlay').count(),0);
+  // Tracking guides are visible by default while monitoring is on, and remain optional.
+  assert.equal(await page.locator('.vision-overlay').count(),1);
+  await page.getByLabel('Show tracking guides',{exact:false}).uncheck();assert.equal(await page.locator('.vision-overlay').count(),0);
   await page.getByLabel('Show tracking guides',{exact:false}).check();
   assert.equal(await page.locator('.vision-overlay .face-track circle').count(),14);
   await page.getByLabel('Show tracking guides',{exact:false}).uncheck();
@@ -173,7 +175,7 @@ try {
   if(process.env.VERIFY_STALLED_VISION==='true') assert.ok(await page.locator('.proctoring-diagnostics').textContent().then((text:string)=>/failures [1-9]/.test(text)));
 
   await page.locator('.proctoring-diagnostics > summary').click();
-  await page.getByText('Connected · sampled every 2 seconds', { exact: true }).waitFor();
+  await page.getByText(/^Connected · about \d+ samples per second$/).waitFor();
 
   // Exercise the actual frontend event handler and backend policy using synthetic
   // visibility episodes with accelerated timestamps. No server responses are mocked.

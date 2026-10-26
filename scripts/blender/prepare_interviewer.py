@@ -3,9 +3,14 @@ import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from generate_assets import *
+from web_assets import thin_strands, organize, is_character, is_camera_or_light
 reset()
 bpy.ops.import_scene.gltf(filepath=str(ROOT/'assets/avatar-source/mpfb.glb'))
-keep = {'eyeBlinkLeft','eyeBlinkRight','mouthSmileLeft','mouthSmileRight','browInnerUp'}
+# Visemes plus the ARKit shapes the browser layers on top of them: jaw opening from
+# loudness, lip rounding/stretching/pressing, blinks and small brow/smile expressions.
+# Gaze uses the rig's LeftEye/RightEye bones, so it needs no shape keys.
+keep = {'eyeBlinkLeft','eyeBlinkRight','mouthSmileLeft','mouthSmileRight','browInnerUp',
+        'jawOpen','mouthClose','mouthFunnel','mouthPucker','mouthStretchLeft','mouthStretchRight','mouthPressLeft','mouthPressRight'}
 for obj in list(bpy.context.scene.objects):
     if obj.type == 'MESH' and obj.data.shape_keys:
         for key in list(obj.data.shape_keys.key_blocks)[1:]:
@@ -24,6 +29,9 @@ for obj in list(bpy.context.scene.objects):
                 turn = current.rotation_difference(target).to_matrix().to_4x4()
                 bone.matrix = Matrix.Translation(bone.head) @ turn @ Matrix.Translation(-bone.head) @ bone.matrix
         bpy.context.view_layer.update()
+# Lash strands are minimal tubes already; halving their count is shape-key safe.
+for obj in [o for o in bpy.context.scene.objects if o.type == 'MESH' and 'eyelash' in o.name]:
+    thin_strands(obj)
 for image in bpy.data.images:
     limit = 2048 if 'female_diffuse' in image.name else 1024
     if image.size[0] > limit:
@@ -37,15 +45,15 @@ for mat in bpy.data.materials:
             for link in list(bsdf.inputs['Base Color'].links): mat.node_tree.links.remove(link)
             bsdf.inputs['Base Color'].default_value=(*linear(PALETTE['charcoal']),1)
             bsdf.inputs['Roughness'].default_value=.65
-ink=material('Ink architectural surface','ink',.08,.65)
-metal=material('Earth architectural metal','earth',.8,.32)
-teal=material('Teal studio light','teal',.1,.3,1.2)
-amber=material('Amber studio accent','amber',.6,.3)
+ink=material('Ink architectural surface','jet',.08,.65)
+metal=material('Titanium architectural metal','jet',.85,.3)
+teal=material('Teal studio light','cerulean',.1,.3,1.2)
+amber=material('Amber studio accent','rose',.6,.3)
 box('Floor',(0,0,-.025),(8,6,.05),ink)
 box('Backdrop',(0,1.8,1.8),(8,.15,4),ink)
 # Layered architecture provides perspective, occlusion and shadow receivers.
-charcoal=material('Charcoal acoustic felt','charcoal',0,.95)
-stone=material('Warm ivory ceramic','ivory',0,.72)
+charcoal=material('Charcoal acoustic felt','charcoal',0,.95)  # Charcoal Black
+stone=material('Charcoal glazed ceramic','charcoal',.1,.42)
 box('LeftReturn',(-2.3,.25,1.6),(.18,3.1,3.2),charcoal)
 box('RightReturn',(2.3,.25,1.6),(.18,3.1,3.2),charcoal)
 box('CeilingCoffer',(0,.3,3.05),(4.6,3.1,.14),charcoal)
@@ -72,12 +80,18 @@ for sign in (-1,1):
         box('AcousticSlat'+str(sign)+str(index),(sign*(1.7+index*.15),1.05,1.65),(.025,.15,3.3),metal)
 box('Desk',(0,-.68,.88),(2.5,.8,.065),ink)
 box('DeskRim',(0,-1.09,.88),(2.5,.015,.012),amber)
+# A fine Cerulean halo behind the head echoes the landing hero; one Neon Rose arc.
+rig=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
+head_z=(rig.matrix_world @ rig.pose.bones['Head'].head).z
+torus('StudioHalo',.36,.0045,teal,location=(0,.55,head_z+.1),rotation=(math.pi/2,0,0))
+torus('StudioHaloRose',.42,.003,amber,location=(0,.6,head_z+.1),rotation=(math.pi/2,.35,0))
 camera_and_lights((0,-2.35,1.48),(0,0,1.27))
 scene=bpy.context.scene
 scene.render.engine='CYCLES';scene.cycles.device='CPU';scene.cycles.samples=32
 scene.render.resolution_x=900;scene.render.resolution_y=650;scene.render.resolution_percentage=100
+organize(scene, {'Character': is_character, 'Camera and lights': is_camera_or_light, 'Studio set': lambda obj: True})
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCES/'human-interview-studio.blend'))
-bpy.ops.export_scene.gltf(filepath=str(OUTPUT/'human-interview-studio.glb'),export_format='GLB',export_apply=False,export_animations=False,export_rest_position_armature=False,export_current_frame=True,export_cameras=False,export_lights=False,export_image_quality=85)
+bpy.ops.export_scene.gltf(filepath=str(OUTPUT/'human-interview-studio.glb'),export_format='GLB',export_apply=False,export_animations=False,export_rest_position_armature=False,export_current_frame=True,export_cameras=False,export_lights=False,export_image_format='WEBP',export_image_quality=85)
 if options.render:
     scene.render.filepath=str(SOURCES/'human-interview-studio-preview.png')
     bpy.ops.render.render(write_still=True)

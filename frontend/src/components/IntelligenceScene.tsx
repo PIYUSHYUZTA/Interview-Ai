@@ -41,15 +41,15 @@ vec3 normalAt(vec3 p) {
   return normalize(vec3(scene(p+e.xyy).x-scene(p-e.xyy).x,scene(p+e.yxy).x-scene(p-e.yxy).x,scene(p+e.yyx).x-scene(p-e.yyx).x));
 }
 vec3 studio(vec3 r) {
-  vec3 color=vec3(.025,.035,.032);
-  color+=vec3(.86,.84,.76)*pow(max(dot(r,normalize(vec3(-.8,1.3,1.))),0.),8.);
-  color+=vec3(.0,.53,.58)*pow(max(dot(r,normalize(vec3(1.,.1,.5))),0.),12.);
-  color+=vec3(.25,.19,.11)*pow(max(dot(r,normalize(vec3(-1.,-.3,.2))),0.),8.);
-  color+=vec3(.725,.616,.451)*pow(max(dot(r,normalize(vec3(.2,-.8,1.))),0.),18.)*.32;
+  vec3 color=vec3(.035,.035,.035);
+  color+=vec3(.93,.93,.93)*pow(max(dot(r,normalize(vec3(-.8,1.3,1.))),0.),8.);
+  color+=vec3(.0,.44,.6)*pow(max(dot(r,normalize(vec3(1.,.1,.5))),0.),12.);
+  color+=vec3(.25,.04,.14)*pow(max(dot(r,normalize(vec3(-1.,-.3,.2))),0.),8.);
+  color+=vec3(1.,.18,.58)*pow(max(dot(r,normalize(vec3(.2,-.8,1.))),0.),18.)*.32;
   float strip=smoothstep(.965,.995,dot(r,normalize(vec3(-.35,.65,1.))));
-  color+=vec3(.91,.89,.81)*strip*1.8;
+  color+=vec3(.93,.93,.93)*strip*1.8;
   float softbox=pow(max(dot(r,normalize(vec3(.8,.9,-.3))),0.),22.);
-  color+=vec3(.0,.43,.48)*softbox;
+  color+=vec3(.0,.39,.53)*softbox;
   return color;
 }
 // Sparse analytic orbital particles cost a fixed six ray tests, not extra march steps.
@@ -63,7 +63,7 @@ vec4 particles(vec3 ro, vec3 rd, float surfaceDepth) {
     float distanceToRay=length(ro+rd*along-particle);
     if(along>0. && along<surfaceDepth) alpha=max(alpha,1.-smoothstep(.004,.019,distanceToRay));
   }
-  return vec4(vec3(.0,.68,.73),alpha*.8);
+  return vec4(vec3(.0,.56,.66),alpha*.8);
 }
 void main() {
   vec2 uv=(gl_FragCoord.xy*2.-resolution)/resolution.y;
@@ -84,17 +84,17 @@ void main() {
   vec3 l=normalize(vec3(-.6,1.,1.5));
   float diffuse=max(dot(n,l),0.);
   float spec=pow(max(dot(reflect(-l,n),v),0.),95.);
-  vec3 color=studio(reflect(rd,n))*.94+vec3(.035,.04,.035)*diffuse;
-  color+=vec3(.86,.84,.76)*spec*.7;
-  color+=vec3(.0,.45,.5)*fresnel*.45;
+  vec3 color=studio(reflect(rd,n))*.94+vec3(.035,.035,.035)*diffuse;
+  color+=vec3(.93,.93,.93)*spec*.7;
+  color+=vec3(.0,.37,.55)*fresnel*.45;
   if(hit.y>1.5 && hit.y<2.5) {
-    vec3 base=mix(vec3(.008,.035,.032),vec3(.0,.22,.25),smoothstep(-.7,.8,n.x+n.y*.5));
+    vec3 base=mix(vec3(.008,.008,.008),vec3(.0,.18,.27),smoothstep(-.7,.8,n.x+n.y*.5));
     color=base*(.45+diffuse*.65)+studio(reflect(rd,n))*.8;
-    color+=vec3(.0,.58,.65)*fresnel*.75+spec*.85;
+    color+=vec3(.0,.48,.65)*fresnel*.75+spec*.85;
 
   }
-  if(hit.y>2.5 && hit.y<3.5) color=vec3(.0,.58,.64)*(.8+.04*sin(time*.6));
-  if(hit.y>3.5) color=vec3(.21,.17,.11)*(.7+.3*facing);
+  if(hit.y>2.5 && hit.y<3.5) color=vec3(.0,.48,.65)*(.8+.04*sin(time*.6));
+  if(hit.y>3.5) color=vec3(.25,.04,.14)*(.7+.3*facing);
   float ao=clamp(scene(p+n*.14).x/.14,.35,1.);
   color*=.65+.35*ao;
   color=vec3(1.)-exp(-color*1.65);
@@ -206,12 +206,12 @@ export function IntelligenceScene({ paused, onStatusChange }: { paused: boolean;
     <div className="c-sculpture-aura" />
     <svg className={`c-sculpture-fallback ${status === 'ready' ? 'is-hidden' : ''}`} viewBox="0 0 600 600" aria-hidden="true">
       <defs>
-        <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#e8e4d3" /><stop offset=".34" stopColor="#6c5636" /><stop offset=".65" stopColor="#090907" /><stop offset="1" stopColor="#00aebb" /></linearGradient>
-        <linearGradient id={`${gradientId}Core`} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#00aebb" /><stop offset=".42" stopColor="#031211" /><stop offset="1" stopColor="#090907" /></linearGradient>
+        <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#ededed" /><stop offset=".34" stopColor="#007ba7" /><stop offset=".65" stopColor="#081c23" /><stop offset="1" stopColor="#007ba7" /></linearGradient>
+        <linearGradient id={`${gradientId}Core`} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#007ba7" /><stop offset=".42" stopColor="#0a0a0a" /><stop offset="1" stopColor="#081c23" /></linearGradient>
       </defs>
       <g fill="none" stroke={`url(#${gradientId})`}><ellipse cx="300" cy="300" rx="206" ry="190" transform="rotate(-22 300 300)" strokeWidth="5" /><ellipse cx="300" cy="300" rx="164" ry="78" transform="rotate(-42 300 300)" strokeWidth="3" /><ellipse cx="300" cy="300" rx="74" ry="148" transform="rotate(-25 300 300)" strokeWidth="2" /></g>
-      <path d="m300 176 94 110-28 85-66 53-97-120 24-71Z" fill={`url(#${gradientId}Core)`} stroke="#00aebb80" strokeWidth="1" />
-      <path d="m300 176 12 128 82-18m-82 18-12 120m12-120-109 0m109 0 54 67" fill="none" stroke="#6c563644" />
+      <path d="m300 176 94 110-28 85-66 53-97-120 24-71Z" fill={`url(#${gradientId}Core)`} stroke="#007ba780" strokeWidth="1" />
+      <path d="m300 176 12 128 82-18m-82 18-12 120m12-120-109 0m109 0 54 67" fill="none" stroke="#007ba744" />
     </svg>
     <canvas ref={canvas} className={status === 'ready' ? '' : 'is-hidden'} aria-hidden="true" />
     <div className="c-sculpture-shadow" />

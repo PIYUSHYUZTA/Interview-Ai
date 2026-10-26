@@ -1,11 +1,16 @@
 # UI library integration
 
-This application uses selected, locally installed **source components** from all four requested libraries.
+This application uses selected, locally installed **source components** from three libraries.
+
+**Removed (25 October 2026):** the Unlumen Switch and its `@radix-ui/react-switch` dependency.
+The current voice room always speaks each question with synchronized lip movement, so the
+"read each question aloud" toggle it powered no longer exists, and nothing rendered it.
+`scripts/verify-ui-libraries.cjs` still contains the old switch steps; they target that
+retired control. The source snapshot and license notes stay in `vendor-sources/` for provenance.
 These are real adapted upstream implementations, not CSS imitations or unused package entries.
 
 | Library | Source component | Used in the application | Local adaptations |
 | --- | --- | --- | --- |
-| [Unlumen UI](https://ui.unlumen.com) | [Switch](https://ui.unlumen.com/r/switch.json) | Interview room: read each question aloud | Scoped CSS, controlled/uncontrolled state correction, reduced motion, existing speech lifecycle |
 | [Magic UI](https://magicui.design) | [Blur Fade](https://magicui.design/r/blur-fade.json) | Landing hero and workspace screen transitions | Reduced-motion handling; restrained timing/blur |
 | [SmoothUI](https://smoothui.dev) | AI Loader, Siri Orb, AI Core | Resume/dashboard loading, interview evaluation/loading, actual interviewer state and explicitly illustrative landing preview | Scoped CSS, blue/cyan palette, application state mapping, no fake audio amplitude |
 | [Retro UI / NeoBrutalism](https://retroui.dev) | [Base UI Button](https://neobrutalism.com/r/base/button.json) | Shared Button across landing, setup, room, dashboard and report | Existing button contract, navy/cyan variants, restrained offset shadows; Base UI semantics retained |
@@ -16,8 +21,8 @@ Retro UI's website redirects to NeoBrutalism. Its official repository is https:/
 
 The libraries distribute editable source through registries. Reviewed source snapshots are stored in
 `vendor-sources/`; adapted application components are in `src/components/vendor/`. Styles use scoped CSS
-instead of adding a global Tailwind reset. Runtime dependencies are `motion`, `@radix-ui/react-switch`,
-`@base-ui/react`, and `class-variance-authority`. React 19 and the existing Vite/backend architecture remain.
+instead of adding a global Tailwind reset. Runtime dependencies are `motion`, `@base-ui/react`
+and `class-variance-authority`. React 19 and the existing Vite/backend architecture remain.
 No paid templates or licensed Pro components were downloaded, and no UI license key is needed.
 
 ## Provenance and licensing

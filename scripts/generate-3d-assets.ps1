@@ -1,4 +1,4 @@
-param([string]$BlenderPath = $env:BLENDER_EXECUTABLE, [switch]$Render, [switch]$HumanStudio)
+param([string]$BlenderPath = $env:BLENDER_EXECUTABLE, [switch]$Render, [switch]$HumanStudio, [switch]$HeroBust)
 $ErrorActionPreference = 'Stop'
 $projectPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (-not $BlenderPath) {
@@ -19,7 +19,7 @@ if (-not $BlenderPath) {
 if (-not $BlenderPath -or -not (Test-Path -LiteralPath $BlenderPath -PathType Leaf)) {
     throw 'Blender was not found. Pass -BlenderPath or set BLENDER_EXECUTABLE to your installed blender.exe.'
 }
-$assetScript = if ($HumanStudio) { 'blender\prepare_interviewer.py' } else { 'blender\generate_assets.py' }
+$assetScript = if ($HeroBust) { 'blender\prepare_hero_bust.py' } elseif ($HumanStudio) { 'blender\prepare_interviewer.py' } else { 'blender\generate_assets.py' }
 $taskArgs = @('--background', '--factory-startup', '--python-exit-code', '1', '--python', (Join-Path $PSScriptRoot $assetScript), '--', '--project-root', $projectPath)
 if ($Render) { $taskArgs += '--render' }
 Write-Host "Generating project assets with $BlenderPath"
