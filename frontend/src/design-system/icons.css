@@ -1,0 +1,97 @@
+/* Icon system: Lucide, one 1.5px stroke, three sizes, tokens throughout.
+ * Motion uses the individual scale / rotate properties so hover, the menu turn and the bell compose
+ * instead of overwriting one another's transform. */
+.ds-icon {
+  flex-shrink: 0;
+  vertical-align: middle;
+  transition: scale var(--transition-fast), rotate var(--transition-normal), opacity var(--transition-normal), color var(--transition-fast);
+}
+
+/* Interactive icons: colour shift + scale 1.1 when their control is hovered or focused. On filled brand
+ * buttons the colour stays (a teal shift on a teal fill would vanish); the scale still applies. */
+:is(button, a, [role="button"], summary):is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]) .ds-icon {
+  scale: 1.1;
+  color: var(--icon-hover-color, var(--color-primary-text));
+}
+:is(.btn-primary, .c-primary, .c-nav-cta) { --icon-hover-color: currentColor; }
+
+/* Icon-only controls: the required label is shown as a tooltip on hover and keyboard focus.
+ * IconButton has it built in; any other icon-only control adds .ds-has-tooltip and data-tooltip. */
+.ds-has-tooltip { position: relative; }
+.ds-icon-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--space-10);
+  height: var(--space-10);
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.ds-icon-button:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+.ds-icon-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+:is(.ds-icon-button, .ds-has-tooltip)::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translate(-50%, var(--space-1));
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  font: var(--font-weight-medium) var(--font-size-xs) / var(--leading-tight) var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: 10;
+}
+:is(.ds-icon-button, .ds-has-tooltip):is(:hover, :focus-visible)::after { opacity: 1; transform: translate(-50%, 0); }
+/* For controls at the top of the page, show the tooltip below. */
+[data-tooltip-side="bottom"]::after { bottom: auto; top: calc(100% + var(--space-2)); transform: translate(-50%, calc(-1 * var(--space-1))); }
+/* For controls at the right edge, align the tooltip's end with the control so it stays on screen. */
+[data-tooltip-align="end"]::after { left: auto; right: 0; transform: translate(0, var(--space-1)); }
+[data-tooltip-align="end"][data-tooltip-side="bottom"]::after { transform: translate(0, calc(-1 * var(--space-1))); }
+[data-tooltip-align="end"]:is(:hover, :focus-visible)::after { transform: translate(0, 0); }
+/* Beside the control, on its left (for example when a sheet opens below it). */
+[data-tooltip-side="left"]::after { left: auto; right: calc(100% + var(--space-2)); top: 50%; bottom: auto; transform: translate(var(--space-1), -50%); }
+[data-tooltip-side="left"]:is(:hover, :focus-visible)::after { transform: translate(0, -50%); }
+
+/* Menu → X: both glyphs stacked; the bars turn 45° and fade while the X turns in. */
+.ds-icon-swap { position: relative; display: inline-grid; }
+.ds-icon-swap > .ds-icon { grid-area: 1 / 1; }
+.ds-menu-toggle .ds-menu-toggle-close { opacity: 0; rotate: -45deg; }
+.ds-menu-toggle.is-open .ds-menu-toggle-menu { opacity: 0; rotate: 45deg; }
+.ds-menu-toggle.is-open .ds-menu-toggle-close { opacity: 1; rotate: 0deg; }
+
+/* Search pulses while loading. */
+.ds-icon-pulse { animation: ds-icon-pulse 1.2s ease-in-out infinite; }
+@keyframes ds-icon-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.88); } }
+
+/* Check draws itself: the circle (63 = 2πr for r=10), then the tick. */
+.ds-check-draw circle { stroke-dasharray: 63; stroke-dashoffset: 63; animation: ds-draw var(--duration-slow) var(--ease-out) forwards; }
+.ds-check-draw path { stroke-dasharray: 10; stroke-dashoffset: 10; animation: ds-draw var(--duration-normal) var(--ease-out) calc(var(--duration-slow) * .8) forwards; }
+@keyframes ds-draw { to { stroke-dashoffset: 0; } }
+
+/* Bell rings ±15°, twice, from its top. */
+.ds-bell-ring { transform-origin: 50% 8%; animation: ds-bell-ring 700ms ease-in-out; }
+@keyframes ds-bell-ring { 0%, 100% { rotate: 0deg; } 15% { rotate: 15deg; } 35% { rotate: -15deg; } 55% { rotate: 15deg; } 75% { rotate: -15deg; } }
+
+/* Spinner: smooth ease-in-out rotation. */
+.ds-spinner { animation: ds-spin 900ms ease-in-out infinite; }
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-icon-pulse, .ds-bell-ring { animation: none; }
+  .ds-spinner { animation-duration: 2.4s; animation-timing-function: linear; }
+  .ds-check-draw circle, .ds-check-draw path { animation: none; stroke-dashoffset: 0; }
+  :is(button, a, [role="button"], summary):is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]) .ds-icon { scale: none; }
+  .ds-icon { transition: color var(--transition-fast), opacity var(--transition-fast); }
+}

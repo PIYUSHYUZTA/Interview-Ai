@@ -26,7 +26,7 @@
 .cinema .c-nav-cta { min-height: 38px; padding: 9px 15px; }
 .cinema .c-primary { min-height: 52px; padding: 15px 23px; gap: 24px; font-size: 13px; }
 .c-hero { display: grid; grid-template-columns: 1.08fr .92fr; align-items: center; position: relative; max-width: 1600px; min-height: calc(100svh - 88px); padding-top: 45px; padding-bottom: 85px; gap: 8px; }
-.c-hero::before { content: ''; position: absolute; width: 75%; height: 90%; pointer-events: none; top: -8%; right: -20%; background: radial-gradient(ellipse, #03121125, transparent 67%); z-index: -1; }
+.c-hero-backdrop { position: absolute; width: 75%; height: 90%; pointer-events: none; top: -8%; right: -20%; background: radial-gradient(ellipse, #03121125, transparent 67%); z-index: -1; }
 .c-hero-copy { position: relative; z-index: 2; padding-top: 0; }
 .c-eyebrow { font-size: 9px; letter-spacing: .17em; font-weight: 550; color: #e8e4d3; line-height: 1.7; }
 .c-hero-eyebrow { display: flex; gap: 11px; align-items: center; margin-bottom: 28px; }
@@ -267,7 +267,7 @@
 .c-sound-toggle > span { display: flex; }
 .c-sound-toggle:hover { border-color: #e8e4d399; color: #e8e4d3; }
 .c-sound-toggle[aria-pressed="true"] { color: #e8e4d3; border-color: #e8e4d380; }
-.c-sound-message { max-width: 230px; background: #0a0a0af5; border: 1px solid var(--c-line); border-radius: 5px; color: #e8e4d3; padding: 10px 12px; font-size: 11px; line-height: 1.7; }
+.c-sound-control .ds-sound-message { max-width: 230px; background: #0a0a0af5; border: 1px solid var(--c-line); border-radius: 5px; color: #e8e4d3; padding: 10px 12px; font-size: 11px; line-height: 1.7; }
 @media(max-width:760px) { .c-sound-control { right: 16px; bottom: 16px; }.c-footer { padding-bottom: 80px; } }
 
 /* Cinematic studio: light, optical depth and fine editorial rules rather than neon surfaces. */
@@ -310,7 +310,7 @@
 .cinema .btn.btn-primary:hover:not(:disabled) { background:#007ba7; filter:brightness(1.08); box-shadow:0 10px 30px rgba(0,123,167,.2); }
 .cinema .btn-ghost { color:#e8e4d3; }
 .cinema .btn-ghost:hover:not(:disabled) { background:rgba(0,123,167,.18); }
-.c-hero::before { background:radial-gradient(ellipse,rgba(0,123,167,.13),transparent 67%); }
+.c-hero-backdrop { background:radial-gradient(ellipse,rgba(0,123,167,.13),transparent 67%); }
 .c-hero-atmosphere { background:radial-gradient(ellipse at 58% 45%,rgba(0,123,167,.18),transparent 55%),radial-gradient(ellipse at 25% 65%,rgba(0,123,167,.1),transparent 60%); }
 .c-heading-soft { color:#e8e4d3; background:linear-gradient(105deg,#e8e4d3,rgba(232,228,211,.75) 85%); background-clip:text; -webkit-text-fill-color:transparent; }
 .c-eyebrow,.c-hero-index,.c-art-bottom > span { color:rgba(232,228,211,.66); }
@@ -360,17 +360,17 @@ html:has(.cinema) { scroll-behavior:smooth; }
 .c-capabilities-intro { max-width:640px; margin-bottom:46px; }
 .c-capabilities-intro .c-eyebrow { color: #00aebb; margin-bottom:18px; }
 .c-capability-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
-.c-capability-grid article { position:relative; padding:28px 26px 30px; border:1px solid var(--c-line); border-radius:10px; background:linear-gradient(160deg,rgba(3,18,17,.72),#0a0a0a 70%); transition:border-color var(--c-motion-fast) var(--c-motion-ease),transform var(--c-motion-fast) var(--c-motion-ease); }
+.c-capability-grid article { position:relative; padding:28px 26px 30px; border:1px solid var(--c-line); border-radius:10px; background:linear-gradient(160deg,rgba(3,18,17,.72),#0a0a0a 70%); transition:border-color var(--duration-normal) var(--ease-out),translate var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal) var(--ease-out); }
 .c-capability-grid article::after { content:''; position:absolute; left:26px; right:26px; top:-1px; height:1px; background:linear-gradient(90deg,#007ba7,transparent); }
 .c-capability-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:34px; color:rgba(232,228,211,.62); font-size:10px; letter-spacing:.14em; }
 .c-capability-icon { display:grid; place-items:center; width:40px; height:40px; border:1px solid rgba(0,123,167,.55); border-radius:50%; color: #00aebb; }
 .c-capability-grid h3 { color:#e8e4d3; font:500 20px/1.35 var(--heading); letter-spacing:-.02em; margin:0 0 10px; }
 .c-capability-grid p { margin:0; font-size:14px; line-height:1.75; color:rgba(232,228,211,.68); }
-@media (hover:hover) { .c-capability-grid article:hover { border-color:rgba(0,123,167,.6); transform:translateY(-2px); } .c-capability-grid article:hover .c-capability-icon { border-color:#ff2d95; color:#ff2d95; } }
+@media (hover:hover) { .c-capability-grid article:hover { border-color:rgba(0,123,167,.6); translate:0 var(--distance-lift); box-shadow:var(--shadow-lg); } .c-capability-grid article:hover .c-capability-icon { border-color:#ff2d95; color:#ff2d95; } }
 .c-capability-grid article:focus-within { border-color:#007ba7; }
 @media(max-width:1100px) { .c-capability-grid { grid-template-columns:1fr 1fr; } .c-capability-grid article:last-child { grid-column:1 / -1; } }
 @media(max-width:760px) { .c-capabilities { padding-block:70px 20px; } .c-capability-grid { grid-template-columns:1fr; gap:12px; } .c-capability-grid article:last-child { grid-column:auto; } .c-capability-head { margin-bottom:22px; } .c-capability-grid h3 { font-size:18px; } }
-@media(prefers-reduced-motion:reduce) { .c-capability-grid article { transition:none; } .c-capability-grid article:hover { transform:none; } }
+@media(prefers-reduced-motion:reduce) { .c-capability-grid article { transition:none; } .c-capability-grid article:hover { translate:none; } }
 
 /* Portrait tablets: stack the hero so the bust gets full width instead of a squeezed column. */
 @media(min-width:761px) and (max-width:1100px) and (orientation:portrait) {
@@ -400,12 +400,7 @@ html:has(.cinema) { scroll-behavior:smooth; }
 .c-close-halo { border: 0; box-shadow: none; background: radial-gradient(ellipse at 50% 55%, rgba(0,123,167,.13), rgba(255,45,149,.025) 45%, transparent 68%); }
 
 /* A. Navigation: a real menu on phones instead of hidden links. */
-.c-menu-toggle { display: none; position: relative; width: 42px; height: 42px; border: 1px solid rgba(0,123,167,.45); border-radius: 10px; background: rgba(10,10,10,.6); cursor: pointer; }
-.c-menu-toggle span { position: absolute; left: 12px; right: 12px; height: 1.5px; background: #e8e4d3; transition: transform var(--c-motion-fast) var(--c-motion-ease), top var(--c-motion-fast) var(--c-motion-ease); }
-.c-menu-toggle span:first-child { top: 16px; }
-.c-menu-toggle span:last-child { top: 24px; }
-.c-nav.is-open .c-menu-toggle span:first-child { top: 20px; transform: rotate(45deg); }
-.c-nav.is-open .c-menu-toggle span:last-child { top: 20px; transform: rotate(-45deg); }
+.c-menu-toggle { display: none; position: relative; width: 42px; height: 42px; border: 1px solid rgba(0,123,167,.45); border-radius: 10px; background: rgba(10,10,10,.6); cursor: pointer; padding: 0; place-items: center; color: #e8e4d3; }
 .c-menu-toggle:focus-visible { outline: 2px solid #007ba7; outline-offset: 3px; }
 .c-mobile-menu { position: fixed; z-index: 90; top: 74px; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 12px; padding: 18px 22px 32px; background: #0a0a0a; border-top: 1px solid rgba(0,123,167,.3); overflow-y: auto; }
 .cinema:has(.c-mobile-menu) .c-sound-control { visibility: hidden; }
@@ -413,7 +408,7 @@ html:has(.cinema) { scroll-behavior:smooth; }
 .c-mobile-menu nav a { display: flex; align-items: center; justify-content: space-between; padding: 18px 2px; border-bottom: 1px solid rgba(0,123,167,.22); color: #e8e4d3; font: 500 22px/1.2 var(--heading); letter-spacing: -.02em; text-decoration: none; }
 .c-mobile-menu nav a svg { color: #00aebb; }
 .c-mobile-menu .btn { width: 100%; min-height: 52px; }
-@media(max-width:760px) { .c-menu-toggle { display: block; } .c-nav-actions .btn-ghost { display: none; } }
+@media(max-width:760px) { .c-menu-toggle { display: grid; } .c-nav-actions .btn-ghost { display: none; } }
 @media(min-width:761px) { .c-mobile-menu { display: none; } }
 
 /* C. How it works: three visually distinct steps, each with a real product visual. */
@@ -478,11 +473,16 @@ html:has(.cinema) { scroll-behavior:smooth; }
 @media(max-width:760px) { .c-footer { grid-template-columns: 1fr; } .c-footer-groups { grid-template-columns: 1fr 1fr; } }
 
 /* Motion pass: a sticky navigation that condenses after scrolling and marks the current section. */
-.cinema > .c-nav { position: sticky; top: 0; z-index: 30; transition: height var(--c-motion-swap) var(--c-motion-ease), background-color var(--c-motion-swap) var(--c-motion-ease), border-color var(--c-motion-swap) var(--c-motion-ease); }
-.cinema > .c-nav.is-scrolled { background: rgba(10,10,10,.95); border-color: rgba(0,123,167,.3); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.cinema > .c-nav { position: sticky; top: 0; z-index: 30; margin-bottom: 0; animation: c-nav-arrive var(--duration-reveal) var(--ease-out) backwards; transition: height var(--duration-nav) var(--ease-out), margin-bottom var(--duration-nav) var(--ease-out), background-color var(--duration-nav) var(--ease-out), border-color var(--duration-nav) var(--ease-out), backdrop-filter var(--duration-nav) var(--ease-out); }
+/* Past 80px the bar condenses: shorter, frosted (12px blur) and edged with a thin line. */
+/* The margin gives back the height the bar loses, so nothing below it moves (no layout shift). */
+.cinema > .c-nav.is-scrolled { height: 64px; margin-bottom: 24px; background: rgba(10,10,10,.82); border-color: rgba(0,123,167,.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+@media(max-width:760px) { .cinema > .c-nav.is-scrolled { height: 60px; margin-bottom: 14px; } }
+@keyframes c-nav-arrive { from { transform: translateY(-100%); } }
 .c-nav nav a { position: relative; padding-block: 6px; }
-.c-nav nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #007ba7; transform: scaleX(0); transform-origin: left; transition: transform var(--c-motion-swap) var(--c-motion-ease); }
-.c-nav nav a:hover::after, .c-nav nav a:focus-visible::after { transform: scaleX(.5); }
+/* The underline grows outward from the centre of the link. */
+.c-nav nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #007ba7; transform: scaleX(0); transform-origin: center; transition: transform var(--duration-normal) var(--ease-out); }
+.c-nav nav a:hover::after, .c-nav nav a:focus-visible::after { transform: scaleX(1); }
 .c-nav nav a[aria-current="location"] { color: #e8e4d3; }
 .c-nav nav a[aria-current="location"]::after { transform: scaleX(1); }
 .cinema section[id] { scroll-margin-top: 84px; }
@@ -503,6 +503,7 @@ html:has(.cinema) { scroll-behavior:smooth; }
 .c-type { transition: border-color var(--c-motion-swap) var(--c-motion-ease); }
 
 @media(prefers-reduced-motion:reduce) {
+  .cinema > .c-nav { animation: none; }
   .cinema > .c-nav, .c-nav nav a::after, .c-step-card, .c-step-visual, .c-step-number, .c-practice-states span, .c-portrait, .c-type { transition: none; }
 }
 
@@ -617,3 +618,8 @@ html:has(.cinema) { scroll-behavior:smooth; }
 .cinema .c-film-copy h2 .c-film-line > span { color: var(--ivory); }
 .cinema .c-film-copy h2 .c-film-line + .c-film-line > span { color: rgba(232,228,211,.62); }
 .cinema .c-film-copy h2 .c-film-line { color: inherit; }
+
+/* Headline words animate on their own layers, so each word carries the line's text gradient itself. */
+.c-heading-soft .ds-word { background: inherit; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+/* Toasts stack above the fixed sound control instead of covering it. */
+:root:has(.c-sound-control) .ds-toast-region { bottom: calc(var(--space-6) + 56px); }

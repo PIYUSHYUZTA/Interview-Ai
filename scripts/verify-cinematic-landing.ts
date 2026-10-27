@@ -228,33 +228,37 @@ try {
   result.lowPower='Low-power devices show the Blender poster without creating WebGL or downloading the GLB; the candidate entry path works.';
   // Real Web Audio synthesis: observe generated samples, not mocked playback.
   const soundContext=await browser.newContext({viewport:{width:1100,height:900},reducedMotion:'reduce'});
-  await soundContext.addInitScript({content:`window.audioChecks={contexts:[],peaks:[]};const NativeAudio=window.AudioContext;window.AudioContext=class extends NativeAudio{constructor(options){super(options);window.audioChecks.contexts.push(this);}createGain(){const gain=super.createGain();const analyser=this.createAnalyser();analyser.fftSize=256;gain.connect(analyser);const samples=new Float32Array(256);const index=window.audioChecks.peaks.push(0)-1;const sample=()=>{if(this.state==='closed'){analyser.disconnect();return;}analyser.getFloatTimeDomainData(samples);window.audioChecks.peaks[index]=Math.max(window.audioChecks.peaks[index],...samples.map(Math.abs));requestAnimationFrame(sample);};requestAnimationFrame(sample);return gain;}};`});
+  await soundContext.addInitScript({content:`window.audioChecks={contexts:[],peaks:[]};const nativeStart=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...args){if(this.buffer){let max=0;for(const value of this.buffer.getChannelData(0))max=Math.max(max,Math.abs(value));window.audioChecks.peaks.push(max);}return nativeStart.apply(this,args);};const NativeAudio=window.AudioContext;window.AudioContext=class extends NativeAudio{constructor(options){super(options);window.audioChecks.contexts.push(this);}createGain(){const gain=super.createGain();const analyser=this.createAnalyser();analyser.fftSize=256;gain.connect(analyser);const samples=new Float32Array(256);const index=window.audioChecks.peaks.push(0)-1;const sample=()=>{if(this.state==='closed'){analyser.disconnect();return;}analyser.getFloatTimeDomainData(samples);window.audioChecks.peaks[index]=Math.max(window.audioChecks.peaks[index],...samples.map(Math.abs));requestAnimationFrame(sample);};requestAnimationFrame(sample);return gain;}};`});
   const audioPage=await soundContext.newPage();const audioErrors:string[]=[];audioPage.on('pageerror',(e:Error)=>audioErrors.push(e.message));await audioPage.goto(origin);
-  const soundToggle=audioPage.getByRole('button',{name:'Landing sound effects',exact:true});await soundToggle.waitFor();assert.equal(await soundToggle.getAttribute('aria-pressed'),'false');
+  const soundToggle=audioPage.getByRole('button',{name:'Interface sounds',exact:true});await soundToggle.waitFor();assert.equal(await soundToggle.getAttribute('aria-pressed'),'false');
   await audioPage.getByRole('button',{name:'Weak answer',exact:true}).click();await audioPage.waitForTimeout(400);
   assert.equal(await audioPage.evaluate(()=>(window as any).audioChecks.contexts.length),0);
   await soundToggle.click();await audioPage.waitForFunction(()=>document.querySelector('.c-sound-toggle')?.getAttribute('aria-pressed')==='true');
   await audioPage.waitForFunction(()=>(window as any).audioChecks.peaks.some((n:number)=>n>.001));
   await audioPage.waitForFunction(()=>(window as any).audioChecks.contexts.every((c:AudioContext)=>c.state==='closed'));
-  assert.ok(await audioPage.evaluate(()=>(window as any).audioChecks.peaks.every((n:number)=>n<.04)));
+  // Cues are normalised to -22 LUFS or quieter (src/api/soundSystem.test.ts); their peaks stay below -9 dBFS.
+  assert.ok(await audioPage.evaluate(()=>(window as any).audioChecks.peaks.every((n:number)=>n<.36)));
   await audioPage.waitForTimeout(400);await audioPage.getByRole('button',{name:'Strong answer',exact:true}).click();
   await audioPage.waitForFunction(()=>(window as any).audioChecks.contexts.length===2);await soundToggle.click();
   assert.equal(await soundToggle.getAttribute('aria-pressed'),'false');await audioPage.waitForFunction(()=>(window as any).audioChecks.contexts.every((c:AudioContext)=>c.state==='closed'));
   await audioPage.getByRole('button',{name:'Partial answer',exact:true}).click();await audioPage.waitForTimeout(400);assert.equal(await audioPage.evaluate(()=>(window as any).audioChecks.contexts.length),2);
   await soundToggle.click();await audioPage.waitForFunction(()=>document.querySelector('.c-sound-toggle')?.getAttribute('aria-pressed')==='true');await audioPage.getByRole('button',{name:'Start Your Interview',exact:true}).click();await audioPage.getByLabel('Email address',{exact:true}).waitFor();
-  assert.equal(await audioPage.evaluate(()=>(window as any).audioChecks.contexts.every((c:AudioContext)=>c.state==='closed')),true);
-  await audioPage.goto(origin);assert.equal(await audioPage.getByRole('button',{name:'Landing sound effects',exact:true}).getAttribute('aria-pressed'),'false');
+  await audioPage.waitForFunction(()=>(window as any).audioChecks.contexts.every((c:AudioContext)=>c.state==='closed')); // released after a short idle
+  // The choice is remembered across reloads (localStorage); turning it off is remembered too. Nothing plays on load.
+  await audioPage.goto(origin);const remembered=audioPage.getByRole('button',{name:'Interface sounds',exact:true});assert.equal(await remembered.getAttribute('aria-pressed'),'true');await audioPage.waitForTimeout(600);
+  const contextsAfterReload=await audioPage.evaluate(()=>(window as any).audioChecks.contexts.length);assert.equal(contextsAfterReload,0);
+  await remembered.click();await audioPage.goto(origin);assert.equal(await audioPage.getByRole('button',{name:'Interface sounds',exact:true}).getAttribute('aria-pressed'),'false');
   assert.deepEqual(audioErrors,[]);await soundContext.close();
   for(const failure of ['unsupported','blocked']) {
     const silentContext=await browser.newContext({reducedMotion:'reduce'});
     await silentContext.addInitScript({content:failure==='unsupported'?`window.AudioContext=undefined;`:`AudioContext.prototype.resume=function(){return Promise.reject(new Error('Audio blocked'));};`});
     const silentPage=await silentContext.newPage();const silentErrors:string[]=[];silentPage.on('pageerror',(e:Error)=>silentErrors.push(e.message));await silentPage.goto(origin);
-    await silentPage.getByRole('button',{name:'Landing sound effects',exact:true}).click();await silentPage.getByRole('status').filter({hasText:'Sound unavailable.'}).waitFor();
-    assert.equal(await silentPage.getByRole('button',{name:'Landing sound effects',exact:true}).getAttribute('aria-pressed'),'false');
+    await silentPage.getByRole('button',{name:'Interface sounds',exact:true}).click();await silentPage.getByRole('status').filter({hasText:'Sound unavailable.'}).waitFor();
+    assert.equal(await silentPage.getByRole('button',{name:'Interface sounds',exact:true}).getAttribute('aria-pressed'),'false');
     await silentPage.getByRole('button',{name:'Weak answer',exact:true}).click();await silentPage.getByRole('heading',{name:'If a payment succeeds but its response is lost, what could happen when the client sends it again?'}).waitFor();
     assert.deepEqual(silentErrors,[]);await silentContext.close();
   }
-  result.sound='No AudioContext before opt-in; actual quiet nonzero synthesized samples; context closes after cue, mute and navigation; reload resets to off; missing/blocked audio preserves the page without runtime errors. Physical speaker listening not performed.';
+  result.sound='No AudioContext before opt-in or on load; actual quiet nonzero synthesized samples; context closes after idle and on mute; the on/off choice persists across reloads; missing/blocked audio preserves the page without runtime errors. Physical speaker listening not performed.';
   assert.deepEqual(errors,[]);result.runtimeErrors=errors;console.log(JSON.stringify(result,null,2));
 } catch(error){console.error('Landing verification failed:',error);throw error;} finally {fs.writeFileSync('.browser-verification/cinematic-checks.json',JSON.stringify(result,null,2));await browser.close();await server.close();await api.close();}
 

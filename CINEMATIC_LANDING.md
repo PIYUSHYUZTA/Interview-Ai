@@ -382,6 +382,13 @@ Verification: frontend production build and TypeScript passed; browser acceptanc
 
 ## Optional landing sound
 
+> **Superseded by the product sound system (design Step 5).** The landing toggle is now the shared
+> `SoundToggle` ("Interface sounds"), backed by `frontend/src/components/sound/sound.ts` and the cue
+> recipes in `frontend/src/design-system/sound.ts`; `useLandingSound.ts` was removed. Sound is still off
+> by default and never plays on load, but the on/off choice is now remembered in localStorage, as the
+> Step 5 brief asks. Cues are normalised to -22 LUFS or quieter (ceiling -18 LUFS), checked in
+> `src/api/soundSystem.test.ts`. The text below describes the original landing-only implementation.
+
 Sound is off on every fresh page load and has a visible, keyboard-accessible toggle at the lower right. Opting in plays a short activation accent. Deliberately changing a journey step or example answer path can play a soft transition accent; selecting the same item, hovering and scrolling never play sounds. Accents are rate-limited to avoid rapid repetition. There is no background soundtrack or audio download.
 
 `useLandingSound.ts` synthesizes a sine tone with a smooth envelope (peak normalized gain 0.025, duration 220 ms). A context is created only for an explicit opted-in interaction and closes at the end of that cue. Muting, hiding the page or leaving the landing page closes active audio. Browser resume failures or missing Web Audio return the toggle to off and show a neutral message; product navigation remains usable. Sound preferences are intentionally not restored across reloads.

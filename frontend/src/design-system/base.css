@@ -1,0 +1,49 @@
+/*
+ * Design-system utilities built only from tokens. All classes are prefixed ds- so they never collide with
+ * existing component styles; components opt in as they move onto the system.
+ */
+
+/* ── Type styles: size / line height / tracking / weight from the scale ── */
+.ds-display { font: var(--font-weight-bold) var(--font-size-6xl) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
+.ds-h1 { font: var(--font-weight-semibold) var(--font-size-5xl) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
+.ds-h2 { font: var(--font-weight-semibold) var(--font-size-3xl) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
+.ds-h3 { font: var(--font-weight-semibold) var(--font-size-2xl) / var(--leading-tight) var(--font-sans); letter-spacing: -0.02em; }
+.ds-h4 { font: var(--font-weight-semibold) var(--font-size-xl) / var(--leading-tight) var(--font-sans); letter-spacing: -0.01em; }
+.ds-body-lg { font: var(--font-weight-regular) var(--font-size-lg) / var(--leading-relaxed) var(--font-sans); letter-spacing: var(--tracking-normal); }
+.ds-body { font: var(--font-weight-regular) var(--font-size-base) / var(--leading-normal) var(--font-sans); letter-spacing: var(--tracking-normal); }
+.ds-body-sm { font: var(--font-weight-regular) var(--font-size-sm) / var(--leading-normal) var(--font-sans); letter-spacing: var(--tracking-normal); }
+.ds-caption { font: var(--font-weight-regular) var(--font-size-xs) / var(--leading-normal) var(--font-sans); color: var(--text-muted); }
+.ds-label { font: var(--font-weight-medium) var(--font-size-xs) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-secondary); }
+/* Exact values: timers, scores, warning counts, angles. Tabular figures keep columns aligned. */
+.ds-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-normal); }
+
+/* The largest steps scale down on small screens so they never overflow. */
+@media (max-width: 767px) {
+  .ds-display { font-size: var(--font-size-4xl); }
+  .ds-h1 { font-size: var(--font-size-3xl); }
+  .ds-h2 { font-size: var(--font-size-2xl); letter-spacing: -0.02em; }
+}
+
+/* ── Layout ── */
+/* Self-contained sizing: utilities must not depend on a global box-sizing reset. */
+.ds-container { box-sizing: border-box; width: 100%; max-width: var(--container-max); margin-inline: auto; padding-inline: var(--container-padding); }
+
+/* 4 / 8 / 12 columns. Children span the full row by default; set --span-mobile / --span-tablet /
+ * --span-desktop on a child (for example style="--span-desktop: 4") to narrow it at that breakpoint. */
+.ds-grid { box-sizing: border-box; display: grid; grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr)); gap: var(--grid-gap); }
+.ds-grid > * { box-sizing: border-box; grid-column: span var(--span-mobile, 4); min-width: 0; }
+@media (min-width: 768px) { .ds-grid > * { grid-column: span var(--span-tablet, 8); } }
+@media (min-width: 1024px) { .ds-grid > * { grid-column: span var(--span-desktop, 12); } }
+
+.ds-stack { display: flex; flex-direction: column; gap: var(--stack-gap, var(--space-4)); }
+.ds-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cluster-gap, var(--space-2)); }
+
+/* ── Surfaces ── */
+.ds-surface, .ds-elevated { box-sizing: border-box; }
+.ds-surface { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+.ds-elevated { background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+
+.ds-focus-ring:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+
+/* Read by assistive technology, not shown: the final value behind a count-up, the label of a skeleton. */
+.ds-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

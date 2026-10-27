@@ -1,0 +1,56 @@
+/* Styles for the token reference page only; tokens throughout. */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg-base); color: var(--text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+p, h1, h2, figure { margin: 0; }
+.ref-page { padding-block: var(--space-16); }
+.ref-intro { display: grid; gap: var(--space-3); margin-bottom: var(--space-12); max-width: 720px; }
+.ref-theme { display: grid; gap: var(--space-4); padding: var(--space-8); background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-default); border-radius: var(--radius-xl); }
+.ref-head { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+.ref-theme > .ds-label { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+.ref-row { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.ref-swatch { display: grid; gap: var(--space-2); width: 112px; }
+.ref-swatch span { height: var(--space-12); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+.ref-swatch figcaption { display: grid; gap: 2px; font-size: var(--font-size-xs); color: var(--text-secondary); }
+.ref-swatch code { font-size: 11px; color: var(--text-primary); }
+.ref-button { font: var(--font-weight-medium) var(--font-size-sm) / 1 var(--font-sans); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid transparent; cursor: pointer; transition: background var(--transition-fast), box-shadow var(--transition-normal); }
+.ref-primary { background: var(--color-primary); color: var(--color-primary-contrast); --icon-hover-color: currentColor; }
+.ref-primary:hover { background: var(--color-primary-hover); box-shadow: var(--shadow-brand); }
+.ref-secondary { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-default); }
+.ref-secondary:hover { border-color: var(--border-strong); }
+.ref-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.ref-accent { color: var(--color-accent-text); background: var(--color-accent-subtle); padding: var(--space-1) var(--space-2); border-radius: var(--radius-full); font-size: var(--font-size-sm); }
+.ref-link { color: var(--color-primary-text); font-size: var(--font-size-sm); text-decoration: underline; text-underline-offset: 3px; }
+.ref-layers div { padding: var(--space-4); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); font: var(--font-weight-medium) var(--font-size-xs) / 1 var(--font-mono); color: var(--text-secondary); display: grid; gap: var(--space-3); }
+.ref-alert { display: flex; gap: var(--space-3); align-items: baseline; padding: var(--space-3) var(--space-4); border: 1px solid; border-radius: var(--radius-md); font-size: var(--font-size-sm); color: var(--text-secondary); }
+.ref-alert strong { text-transform: capitalize; font-weight: var(--font-weight-semibold); }
+.ref-type { display: grid; gap: var(--space-3); overflow: hidden; }
+.ref-space { display: grid; gap: var(--space-1); }
+.ref-space span { display: flex; align-items: center; gap: var(--space-3); font-size: var(--font-size-xs); color: var(--text-muted); }
+.ref-space i { display: block; height: var(--space-2); background: var(--color-primary); border-radius: var(--radius-xs); }
+.ref-shape { display: grid; place-items: center; width: 72px; height: 72px; background: var(--bg-elevated); border: 1px solid var(--border-default); font-size: var(--font-size-xs); color: var(--text-secondary); }
+.ref-shadow { border-radius: var(--radius-lg); background: var(--bg-surface); }
+.ref-icon-text { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-secondary); }
+.ref-button.ref-icon-text { color: inherit; }
+.ref-secondary.ref-icon-text { color: var(--text-primary); }
+.ref-primary.ref-icon-text { color: var(--color-primary-contrast); }
+.ref-icon-size { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: var(--font-size-xs); }
+.ref-animations { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.ref-motion-panel { margin-top: var(--space-8); }
+.ref-motion-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); }
+.ref-motion-cards .card, .ref-lift, .ref-details, .ref-skeleton { padding: var(--space-4); border: 1px solid var(--border-default); border-radius: var(--radius-lg); background: var(--bg-surface); color: var(--text-primary); }
+.ref-motion-cards .card { display: grid; gap: var(--space-2); }
+.ref-lift { font: inherit; cursor: pointer; }
+.ref-media { display: block; width: 96px; height: 96px; border-radius: var(--radius-lg); }
+.ref-media img { width: 100%; height: 100%; object-fit: cover; }
+.ref-motion .field { display: grid; gap: var(--space-1); min-width: 240px; }
+
+:where(.ref-motion .field) input { width: 100%; min-height: 44px; padding-inline: 13px; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); color: var(--text-primary); font: inherit; }
+.ref-details summary { cursor: pointer; }
+.ref-skeleton { display: grid; }
+.ref-motion .btn { min-height: 40px; padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm); border-radius: var(--radius-md); }
+.ref-motion .btn-primary { background: var(--color-primary); color: var(--color-primary-contrast); border-color: var(--color-primary); }
+.ref-motion .btn-secondary { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-default); }
+.ref-motion .btn-ghost { color: var(--text-primary); }
+.ref-sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); }
+.ref-sound-grid button { display: grid; gap: var(--space-1); text-align: left; line-height: 1.4; }
+.ref-sound-grid small { color: var(--text-secondary); font-size: var(--font-size-xs); }

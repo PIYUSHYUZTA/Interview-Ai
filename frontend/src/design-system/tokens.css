@@ -1,0 +1,270 @@
+/*
+ * Design tokens — the single source of truth for colour, type, space, shape, depth and motion.
+ * Personality: Minimal Precision (dark-first). Raw colour values live ONLY in the palette block below;
+ * everything else, and every component, refers to semantic tokens. Contrast ratios (WCAG 2.x) are
+ * checked by src/api/designTokens.test.ts.
+ *
+ * Themes: dark is the default (:root). Light is a full mirror, applied with data-theme="light" on <html>
+ * or on any subtree; data-theme="dark" forces dark inside a light subtree.
+ */
+
+/* ── Palette primitives (the brand's nine colours plus tuned tints). Never use these in components. ── */
+:root {
+  --palette-ink: #031211;          /* Ink Black: dark base */
+  --palette-ivory: #E8E4D3;        /* Warm Ivory: dark-theme text */
+  --palette-teal: #00AEBB;         /* Electric Teal: primary brand */
+  --palette-teal-bright: #2CC3CF;  /* primary hover on dark */
+  --palette-teal-press: #009AA6;   /* primary hover/press on light */
+  --palette-teal-deep: #00707A;    /* teal as text on light (5.2:1) */
+  --palette-amber: #B99D73;        /* Burnt Amber: accent */
+  --palette-earth: #6C5636;        /* Earth Brown: accent as text on light (6.1:1) */
+  --palette-charcoal: #090907;     /* Charcoal Black */
+  --palette-jet: #0A0A0A;          /* Jet Black */
+  --palette-cerulean: #007BA7;     /* Cerulean Blue */
+  --palette-rose: #FF2D95;         /* Neon Rose: error fills */
+  --palette-rose-light: #FF4AA3;   /* Neon Rose as error text on dark: 6.2:1 (4.9:1 on overlay) */
+
+  /* Derived neutrals: ivory mixed into ink (dark) and ink into a warm off-white (light). */
+  --palette-ink-100: #0B1918;      /* 3.5% ivory */
+  --palette-ink-200: #13211F;      /* 7% ivory */
+  --palette-ink-300: #1B2825;      /* 10.5% ivory */
+  --palette-ivory-74: #ACADA1;     /* 74% ivory on ink: 8.4:1 */
+  --palette-ivory-60: #8C9085;     /* 60% ivory on ink: 5.9:1 (4.7:1 on overlay) */
+  --palette-ivory-34: #515953;     /* 34% ivory on ink: disabled */
+  --palette-paper: #F3F1E9;        /* light base */
+  --palette-paper-100: #F9F8F3;    /* light surface */
+  --palette-white: #FFFFFF;        /* light elevated / overlay */
+  --palette-ink-76: #3D4845;       /* 76% ink on paper: 8.4:1 */
+  --palette-ink-60: #636B67;       /* 60% ink on paper: 4.9:1 */
+  --palette-ink-36: #9DA19B;       /* 36% ink on paper: disabled */
+
+  /* Semantic hues, tuned per theme for ≥ 4.5:1 as text. */
+  --palette-green: #46C98B;        --palette-green-deep: #167549;
+  --palette-gold: #E9B44C;         --palette-gold-deep: #8A5D00;
+  --palette-rose-deep: #C2117A;
+  --palette-sky: #4FA8D8;          --palette-sky-deep: #006E96;
+  --palette-black: #000000;
+}
+
+/* ── Colour tokens: dark (default) ── */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Brand */
+  --color-primary: var(--palette-teal);
+  --color-primary-hover: var(--palette-teal-bright);
+  --color-primary-contrast: var(--palette-ink);          /* text on primary fills (7.1:1; ivory would be 2.1:1) */
+  --color-primary-text: var(--palette-teal);            /* primary as text/icon on backgrounds (7.1:1) */
+  --color-primary-subtle: color-mix(in srgb, var(--palette-teal) 12%, transparent);
+  --color-primary-border: color-mix(in srgb, var(--palette-teal) 40%, transparent);
+  --color-accent: var(--palette-amber);
+  --color-accent-text: var(--palette-amber);            /* 7.4:1 */
+  --color-accent-subtle: color-mix(in srgb, var(--palette-amber) 12%, transparent);
+
+  /* Backgrounds: each step is a little more ivory in the ink. */
+  --bg-base: var(--palette-ink);
+  --bg-surface: var(--palette-ink-100);
+  --bg-elevated: var(--palette-ink-200);
+  --bg-overlay: var(--palette-ink-300);
+  --bg-scrim: color-mix(in srgb, var(--palette-ink) 72%, transparent);
+
+  /* Text */
+  --text-primary: var(--palette-ivory);                 /* 15.0:1 on base */
+  --text-secondary: var(--palette-ivory-74);            /*  8.4:1 */
+  --text-muted: var(--palette-ivory-60);                /*  5.9:1 (4.7:1 on overlay) */
+  --text-disabled: var(--palette-ivory-34);             /* intentionally low; never for content */
+
+  /* Lines */
+  --border-subtle: color-mix(in srgb, var(--palette-ivory) 7%, transparent);
+  --border-default: color-mix(in srgb, var(--palette-ivory) 12%, transparent);
+  --border-strong: color-mix(in srgb, var(--palette-ivory) 22%, transparent);
+  --border-focus: var(--palette-teal);
+
+  /* Semantic: base colour (text/icons, ≥ 4.5:1), subtle fill, border. */
+  --color-success: var(--palette-green);
+  --color-warning: var(--palette-gold);
+  --color-error: var(--palette-rose-light);
+  --color-info: var(--palette-sky);
+  --color-success-subtle: color-mix(in srgb, var(--color-success) 12%, transparent);
+  --color-warning-subtle: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  --color-error-subtle: color-mix(in srgb, var(--color-error) 12%, transparent);
+  --color-info-subtle: color-mix(in srgb, var(--color-info) 12%, transparent);
+  --color-success-border: color-mix(in srgb, var(--color-success) 36%, transparent);
+  --color-warning-border: color-mix(in srgb, var(--color-warning) 36%, transparent);
+  --color-error-border: color-mix(in srgb, var(--color-error) 36%, transparent);
+  --color-info-border: color-mix(in srgb, var(--color-info) 36%, transparent);
+
+  /* Depth: the specified shadow scale is invisible on near-black, so dark uses stronger alphas. */
+  --shadow-color: var(--palette-black);
+  --shadow-xs: 0 1px 2px color-mix(in srgb, var(--shadow-color) 30%, transparent);
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--shadow-color) 36%, transparent);
+  --shadow-md: 0 4px 16px color-mix(in srgb, var(--shadow-color) 44%, transparent);
+  --shadow-lg: 0 8px 32px color-mix(in srgb, var(--shadow-color) 52%, transparent);
+  --shadow-brand: 0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+/* ── Colour tokens: light mirror ── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-primary: var(--palette-teal);
+  --color-primary-hover: var(--palette-teal-press);
+  --color-primary-contrast: var(--palette-ink);          /* 7.1:1 */
+  --color-primary-text: var(--palette-teal-deep);       /* 5.2:1 (raw teal would be 2.4:1) */
+  --color-primary-subtle: color-mix(in srgb, var(--palette-teal) 10%, transparent);
+  --color-primary-border: color-mix(in srgb, var(--palette-teal-deep) 36%, transparent);
+  --color-accent: var(--palette-amber);
+  --color-accent-text: var(--palette-earth);            /* 6.1:1 */
+  --color-accent-subtle: color-mix(in srgb, var(--palette-amber) 16%, transparent);
+
+  --bg-base: var(--palette-paper);
+  --bg-surface: var(--palette-paper-100);
+  --bg-elevated: var(--palette-white);
+  --bg-overlay: var(--palette-white);
+  --bg-scrim: color-mix(in srgb, var(--palette-ink) 40%, transparent);
+
+  --text-primary: var(--palette-ink);                   /* 16.9:1 */
+  --text-secondary: var(--palette-ink-76);              /*  8.4:1 */
+  --text-muted: var(--palette-ink-60);                  /*  4.9:1 */
+  --text-disabled: var(--palette-ink-36);
+
+  --border-subtle: color-mix(in srgb, var(--palette-ink) 7%, transparent);
+  --border-default: color-mix(in srgb, var(--palette-ink) 12%, transparent);
+  --border-strong: color-mix(in srgb, var(--palette-ink) 24%, transparent);
+  --border-focus: var(--palette-teal-deep);
+
+  --color-success: var(--palette-green-deep);            /* 5.1:1 */
+  --color-warning: var(--palette-gold-deep);             /* 5.1:1 */
+  --color-error: var(--palette-rose-deep);               /* 5.1:1 */
+  --color-info: var(--palette-sky-deep);                 /* 5.1:1 */
+  --color-success-subtle: color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-warning-subtle: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-error-subtle: color-mix(in srgb, var(--color-error) 10%, transparent);
+  --color-info-subtle: color-mix(in srgb, var(--color-info) 10%, transparent);
+  --color-success-border: color-mix(in srgb, var(--color-success) 32%, transparent);
+  --color-warning-border: color-mix(in srgb, var(--color-warning) 32%, transparent);
+  --color-error-border: color-mix(in srgb, var(--color-error) 32%, transparent);
+  --color-info-border: color-mix(in srgb, var(--color-info) 32%, transparent);
+
+  /* The specified scale, exactly. */
+  --shadow-color: var(--palette-black);
+  --shadow-xs: 0 1px 2px color-mix(in srgb, var(--shadow-color) 5%, transparent);
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--shadow-color) 8%, transparent);
+  --shadow-md: 0 4px 16px color-mix(in srgb, var(--shadow-color) 12%, transparent);
+  --shadow-lg: 0 8px 32px color-mix(in srgb, var(--shadow-color) 16%, transparent);
+  --shadow-brand: 0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+/* ── Typography, space, grid, shape, motion (theme-independent) ── */
+:root {
+  /* Geist for all interface text; Geist Mono for exact values (timers, scores, angles, IDs). */
+  --font-sans: 'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+  --font-size-4xl: 40px;
+  --font-size-5xl: 48px;
+  --font-size-6xl: 60px;
+  --font-size-7xl: 72px;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  --tracking-tight: -0.04em;    /* large headings (32px and up) */
+  --tracking-normal: 0;         /* body */
+  --tracking-wide: 0.08em;      /* uppercase labels */
+
+  --font-weight-regular: 400;   /* body */
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;      /* display only */
+
+  /* 4pt grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --container-max: 1280px;
+  --container-padding: var(--space-6);   /* 24px; 48px from the desktop breakpoint */
+  --grid-columns: 4;                      /* 4 mobile / 8 tablet / 12 desktop */
+  --grid-gap: var(--space-4);
+  /* Breakpoints (for reference; media queries cannot read custom properties): tablet 768px, desktop 1024px. */
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Icons (Lucide): one absolute stroke; three sizes. The Icon component uses these exact values. */
+  --icon-size-inline: 16px;
+  --icon-size-standalone: 20px;
+  --icon-size-feature: 24px;
+  --icon-stroke: 1.5px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+  --transition-fast: var(--duration-fast) var(--ease-out);
+  --transition-normal: var(--duration-normal) var(--ease-out);
+  --transition-slow: var(--duration-slow) var(--ease-out);
+
+  /* Motion system (Step 4). Durations are purpose-named; src/design-system/motion.ts mirrors them for
+     the Motion library and src/api/motionSystem.test.ts keeps the two in step. */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --duration-press: 150ms;
+  --duration-dropdown: 180ms;
+  --duration-modal-in: 200ms;
+  --duration-modal-out: 150ms;
+  --duration-page-in: 200ms;
+  --duration-page-out: 150ms;
+  --duration-nav: 250ms;
+  --duration-media: 300ms;
+  --duration-reveal: 400ms;
+  --duration-shake: 400ms;
+  --duration-count: 1000ms;
+  --duration-shimmer: 1500ms;
+  --stagger-word: 60ms;
+  --stagger-item: 80ms;
+  --distance-reveal: 20px;
+  --distance-lift: -4px;
+  --distance-shake: 8px;
+  /* Not motion: how long a toast stays readable. Unaffected by reduced motion. */
+  --toast-lifetime: 5000ms;
+}
+
+@media (min-width: 768px) {
+  :root { --grid-columns: 8; --grid-gap: var(--space-5); }
+}
+@media (min-width: 1024px) {
+  :root { --grid-columns: 12; --grid-gap: var(--space-6); --container-padding: var(--space-12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms; --duration-normal: 0ms; --duration-slow: 0ms;
+    --duration-press: 0ms; --duration-dropdown: 0ms; --duration-modal-in: 0ms; --duration-modal-out: 0ms;
+    --duration-page-in: 0ms; --duration-page-out: 0ms; --duration-nav: 0ms; --duration-media: 0ms;
+    --duration-reveal: 0ms; --duration-shake: 0ms; --duration-count: 0ms; --duration-shimmer: 0ms;
+    --stagger-word: 0ms; --stagger-item: 0ms; --distance-reveal: 0px; --distance-lift: 0px; --distance-shake: 0px;
+  }
+}

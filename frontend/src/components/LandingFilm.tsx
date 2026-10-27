@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRightIcon } from './Icons';
+import { Icon } from './icon/Icon';
+import { ArrowRight } from './icon/icons';
 import { loadGsap } from './landing-gsap';
 import { useLandingReducedMotion } from './landing-motion';
 import { Button } from './ui';
@@ -65,7 +66,7 @@ export function LandingFilm({ onStart }: { onStart: () => void }) {
       <h2 id="c-film-title"><span className="c-film-line"><span>Someone to talk to.</span></span><span className="c-film-line"><span>Not a form to fill in.</span></span></h2>
       <p className="c-film-text">This film is rendered in Blender with Cycles. In the interview room the same character is drawn live in your browser and speaks each question, with lip movement driven by the spoken audio.</p>
       <div className="c-film-actions">
-        <Button className="c-primary" onClick={onStart}>Meet your interviewer <ArrowRightIcon size={16} /></Button>
+        <Button className="c-primary" onClick={onStart}>Meet your interviewer <Icon icon={ArrowRight} /></Button>
         {!failed && <button type="button" className="c-film-toggle" aria-pressed={playing} onClick={() => { const next = playing ? 'pause' : 'play'; setUserChoice(next); if (next === 'play') { setNear(true); setVisible(true); } }}><span aria-hidden="true">{playing ? 'Ⅱ' : '▷'}</span>{playing ? 'Pause film' : 'Play film'}</button>}
       </div>
       <p className="c-film-note">{failed ? 'Film unavailable · showing a still frame' : 'Pre-rendered film · silent · 10-second loop'}</p>

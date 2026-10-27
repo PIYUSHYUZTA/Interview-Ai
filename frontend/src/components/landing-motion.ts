@@ -1,37 +1,34 @@
 import type { CSSProperties } from 'react';
-import { useSyncExternalStore } from 'react';
 import type { Variants } from 'motion/react';
+import { motionTokens, usePrefersReducedMotion } from '../design-system/motion';
 
-let preference: MediaQueryList | undefined;
-function motionPreference() {
-  if (typeof window === 'undefined') return undefined;
-  return preference ??= window.matchMedia('(prefers-reduced-motion: reduce)');
-}
-function subscribePreference(notify: () => void) {
-  const media = motionPreference();
-  media?.addEventListener('change', notify);
-  return () => media?.removeEventListener('change', notify);
-}
-const readPreference = () => motionPreference()?.matches ?? true;
-const serverPreference = () => true;
+/** The installed Motion hook snapshots on mount; this one follows runtime changes too. */
+export const useLandingReducedMotion = usePrefersReducedMotion;
 
-/** The installed Motion hook snapshots on mount; subscribe to runtime changes too. */
-export function useLandingReducedMotion() {
-  return useSyncExternalStore(subscribePreference, readPreference, serverPreference);
-}
-
-/** Shared motion language for the landing page. Durations are seconds. */
+/**
+ * Shared motion language for the landing page, built on the product motion tokens. Durations are seconds.
+ * Hero entrance, in order: navigation slides down; headline word by word (60ms apart); supporting copy
+ * 200ms after the last word; the call to action 300ms later (scale 0.95 -> 1); the background last.
+ */
+const headline = 0.1;
+const headlineWords = 5; // "Interview practice that feels real."
+const lastWord = headline + (headlineWords - 1) * motionTokens.stagger.word;
+const copy = lastWord + 0.2;
+const action = copy + 0.3;
 export const landingMotion = {
-  ease: [0.22, 1, 0.36, 1] as const,
+  ease: motionTokens.ease.out,
   interactionEase: [0.2, 0.8, 0.2, 1] as const,
-  duration: { press: 0.1, fast: 0.16, swap: 0.24, reveal: 0.64, atmosphere: 1.2, scene: 1.3 },
-  stagger: 0.08,
-  distance: { reveal: 18, swap: 8, heroDrift: 48 },
+  duration: { press: 0.1, fast: 0.16, swap: 0.24, reveal: motionTokens.duration.reveal, atmosphere: 1.2, scene: 1.3 },
+  stagger: motionTokens.stagger.item,
+  wordStagger: motionTokens.stagger.word,
+  distance: { reveal: motionTokens.distance.reveal, swap: 8, heroDrift: 48 },
+  /** Background layers move at 0.3x the scroll speed. */
+  parallax: 0.3,
   pointerSpring: { stiffness: 90, damping: 26, mass: 0.8 },
   pointerResponse: 10,
   frameInterval: 1000 / 30,
   maxFrameDelta: 0.08,
-  entrance: { eyebrow: 0.04, headline: 0.12, headlineEnd: 0.2, copy: 0.28, action: 0.28, descriptor: 0.4, scene: 0.08, panel: 0.44, followUp: 0.56 },
+  entrance: { eyebrow: 0.04, headline, copy, action, descriptor: action + 0.08, background: 0.4, scene: 0.4, panel: 0.9, followUp: 1.1 },
 } as const;
 
 export const landingMotionStyles = {
@@ -52,4 +49,20 @@ export function revealVariants(reduced: boolean): Variants {
 
 export function staggerVariants(reduced: boolean): Variants {
   return { hidden: {}, visible: { transition: { staggerChildren: reduced ? 0 : landingMotion.stagger } } };
+}
+
+/** Section headings arrive from the left: they lead the eye into the section. */
+export function headingVariants(reduced: boolean): Variants {
+  return {
+    hidden: { opacity: reduced ? 1 : 0, x: reduced ? 0 : -landingMotion.distance.reveal },
+    visible: { opacity: 1, x: 0, transition: { duration: reduced ? 0 : landingMotion.duration.reveal, ease: landingMotion.ease } },
+  };
+}
+
+/** Bento cards tilt by one degree, alternating, and settle flat on a spring. */
+export function bentoVariants(reduced: boolean): Variants {
+  return {
+    hidden: (index: number) => (reduced ? { opacity: 1 } : { opacity: 0, y: landingMotion.distance.reveal, rotate: index % 2 ? 1 : -1 }),
+    visible: { opacity: 1, y: 0, rotate: 0, transition: reduced ? { duration: 0 } : motionTokens.spring },
+  };
 }

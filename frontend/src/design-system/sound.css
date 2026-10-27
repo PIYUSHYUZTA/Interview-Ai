@@ -1,0 +1,25 @@
+/* The sound toggle (components/sound/SoundToggle.tsx). The landing page restyles it in its own palette. */
+.ds-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-10);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.ds-sound-toggle > span { display: flex; }
+.ds-sound-toggle:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.ds-sound-toggle[aria-pressed="true"] { color: var(--color-primary-text); border-color: var(--color-primary-border); }
+.ds-sound-toggle:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.ds-sound-message { max-width: 240px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-elevated); color: var(--text-primary); font-size: var(--font-size-xs); }
+/* Corner placement for screens without a toolbar. */
+.ds-sound-corner { position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: 30; display: grid; justify-items: end; gap: var(--space-2); }
+:root:has(.ds-sound-corner) .ds-toast-region { bottom: calc(var(--space-6) + 56px); }
+@media (max-width: 767px) { .ds-sound-corner { right: var(--space-4); bottom: var(--space-4); } }

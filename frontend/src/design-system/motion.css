@@ -1,0 +1,239 @@
+/*
+ * Motion system: interaction and feedback motion shared by every screen.
+ * Imported last so these interaction states win over component styles. Timing comes only from the motion
+ * tokens in tokens.css, which reduced motion sets to zero; anything that would still move is switched off
+ * at the bottom. Motion here explains something: a control responds, an action succeeded or failed, a
+ * layer opened or closed. Nothing loops for decoration.
+ */
+
+/* ── Scroll reveal (product screens; the landing page uses Motion with the same tokens) ── */
+.ds-reveal {
+  opacity: 0;
+  translate: 0 var(--distance-reveal);
+  transition: opacity var(--duration-reveal) var(--ease-out), translate var(--duration-reveal) var(--ease-out);
+  transition-delay: calc(var(--reveal-index, 0) * var(--stagger-item));
+}
+.ds-reveal[data-reveal-from="left"] { translate: calc(var(--distance-reveal) * -1) 0; }
+.is-revealed-group .ds-reveal, .ds-reveal:focus-within { opacity: 1; translate: none; }
+
+/* ── Hover: cards that are controls lift ── */
+.ds-lift { transition: translate var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
+@media (hover: hover) {
+  .ds-lift:hover { translate: 0 var(--distance-lift); box-shadow: var(--shadow-lg); }
+}
+.ds-lift:focus-within { translate: 0 var(--distance-lift); box-shadow: var(--shadow-lg); }
+
+/* ── Hover: buttons ──
+   Primary actions grow slightly and glow once; ghost actions fill from the left. `scale` and `translate`
+   compose with the transforms the button styles already use for press feedback. */
+:is(.btn, .retro-button):is(.btn-primary, .btn-ghost),
+:is(.c-primary, .c-nav-cta).btn {
+  position: relative;
+  isolation: isolate;
+  transition:
+    background-color var(--duration-press) var(--ease-out), border-color var(--duration-press) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out), color var(--duration-press) var(--ease-out),
+    transform var(--duration-press) var(--ease-out), filter var(--duration-press) var(--ease-out),
+    scale var(--duration-press) var(--ease-out), translate var(--duration-nav) var(--ease-spring);
+}
+:is(.btn-primary, .c-primary, .c-nav-cta).btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 var(--space-6) color-mix(in srgb, var(--color-primary) 45%, transparent);
+  transition: opacity var(--duration-press) var(--ease-out);
+}
+@media (hover: hover) {
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled) { scale: 1.02; }
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::after { opacity: 1; animation: ds-glow-pulse var(--duration-shimmer) var(--ease-out) 1; }
+}
+:is(.btn-primary, .c-primary, .c-nav-cta).btn:focus-visible::after { opacity: 1; }
+
+:is(.btn, .retro-button).btn-ghost::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-primary-subtle);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+:is(.btn, .retro-button).btn-ghost:is(:hover, :focus-visible):not(:disabled)::before { transform: scaleX(1); }
+
+/* ── Hover: icon-only buttons fill with a circle that grows from the centre ── */
+:is(.ds-icon-button, .c-menu-toggle) { isolation: isolate; }
+:is(.ds-icon-button, .c-menu-toggle)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-primary-subtle);
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path var(--duration-normal) var(--ease-out);
+}
+:is(.ds-icon-button, .c-menu-toggle):is(:hover, :focus-visible)::before { clip-path: circle(75% at 50% 50%); }
+
+/* ── Hover: images inside cards ── */
+.ds-media-zoom { overflow: hidden; }
+.ds-media-zoom img { transition: scale var(--duration-media) var(--ease-out); }
+@media (hover: hover) { .ds-media-zoom:hover img { scale: 1.04; } }
+
+/* ── Inputs: the border answers focus; the label floats out of the way ── */
+:where(.field) :is(input, textarea, select) { transition: border-color var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out); }
+:where(.field) :is(input, textarea, select):focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); outline: none; }
+.ds-float-field { position: relative; }
+.ds-float-field > input { padding-top: var(--space-5); padding-bottom: var(--space-2); }
+.ds-float-field > .ds-float-label {
+  position: absolute;
+  left: 13px;
+  top: 22px;
+  translate: 0 -50%;
+  color: var(--text-muted);
+  pointer-events: none;
+  transform-origin: left center;
+  transition: top var(--duration-normal) var(--ease-out), scale var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out);
+}
+.ds-float-field > input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { top: 12px; scale: 0.82; color: var(--color-primary-text); }
+.ds-float-field > input:not(:focus):not(:placeholder-shown) + .ds-float-label { color: var(--text-secondary); }
+
+/* ── Feedback: submit button (text -> spinner -> checkmark) ── */
+.ds-action-button { min-width: var(--action-width, auto); }
+.ds-action-button[data-state="success"] { background-color: var(--color-success); border-color: var(--color-success); color: var(--color-primary-contrast); }
+.ds-action-swap { display: inline-flex; align-items: center; gap: var(--space-2); animation: ds-swap-in var(--duration-normal) var(--ease-out); }
+
+/* ── Feedback: error shake (±8px, three times) ── */
+.ds-shake { animation: ds-shake var(--duration-shake) var(--ease-out); }
+
+/* ── Feedback: modal ── */
+dialog.ds-modal[open] { animation: ds-modal-in var(--duration-modal-in) var(--ease-out); }
+dialog.ds-modal[open]::backdrop { animation: ds-fade-in var(--duration-modal-in) var(--ease-out); }
+dialog.ds-modal[data-closing] { animation: ds-modal-out var(--duration-modal-out) var(--ease-in) forwards; }
+dialog.ds-modal[data-closing]::backdrop { animation: ds-fade-out var(--duration-modal-out) var(--ease-in) forwards; }
+
+/* ── Feedback: toasts (bottom-right; the bar shows the time left and pauses with the toast) ── */
+.ds-toast-region {
+  position: fixed;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 1000;
+  display: grid;
+  gap: var(--space-3);
+  width: min(360px, calc(100vw - var(--space-8)));
+  pointer-events: none;
+}
+.ds-toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  overflow: hidden;
+  padding: var(--space-3) var(--space-3) var(--space-4) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+  pointer-events: auto;
+  animation: ds-toast-in var(--duration-slow) var(--ease-out);
+}
+.ds-toast[data-tone="success"] { border-color: var(--color-success-border); }
+.ds-toast[data-tone="success"] > .ds-icon { color: var(--color-success); }
+.ds-toast[data-tone="error"] { border-color: var(--color-error-border); }
+.ds-toast[data-tone="error"] > .ds-icon { color: var(--color-error); }
+.ds-toast[data-leaving] { animation: ds-toast-out var(--duration-modal-out) var(--ease-in) forwards; }
+.ds-toast-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.5;
+  transform-origin: left center;
+  animation: ds-toast-timer var(--toast-lifetime) linear forwards;
+}
+.ds-toast[data-paused] .ds-toast-progress { animation-play-state: paused; }
+@media (max-width: 767px) { .ds-toast-region { right: var(--space-4); bottom: var(--space-4); } }
+
+/* ── Feedback: skeleton loading ── */
+.ds-skeleton {
+  display: block;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-elevated) 30%, var(--bg-overlay) 50%, var(--bg-elevated) 70%);
+  background-size: 300% 100%;
+  animation: ds-shimmer var(--duration-shimmer) ease-in-out infinite;
+}
+.ds-skeleton + .ds-skeleton { margin-top: var(--space-3); }
+
+/* ── Feedback: disclosures and dropdowns expand instead of jumping open ── */
+details { interpolate-size: allow-keywords; }
+details::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition: block-size var(--duration-dropdown) var(--ease-out), content-visibility var(--duration-dropdown) allow-discrete;
+}
+details[open]::details-content { block-size: auto; }
+
+/* ── Advanced, used once each on the landing page ── */
+.ds-typewriter { display: inline-grid; }
+.ds-typewriter-space, .ds-typewriter-typed { grid-area: 1 / 1; }
+.ds-typewriter-space { visibility: hidden; }
+.ds-typewriter-caret { display: inline-block; width: 1px; height: 1em; margin-left: 2px; vertical-align: -0.1em; background: currentColor; animation: ds-caret 1s steps(1) infinite; }
+.ds-typewriter[data-done] .ds-typewriter-caret { animation: ds-fade-out var(--duration-slow) var(--ease-out) forwards; }
+.ds-gradient-text {
+  background: linear-gradient(90deg, var(--color-primary-text), var(--color-accent-text), var(--color-primary-text)) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: ds-gradient-drift 9s ease-in-out infinite alternate;
+}
+.ds-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--spotlight-opacity, 0);
+  background: radial-gradient(circle 360px at var(--spotlight-x, 50%) var(--spotlight-y, 50%), color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 70%);
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+.ds-count { font-variant-numeric: tabular-nums; }
+
+@keyframes ds-glow-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 55%, transparent), 0 0 var(--space-6) color-mix(in srgb, var(--color-primary) 45%, transparent); }
+  100% { box-shadow: 0 0 0 var(--space-3) transparent, 0 0 var(--space-6) color-mix(in srgb, var(--color-primary) 45%, transparent); }
+}
+@keyframes ds-shake {
+  0%, 100% { translate: 0; }
+  10%, 40%, 70% { translate: calc(var(--distance-shake) * -1) 0; }
+  25%, 55%, 85% { translate: var(--distance-shake) 0; }
+}
+@keyframes ds-swap-in { from { opacity: 0; translate: 0 4px; } }
+@keyframes ds-modal-in { from { opacity: 0; scale: 0.96; } }
+@keyframes ds-modal-out { to { opacity: 0; scale: 0.96; } }
+@keyframes ds-fade-in { from { opacity: 0; } }
+@keyframes ds-fade-out { to { opacity: 0; } }
+@keyframes ds-toast-in { from { opacity: 0; translate: var(--space-6) var(--space-4); } }
+@keyframes ds-toast-out { to { opacity: 0; translate: var(--space-6) 0; } }
+@keyframes ds-toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes ds-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes ds-caret { 50% { opacity: 0; } }
+@keyframes ds-gradient-drift { to { background-position: 100% 0; } }
+
+/* Reduced motion: the token durations are already zero; switch off what would still move or loop. */
+@media (prefers-reduced-motion: reduce) {
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled) { scale: none; }
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::after,
+  .ds-skeleton, .ds-typewriter-caret, .ds-gradient-text, .ds-toast, .ds-toast-progress, .ds-shake,
+  dialog.ds-modal[open], dialog.ds-modal[open]::backdrop { animation: none; }
+  .ds-media-zoom:hover img { scale: none; }
+  .ds-toast-progress { display: none; }
+  .ds-spotlight { display: none; }
+}
