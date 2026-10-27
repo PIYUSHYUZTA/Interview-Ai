@@ -20,6 +20,7 @@
 .ds-sound-toggle:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .ds-sound-message { max-width: 240px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-elevated); color: var(--text-primary); font-size: var(--font-size-xs); }
 /* Corner placement for screens without a toolbar. */
+.ds-sound-corner.ds-preferences, .ds-preferences { display: flex; align-items: center; gap: var(--space-2); }
 .ds-sound-corner { position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: 30; display: grid; justify-items: end; gap: var(--space-2); }
 :root:has(.ds-sound-corner) .ds-toast-region { bottom: calc(var(--space-6) + 56px); }
 @media (max-width: 767px) { .ds-sound-corner { right: var(--space-4); bottom: var(--space-4); } }

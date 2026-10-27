@@ -1,6 +1,6 @@
 // Captures the main product screens (landing, workspace, interview setup, interview room) from the
 // production build, for before/after comparison when the design system changes.
-//   npx tsx scripts/capture-ui.ts <label>     -> .browser-verification/ui-<label>-<screen>.png
+//   npx tsx scripts/capture-ui.ts <label> [dark|light]     -> .browser-verification/ui-<label>-<screen>.png
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH ?? 'playwright');
 const { preview } = await import(pathToFileURL(path.resolve('frontend/node_modules/vite/dist/node/index.js')).href);
 const label = process.argv[2] ?? 'current';
+const theme = process.argv[3]; // optional: saved theme choice for the run (otherwise the system preference)
 const api = await new ApiServer({ provider: new DeterministicProvider(), dataDirectory: path.resolve('.browser-verification/capture-ui-data') }).listen(0);
 const web = await preview({ root: path.resolve('frontend'), preview: { host: '127.0.0.1', port: 0, proxy: Object.fromEntries(['/auth','/interviews','/resumes'].map((key) => [key, { target: `http://127.0.0.1:${api.port}`, changeOrigin: false }])) } });
 const base = `http://127.0.0.1:${(web.httpServer!.address() as { port: number }).port}`;
@@ -18,6 +19,7 @@ const browser = await chromium.launch({ executablePath: process.env.BROWSER_EXEC
 const shot = (name: string) => path.resolve(`.browser-verification/ui-${label}-${name}.png`);
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', permissions: ['camera', 'microphone'] });
+  if (theme) await context.addInitScript(`localStorage.setItem('interview-ai.theme', '${theme}')`);
   const page = await context.newPage(); page.setDefaultTimeout(30000);
   await page.goto(base); await page.waitForTimeout(1500);
   await page.screenshot({ path: shot('landing') });

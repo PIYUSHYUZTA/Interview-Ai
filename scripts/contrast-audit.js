@@ -1,7 +1,12 @@
 // Used by scripts/verify-cinematic-landing.ts: page.evaluate(`${source}('.cinema')`).
 // WCAG 2.x contrast for every visible element that has its own text, inside `rootSelector`.
 (function (rootSelector) {
-  function parse(c) { var m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; var p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); if (p.length < 4) p.push(1); return p; }
+  // rgb()/rgba(), and color(srgb r g b / a) — how browsers report colours produced by color-mix().
+  function parse(c) {
+    var s = c.match(/color\(srgb ([\d.e-]+) ([\d.e-]+) ([\d.e-]+)(?: \/ ([\d.]+))?\)/);
+    if (s) return [s[1] * 255, s[2] * 255, s[3] * 255, s[4] === undefined ? 1 : Number(s[4])];
+    var m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; var p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); if (p.length < 4) p.push(1); return p;
+  }
   function lum(c) { function f(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); } return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); }
   function background(el) { while (el) { var c = parse(getComputedStyle(el).backgroundColor); if (c && c[3] > 0.5) return c; el = el.parentElement; } return [10, 10, 10, 1]; }
   function opacity(el) { var o = 1; while (el) { o *= Number(getComputedStyle(el).opacity); el = el.parentElement; } return o; }

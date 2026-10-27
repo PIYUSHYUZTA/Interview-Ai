@@ -16,13 +16,17 @@
   --palette-teal-bright: #2CC3CF;  /* primary hover on dark */
   --palette-teal-press: #009AA6;   /* primary hover/press on light */
   --palette-teal-deep: #00707A;    /* teal as text on light (5.2:1) */
+  --palette-teal-ink: #005A62;     /* product teal text on light, also over tinted panels (≥ 6:1) */
   --palette-amber: #B99D73;        /* Burnt Amber: accent */
   --palette-earth: #6C5636;        /* Earth Brown: accent as text on light (6.1:1) */
   --palette-charcoal: #090907;     /* Charcoal Black */
   --palette-jet: #0A0A0A;          /* Jet Black */
   --palette-cerulean: #007BA7;     /* Cerulean Blue */
   --palette-rose: #FF2D95;         /* Neon Rose: error fills */
-  --palette-rose-light: #FF4AA3;   /* Neon Rose as error text on dark: 6.2:1 (4.9:1 on overlay) */
+  --palette-rose-light: #FF4AA3;
+  --palette-snow: #EDEDED;         /* product text and pale fills on dark */
+  --palette-abyss: #081C23;        /* tinted dark surface and hairline */
+  --palette-mist: #DCE6E5;         /* abyss mirrored for light: tinted pale surface and hairline */   /* Neon Rose as error text on dark: 6.2:1 (4.9:1 on overlay) */
 
   /* Derived neutrals: ivory mixed into ink (dark) and ink into a warm off-white (light). */
   --palette-ink-100: #0B1918;      /* 3.5% ivory */
@@ -102,6 +106,29 @@
   --shadow-md: 0 4px 16px color-mix(in srgb, var(--shadow-color) 44%, transparent);
   --shadow-lg: 0 8px 32px color-mix(in srgb, var(--shadow-color) 52%, transparent);
   --shadow-brand: 0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
+
+  /* Paint: the product's own colour roles (component CSS uses only these and the tokens above).
+     Dark values are the original product colours; the light block mirrors each one. "-text" variants are
+     the accent as text, borders and icons, darkened in light for contrast; bare accents are fills. */
+  color-scheme: dark;
+  --paint-jet: var(--palette-jet);
+  --paint-charcoal: var(--palette-charcoal);
+  --paint-ink: var(--palette-ink);
+  --paint-abyss: var(--palette-abyss);
+  --paint-snow: var(--palette-snow);
+  --paint-ivory: var(--palette-ivory);
+  --paint-teal: var(--palette-teal);
+  --paint-cerulean: var(--palette-cerulean);
+  --paint-rose: var(--palette-rose);
+  --paint-amber: var(--palette-amber);
+  --paint-earth: var(--palette-earth);
+  --paint-teal-text: var(--palette-teal);
+  --paint-cerulean-text: var(--palette-cerulean);
+  --paint-rose-text: var(--palette-rose);
+  --paint-amber-text: var(--palette-amber);
+  --paint-earth-text: var(--palette-earth);
+  --paint-shadow: var(--palette-jet);
+  --paint-on-accent: var(--palette-jet);
 }
 
 /* ── Colour tokens: light mirror ── */
@@ -154,6 +181,26 @@
   --shadow-md: 0 4px 16px color-mix(in srgb, var(--shadow-color) 12%, transparent);
   --shadow-lg: 0 8px 32px color-mix(in srgb, var(--shadow-color) 16%, transparent);
   --shadow-brand: 0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
+
+  color-scheme: light;
+  --paint-jet: var(--palette-paper);
+  --paint-charcoal: var(--palette-paper);
+  --paint-ink: var(--palette-paper-100);
+  --paint-abyss: var(--palette-mist);
+  --paint-snow: var(--palette-ink);
+  --paint-ivory: var(--palette-ink);
+  --paint-teal: var(--palette-teal);
+  --paint-cerulean: var(--palette-cerulean);
+  --paint-rose: var(--palette-rose);
+  --paint-amber: var(--palette-amber);
+  --paint-earth: var(--palette-earth);
+  --paint-teal-text: var(--palette-teal-ink);
+  --paint-cerulean-text: var(--palette-sky-deep);
+  --paint-rose-text: var(--palette-rose-deep);
+  --paint-amber-text: var(--palette-earth);
+  --paint-earth-text: var(--palette-earth);
+  --paint-shadow: color-mix(in srgb, var(--palette-ink) 28%, transparent);
+  --paint-on-accent: var(--palette-jet);
 }
 
 /* ── Typography, space, grid, shape, motion (theme-independent) ── */
@@ -244,6 +291,7 @@
   --duration-shake: 400ms;
   --duration-count: 1000ms;
   --duration-shimmer: 1500ms;
+  --duration-theme: 300ms;
   --stagger-word: 60ms;
   --stagger-item: 80ms;
   --distance-reveal: 20px;
@@ -264,7 +312,7 @@
     --duration-fast: 0ms; --duration-normal: 0ms; --duration-slow: 0ms;
     --duration-press: 0ms; --duration-dropdown: 0ms; --duration-modal-in: 0ms; --duration-modal-out: 0ms;
     --duration-page-in: 0ms; --duration-page-out: 0ms; --duration-nav: 0ms; --duration-media: 0ms;
-    --duration-reveal: 0ms; --duration-shake: 0ms; --duration-count: 0ms; --duration-shimmer: 0ms;
+    --duration-reveal: 0ms; --duration-shake: 0ms; --duration-count: 0ms; --duration-shimmer: 0ms; --duration-theme: 0ms;
     --stagger-word: 0ms; --stagger-item: 0ms; --distance-reveal: 0px; --distance-lift: 0px; --distance-shake: 0px;
   }
 }

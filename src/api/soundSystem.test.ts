@@ -139,7 +139,7 @@ describe('sound integration', () => {
     const app = read('App.tsx');
     expect(app).toContain("playSound('done')");
     expect(app).toContain("playSound('page')");
-    expect(app).toContain('<SoundToggle corner />');
+    expect(app).toContain('<ThemeToggle tooltipSide="left" /><SoundToggle />');
     expect(read('components/InterviewRoom.tsx')).toContain('useSoundSuppressed();');
     expect(read('components/LandingPage.tsx')).toContain('<SoundToggle className="c-sound-toggle" />');
     const player = read('components/sound/sound.ts');

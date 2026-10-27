@@ -6,11 +6,11 @@
  */
 
 /* ── Shared ── */
-.ds-library-focus, :where(.ds-button, .ds-tab, .ds-sidebar-item, .ds-select-trigger, .ds-switch, .ds-field-action, .ds-choice, .ds-page, .ds-breadcrumbs button, .ds-table th button, .ds-chip button, .ds-navbar-links a, .ds-mobile-menu a):focus-visible {
+.ds-library-focus, :where(.ds-button, .ds-tab, .ds-sidebar-item, .ds-select-trigger, .ds-switch, .ds-field-action, .ds-choice, .ds-page-button, .ds-breadcrumbs button, .ds-table th button, .ds-chip button, .ds-navbar-links a, .ds-mobile-menu a):focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
-:where(.ds-button, .ds-tab, .ds-sidebar-item, .ds-select-trigger, .ds-switch, .ds-choice, .ds-page):disabled,
+:where(.ds-button, .ds-tab, .ds-sidebar-item, .ds-select-trigger, .ds-switch, .ds-choice, .ds-page-button):disabled,
 [data-disabled] { opacity: 0.5; cursor: not-allowed; }
 [aria-busy="true"] { cursor: progress; }
 .ds-ripple-host { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
@@ -498,9 +498,9 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
 .ds-pagination { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: var(--font-size-sm); }
 .ds-pagination > span { margin-right: auto; font-variant-numeric: tabular-nums; }
 .ds-pagination .ds-icon-button { width: var(--space-8); height: var(--space-8); }
-.ds-page { min-width: var(--space-8); height: var(--space-8); border: 1px solid transparent; border-radius: var(--radius-md); background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
-.ds-page:hover { background: var(--bg-elevated); color: var(--text-primary); }
-.ds-page[aria-current="page"] { border-color: var(--color-primary-border); background: var(--color-primary-subtle); color: var(--color-primary-text); }
+.ds-page-button { min-width: var(--space-8); height: var(--space-8); border: 1px solid transparent; border-radius: var(--radius-md); background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.ds-page-button:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.ds-page-button[aria-current="page"] { border-color: var(--color-primary-border); background: var(--color-primary-subtle); color: var(--color-primary-text); }
 
 /* ── 404 ── */
 .ds-not-found { display: grid; justify-items: center; align-content: center; gap: var(--space-4); min-height: 100svh; padding: var(--space-12) var(--space-6); background: var(--bg-base); color: var(--text-primary); text-align: center; outline: none; }

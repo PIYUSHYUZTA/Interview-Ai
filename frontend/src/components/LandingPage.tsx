@@ -13,6 +13,7 @@ import { magnetic, Typewriter, WordReveal } from './motion/reveal';
 import { Button } from './ui';
 import { playSound } from './sound/sound';
 import { SoundToggle } from './sound/SoundToggle';
+import { ThemeToggle } from './library/navigation';
 import './LandingPage.css';
 
 // Labels and round structure match /interviews/options and the setup screen.
@@ -138,7 +139,7 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
     <header className={`c-nav ${menuOpen ? 'is-open' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
       <a className="c-wordmark" href="#top" aria-label="Interview AI home"><Mark /><span>interview<span className="c-wordmark-ai">ai</span></span></a>
       <nav aria-label="Landing navigation">{navigation.map(([href, label]) => <a key={href} href={href} aria-current={section === href.slice(1) ? 'location' : undefined}>{label}</a>)}</nav>
-      <div className="c-nav-actions"><Button variant="ghost" onClick={onWorkspace}>{signedIn ? 'Workspace' : 'Sign in'}</Button><Button className="c-nav-cta" onClick={onStart}>Start practicing <Icon icon={ArrowRight} /></Button></div>
+      <div className="c-nav-actions"><ThemeToggle /><Button variant="ghost" onClick={onWorkspace}>{signedIn ? 'Workspace' : 'Sign in'}</Button><Button className="c-nav-cta" onClick={onStart}>Start practicing <Icon icon={ArrowRight} /></Button></div>
       <button ref={menuToggle} type="button" className="c-menu-toggle ds-has-tooltip" data-tooltip={menuOpen ? 'Close menu' : 'Open menu'} data-tooltip-side={menuOpen ? 'left' : 'bottom'} data-tooltip-align="end" aria-expanded={menuOpen} aria-controls="c-mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen((open) => !open)}><MenuToggleIcon open={menuOpen} /></button>
     </header>
     <AnimatePresence>{menuOpen && <motion.div className="c-mobile-menu" id="c-mobile-menu" initial={reduced ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={reduced ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, y: -8 }} transition={{ duration: reduced ? 0 : timing.duration.swap, ease: timing.ease }}>

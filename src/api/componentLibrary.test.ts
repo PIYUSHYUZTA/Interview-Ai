@@ -34,8 +34,8 @@ describe('component library', () => {
       expect([control, new RegExp(`${control.replace('.', '\\.')}[^{]*:hover`).test(plain)]).toEqual([control, true]);
     }
     for (const pressed of ['.ds-button:active', '.ds-sidebar-item:active', '.ds-tab:active', '.ds-switch:active', '.ds-choice:active', '.ds-drop:active', '.ds-check:active', '.ds-field-action:active', '.ds-icon-button:active']) expect(plain).toContain(pressed);
-    expect(plain).toMatch(/:where\(\.ds-button, \.ds-tab, \.ds-sidebar-item, \.ds-select-trigger, \.ds-switch, \.ds-field-action, \.ds-choice, \.ds-page[^)]*\):focus-visible \{\s*outline: 2px solid var\(--border-focus\)/);
-    expect(plain).toMatch(/:where\(\.ds-button, \.ds-tab, \.ds-sidebar-item, \.ds-select-trigger, \.ds-switch, \.ds-choice, \.ds-page\):disabled/);
+    expect(plain).toMatch(/:where\(\.ds-button, \.ds-tab, \.ds-sidebar-item, \.ds-select-trigger, \.ds-switch, \.ds-field-action, \.ds-choice, \.ds-page-button[^)]*\):focus-visible \{\s*outline: 2px solid var\(--border-focus\)/);
+    expect(plain).toMatch(/:where\(\.ds-button, \.ds-tab, \.ds-sidebar-item, \.ds-select-trigger, \.ds-switch, \.ds-choice, \.ds-page-button\):disabled/);
     expect(plain).toContain('[aria-busy="true"] { cursor: progress; }');
     // Loading props exist on the components that do work.
     for (const loading of ['loading = false, icon', 'aria-busy={loading || undefined} disabled={disabled || loading} className="ds-switch"', "aria-busy={loading || undefined} disabled={disabled || loading}\n      onClick={() => (open ? setOpen(false) : show())}", 'progress?: number', 'loading?: boolean }) {\n  if (loading) return <div className="ds-panel ds-choice"']) expect(library).toContain(loading);
@@ -64,6 +64,8 @@ describe('component library', () => {
     expect(library).toContain('delay: reduced ? 0 : 0.06 + index * motionTokens.stagger.item'); // mobile menu stagger
     expect(read('components/motion/feedback.tsx')).toContain("const TOAST_ICONS = { success: CircleCheck, error: CircleAlert, warning: TriangleAlert, info: Info };");
     expect(plain).toContain('@media (prefers-reduced-motion: reduce)');
+    // .ds-page is the page-transition wrapper (motion/feedback.tsx); library styles must never target it.
+    expect(plain).not.toMatch(/\.ds-page(?![-\w])/);
   });
 
   it('is used by the product where it replaces something', () => {

@@ -206,12 +206,12 @@ export function IntelligenceScene({ paused, onStatusChange }: { paused: boolean;
     <div className="c-sculpture-aura" />
     <svg className={`c-sculpture-fallback ${status === 'ready' ? 'is-hidden' : ''}`} viewBox="0 0 600 600" aria-hidden="true">
       <defs>
-        <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#ededed" /><stop offset=".34" stopColor="#007ba7" /><stop offset=".65" stopColor="#081c23" /><stop offset="1" stopColor="#007ba7" /></linearGradient>
-        <linearGradient id={`${gradientId}Core`} x1="0" x2="1" y1="0" y2="1"><stop stopColor="#007ba7" /><stop offset=".42" stopColor="#0a0a0a" /><stop offset="1" stopColor="#081c23" /></linearGradient>
+        <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="1"><stop style={{ stopColor: 'var(--paint-snow)' }} /><stop offset=".34" style={{ stopColor: 'var(--paint-cerulean)' }} /><stop offset=".65" style={{ stopColor: 'var(--paint-abyss)' }} /><stop offset="1" style={{ stopColor: 'var(--paint-cerulean)' }} /></linearGradient>
+        <linearGradient id={`${gradientId}Core`} x1="0" x2="1" y1="0" y2="1"><stop style={{ stopColor: 'var(--paint-cerulean)' }} /><stop offset=".42" style={{ stopColor: 'var(--paint-jet)' }} /><stop offset="1" style={{ stopColor: 'var(--paint-abyss)' }} /></linearGradient>
       </defs>
       <g fill="none" stroke={`url(#${gradientId})`}><ellipse cx="300" cy="300" rx="206" ry="190" transform="rotate(-22 300 300)" strokeWidth="5" /><ellipse cx="300" cy="300" rx="164" ry="78" transform="rotate(-42 300 300)" strokeWidth="3" /><ellipse cx="300" cy="300" rx="74" ry="148" transform="rotate(-25 300 300)" strokeWidth="2" /></g>
-      <path d="m300 176 94 110-28 85-66 53-97-120 24-71Z" fill={`url(#${gradientId}Core)`} stroke="#007ba780" strokeWidth="1" />
-      <path d="m300 176 12 128 82-18m-82 18-12 120m12-120-109 0m109 0 54 67" fill="none" stroke="#007ba744" />
+      <path d="m300 176 94 110-28 85-66 53-97-120 24-71Z" fill={`url(#${gradientId}Core)`} style={{ stroke: 'color-mix(in srgb, var(--paint-cerulean-text) 50%, transparent)' }} strokeWidth="1" />
+      <path d="m300 176 12 128 82-18m-82 18-12 120m12-120-109 0m109 0 54 67" fill="none" style={{ stroke: 'color-mix(in srgb, var(--paint-cerulean-text) 27%, transparent)' }} />
     </svg>
     <canvas ref={canvas} className={status === 'ready' ? '' : 'is-hidden'} aria-hidden="true" />
     <div className="c-sculpture-shadow" />

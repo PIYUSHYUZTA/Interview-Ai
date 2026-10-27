@@ -6,7 +6,7 @@
 
 .blender-static { opacity:.8; }
 
-.blender-studio { height:clamp(300px,46vh,520px); border-radius:12px; background:radial-gradient(ellipse at center,#007ba70a,transparent 75%),#0a0a0a; border:1px solid #007ba733; }
+.blender-studio { height:clamp(300px,46vh,520px); border-radius:12px; background:radial-gradient(ellipse at center,color-mix(in srgb, var(--paint-cerulean) 3.9%, transparent),transparent 75%),var(--paint-jet); border:1px solid color-mix(in srgb, var(--paint-cerulean-text) 20%, transparent); }
 
 .voice-interviewer .interviewer-visual.has-blender-studio { width:100%; height:auto; margin:0 auto 18px; }
 
@@ -14,31 +14,31 @@
 
 
 
-.avatar-connection { font-size:11px!important; color:#ff2d95; margin:10px 0 0!important; line-height:1.6; }
+.avatar-connection { font-size:11px!important; color:var(--paint-rose-text); margin:10px 0 0!important; line-height:1.6; }
 
-.avatar-recovery { padding:14px; border:1px solid #007ba7; color:#ededed; font-size:13px; line-height:1.7; }
+.avatar-recovery { padding:14px; border:1px solid var(--paint-cerulean-text); color:var(--paint-snow); font-size:13px; line-height:1.7; }
 
 .immersive-room .voice-interviewer h1 { font-size:clamp(19px,1.55vw,24px); line-height:1.5; max-width:850px; margin-top:12px; }
 
-.interview-active .voice-transcript { min-height:90px; border-color:#007ba755; background:#081c2366; }
+.interview-active .voice-transcript { min-height:90px; border-color:color-mix(in srgb, var(--paint-cerulean-text) 33.3%, transparent); background:color-mix(in srgb, var(--paint-abyss) 40%, transparent); }
 
-.immersive-room > progress { accent-color:#007ba7; }
+.immersive-room > progress { accent-color:var(--paint-cerulean-text); }
 
 
 
-.voice-console { margin:24px auto 16px; padding:20px; border:1px solid #007ba766; border-radius:12px; background:#081c23; text-align:left; }
+.voice-console { margin:24px auto 16px; padding:20px; border:1px solid color-mix(in srgb, var(--paint-cerulean-text) 40%, transparent); border-radius:12px; background:var(--paint-abyss); text-align:left; }
 
 .voice-console-status { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:baseline; }
 
-.voice-console-status strong { color:#ededed; font-size:16px; }
+.voice-console-status strong { color:var(--paint-snow); font-size:16px; }
 
-.voice-console-status span { color:#ededed99; font-size:13px; line-height:1.6; }
+.voice-console-status span { color:color-mix(in srgb, var(--paint-snow) 60%, transparent); font-size:13px; line-height:1.6; }
 
-.voice-console meter { display:block; width:100%; height:12px; margin:14px 0; accent-color:#007ba7; }
+.voice-console meter { display:block; width:100%; height:12px; margin:14px 0; accent-color:var(--paint-cerulean-text); }
 
-.voice-console meter::-webkit-meter-bar { background:#0a0a0a; border:1px solid #007ba755; }
+.voice-console meter::-webkit-meter-bar { background:var(--paint-jet); border:1px solid color-mix(in srgb, var(--paint-cerulean-text) 33.3%, transparent); }
 
-.voice-console meter::-webkit-meter-optimum-value { background:#007ba7; }
+.voice-console meter::-webkit-meter-optimum-value { background:var(--paint-cerulean); }
 
 .voice-console .actions { margin:0; }
 

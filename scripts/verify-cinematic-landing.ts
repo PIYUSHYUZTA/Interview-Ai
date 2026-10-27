@@ -14,9 +14,11 @@ const server = await preview({root:path.resolve('frontend'),preview:{host:'127.0
 const origin=`http://127.0.0.1:${(server.httpServer!.address() as {port:number}).port}`;
 const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE??'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true,args:['--enable-unsafe-swiftshader']});
 fs.mkdirSync('.browser-verification',{recursive:true});
+// The checks below pin the dark brand identity (palette roles, dark contrast), so every context asks for the
+// dark theme; light mode has its own checks (src/api/themeSystem.test.ts and the theme browser check).
 const result:Record<string,unknown>={};
 try {
-  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
+  const context=await browser.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
   await context.addInitScript({content:`window.firstCtaOpacity=null;new MutationObserver(()=>{const action=document.querySelector('.c-hero-actions');if(action&&window.firstCtaOpacity===null)window.firstCtaOpacity=Number(getComputedStyle(action).opacity);}).observe(document,{subtree:true,childList:true});window.sceneDraws=0;window.disposedScenePrograms=0;for(const Context of [WebGLRenderingContext,WebGL2RenderingContext]){const dispose=Context.prototype.deleteProgram;Context.prototype.deleteProgram=function(program){window.disposedScenePrograms++;return dispose.call(this,program);};for(const method of ['drawArrays','drawElements']){const draw=Context.prototype[method];Context.prototype[method]=function(...args){window.sceneDraws++;return draw.apply(this,args);};}}`});
   await context.addInitScript({content:`window.layoutShift=0;new PerformanceObserver(list=>{for(const entry of list.getEntries())if(!entry.hadRecentInput)window.layoutShift+=entry.value;}).observe({type:'layout-shift',buffered:true});`});
   const page=await context.newPage();page.setDefaultTimeout(30000);
@@ -97,7 +99,8 @@ try {
   await page.getByRole('button',{name:'Weak answer',exact:true}).click();await page.getByRole('heading',{name:'If a payment succeeds but its response is lost, what could happen when the client sends it again?'}).waitFor();
   await page.getByRole('button',{name:'Partial answer',exact:true}).click();await page.getByRole('heading',{name:'What should the server return when it receives the same idempotency key again?'}).waitFor();
   await page.getByRole('button',{name:'Strong answer',exact:true}).click();await page.getByRole('heading',{name:'How would you enforce idempotency when two identical requests arrive at the same time?'}).waitFor();
-  assert.deepEqual(await page.locator('#candidate-fill stop').evaluateAll((stops:SVGStopElement[])=>stops.map(stop=>stop.getAttribute('stop-color'))),['#007ba7','#0a0a0a']);
+  // Stop colours come from theme tokens; in the dark theme they resolve to cerulean and jet.
+  assert.deepEqual(await page.locator('#candidate-fill stop').evaluateAll((stops:SVGStopElement[])=>stops.map(stop=>getComputedStyle(stop).stopColor)),['rgb(0, 123, 167)','rgb(10, 10, 10)']);
   assert.equal(await page.locator('.c-room-preview video,.c-room-preview audio,.c-room-preview button').count(),0);
   await page.getByText('Illustrative report · these scores and answers are examples, not your results.',{exact:true}).waitFor();
   assert.equal(await page.locator('.c-report-preview progress').count(),3);
@@ -120,7 +123,8 @@ try {
       roles: { type: style('#c-hero-title','color'), page: style('.cinema','background-color'), steps: style('.c-steps','background-color'), features: style('.c-capabilities','background-color'), button: style('.c-hero-actions .c-primary','background-color'), number: style('.c-step-number','color'), footerRule: style('.c-footer','border-top-color') } }; })()`) as {tokens:string[];roles:Record<string,string>};
   assert.deepEqual(palette.tokens,['#031211','#e8e4d3','#00aebb','#090907','#6c5636','#b99d73','#0a0a0a','#007ba7','#ff2d95']);
   assert.deepEqual([palette.roles.type,palette.roles.page,palette.roles.steps,palette.roles.features,palette.roles.button,palette.roles.number],['rgb(232, 228, 211)','rgb(10, 10, 10)','rgb(3, 18, 17)','rgb(9, 9, 7)','rgb(0, 174, 187)','rgb(185, 157, 115)']);
-  assert.ok(palette.roles.footerRule.startsWith('rgba(108, 86, 54'));
+  // Earth Brown at partial alpha; colour-mix() reports it as color(srgb …) rather than rgba().
+  assert.match(palette.roles.footerRule,/^(rgba\(108, 86, 54|color\(srgb 0\.423\d* 0\.337\d* 0\.211\d*)/);
   assert.equal(await page.locator('.c-hero-bust').getAttribute('data-particles'),'520');
   // Cinematic film: lazy, plays only on screen, real pause/play, GSAP opens the frame.
   await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(300);
@@ -161,7 +165,7 @@ try {
   assert.equal((await context.request.post(`${origin}/auth/register`,{data:{name:'Landing verifier',email:`landing-${Date.now()}@example.test`,password:'LandingVerify!2026'}})).status(),201);
   await page.goto(origin);await page.getByRole('button',{name:'Workspace',exact:true}).click();await page.getByRole('heading',{name:'Interview history',exact:true}).waitFor();
   await page.goto(origin);await page.getByRole('button',{name:'Start practicing',exact:true}).click();await page.getByLabel('Resume file',{exact:true}).waitFor({state:'attached'});
-  const formContext=await browser.newContext({viewport:{width:1280,height:900},reducedMotion:'reduce'});const form=await formContext.newPage();
+  const formContext=await browser.newContext({colorScheme:'dark',viewport:{width:1280,height:900},reducedMotion:'reduce'});const form=await formContext.newPage();
   await form.goto(origin);await form.getByRole('button',{name:'Sign in',exact:true}).click();await form.getByLabel('Email address',{exact:true}).waitFor();
   if(!await form.getByLabel('Full name',{exact:true}).count())await form.getByRole('button',{name:'Create account',exact:true}).click();
   await form.getByLabel('Full name',{exact:true}).fill('Form verifier');await form.getByLabel('Email address',{exact:true}).fill(`form-${Date.now()}@example.test`);
@@ -170,7 +174,7 @@ try {
   await form.getByLabel('Password',{exact:true}).fill(`Form-${Date.now()}-Verify!`);await form.getByRole('button',{name:'Create candidate account',exact:true}).click();
   await form.getByRole('heading',{name:'Interview history',exact:true}).waitFor();await formContext.close();
   result.navigation='Primary CTA, Sign in, the real sign-up form (short password rejected, valid account created and signed in), workspace and resume routes passed.';console.log('Existing app navigation and GPU cleanup passed');
-  const mobile=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',isMobile:true,deviceScaleFactor:1});const phone=await mobile.newPage();
+  const mobile=await browser.newContext({colorScheme:'dark',viewport:{width:390,height:844},reducedMotion:'reduce',isMobile:true,deviceScaleFactor:1});const phone=await mobile.newPage();
   await phone.goto(origin);await phone.locator('[data-scene-state="ready"][data-motion="still"]').waitFor();assert.equal(await phone.getByRole('button',{name:'Motion reduced',exact:true}).isDisabled(),true);
   assert.equal(await phone.locator('.cinema').getAttribute('data-motion-policy'),'reduced');
   assert.equal(await phone.locator('.c-method li,.c-evidence-stack article,.c-capability-grid article').evaluateAll((elements:Element[])=>elements.every(el=>Number(getComputedStyle(el).opacity)===1)),true);
@@ -196,29 +200,29 @@ try {
   await phone.getByRole('button',{name:'Open menu',exact:true}).click();await mobileMenu.getByRole('link',{name:'Features'}).click();
   await mobileMenu.waitFor({state:'detached'});await phone.waitForFunction(()=>location.hash==='#capabilities');
   await phone.evaluate(()=>window.scrollTo(0,0));await phone.screenshot({path:path.resolve('.browser-verification/cinematic-mobile.png')});await mobile.close();result.mobileNavigation='Reduced motion: the film does not autoplay, GSAP is never downloaded, and Play/Pause film work; it also keeps the turn-taking illustration and skill bars still. Phone menu opens, lists How it works / Features / About, closes on Escape with focus returned, and navigates.';console.log('Mobile checks passed');
-  const narrow=await browser.newContext({viewport:{width:320,height:740},reducedMotion:'reduce'});const small=await narrow.newPage();await small.goto(origin);await small.getByRole('heading',{name:'Interview practice that feels real.'}).waitFor();assert.equal(await small.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await narrow.close();console.log('Narrow checks passed');
-  for(const [width,height] of [[768,1024],[1024,768]]){const tabletContext=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});const tablet=await tabletContext.newPage();await tablet.goto(origin);await tablet.locator('[data-scene-state="ready"],[data-scene-state="fallback"]').first().waitFor();
+  const narrow=await browser.newContext({colorScheme:'dark',viewport:{width:320,height:740},reducedMotion:'reduce'});const small=await narrow.newPage();await small.goto(origin);await small.getByRole('heading',{name:'Interview practice that feels real.'}).waitFor();assert.equal(await small.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await narrow.close();console.log('Narrow checks passed');
+  for(const [width,height] of [[768,1024],[1024,768]]){const tabletContext=await browser.newContext({colorScheme:'dark',viewport:{width,height},reducedMotion:'reduce'});const tablet=await tabletContext.newPage();await tablet.goto(origin);await tablet.locator('[data-scene-state="ready"],[data-scene-state="fallback"]').first().waitFor();
     for(const selector of ['.c-hero','#how-it-works','#capabilities','#approach','#interview-room','.c-report-preview','#start','.c-footer']){await tablet.locator(selector).scrollIntoViewIfNeeded();assert.equal(await tablet.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${width}x${height} overflows at ${selector}`);}
     await tablet.evaluate(()=>window.scrollTo(0,0));const cta=await tablet.getByRole('button',{name:'Start Your Interview',exact:true}).boundingBox();assert.ok(cta&&cta.y+cta.height<=height);
     assert.equal(await tablet.getByRole('link',{name:'How it works',exact:true}).first().isVisible(),true);await tablet.screenshot({path:path.resolve(`.browser-verification/cinematic-tablet-${width}x${height}.png`)});await tabletContext.close();}
   result.tablet='Portrait 768x1024 and landscape 1024x768: no horizontal overflow in any section, CTA in the first viewport, desktop navigation visible.';
-  const laptop=await browser.newContext({viewport:{width:1366,height:768},reducedMotion:'reduce'});const laptopPage=await laptop.newPage();await laptopPage.goto(origin);await laptopPage.locator('[data-scene-state="ready"]').waitFor();const heroBounds=await laptopPage.locator('.c-hero').boundingBox();console.log('Laptop hero bounds',heroBounds);assert.ok(heroBounds&&heroBounds.y+heroBounds.height<=770);await laptopPage.screenshot({path:path.resolve('.browser-verification/cinematic-laptop.png')});await laptop.close();
+  const laptop=await browser.newContext({colorScheme:'dark',viewport:{width:1366,height:768},reducedMotion:'reduce'});const laptopPage=await laptop.newPage();await laptopPage.goto(origin);await laptopPage.locator('[data-scene-state="ready"]').waitFor();const heroBounds=await laptopPage.locator('.c-hero').boundingBox();console.log('Laptop hero bounds',heroBounds);assert.ok(heroBounds&&heroBounds.y+heroBounds.height<=770);await laptopPage.screenshot({path:path.resolve('.browser-verification/cinematic-laptop.png')});await laptop.close();
   result.responsive='Desktop first-viewport, 1366px laptop, 390px/320px overflow and reduced-motion checks passed.';
-  const fallback=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+  const fallback=await browser.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},reducedMotion:'reduce'});
   await fallback.addInitScript({content:`const context=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){if(type==='webgl'||type==='webgl2')return null;return context.call(this,type,...args);};`});
   const staticPage=await fallback.newPage();await staticPage.goto(origin);await staticPage.locator('[data-scene-state="fallback"]').waitFor();await staticPage.getByRole('button',{name:'Static visual',exact:true}).waitFor();await staticPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await staticPage.getByLabel('Email address',{exact:true}).waitFor();
   result.fallback='No-WebGL static art preserves the candidate entry path.';
-  const missingAsset=await browser.newContext({reducedMotion:'reduce'});
+  const missingAsset=await browser.newContext({colorScheme:'dark',reducedMotion:'reduce'});
   await missingAsset.route('**/models/hero-bust.glb',(route:any)=>route.fulfill({status:404,body:'Asset unavailable'}));
   const missingPage=await missingAsset.newPage();await missingPage.goto(origin);await missingPage.locator('[data-scene-state="fallback"]').waitFor();
   await missingPage.getByRole('button',{name:'Static visual',exact:true}).waitFor();await missingPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await missingPage.getByLabel('Email address',{exact:true}).waitFor();await missingAsset.close();
-  const noFilm=await browser.newContext({viewport:{width:1280,height:900},reducedMotion:'reduce'});await noFilm.route('**/media/hero-film.mp4',(route:any)=>route.fulfill({status:404,body:'missing'}));
+  const noFilm=await browser.newContext({colorScheme:'dark',viewport:{width:1280,height:900},reducedMotion:'reduce'});await noFilm.route('**/media/hero-film.mp4',(route:any)=>route.fulfill({status:404,body:'missing'}));
   const noFilmPage=await noFilm.newPage();await noFilmPage.goto(origin);await noFilmPage.locator('#the-interviewer').scrollIntoViewIfNeeded();
   await noFilmPage.getByRole('button',{name:'Play film',exact:true}).click();
   await noFilmPage.waitForFunction(()=>(document.getElementById('the-interviewer') as HTMLElement).dataset.film==='failed',undefined,{timeout:10000});
   await noFilmPage.getByText('Film unavailable · showing a still frame',{exact:true}).waitFor();assert.equal(await noFilmPage.getByRole('button',{name:'Play film',exact:true}).count(),0);await noFilm.close();
   result.assetFailure='A real failed GLB request shows static fallback and preserves the candidate entry path.';
-  const lowPower=await browser.newContext({viewport:{width:1100,height:900},reducedMotion:'no-preference'});
+  const lowPower=await browser.newContext({colorScheme:'dark',viewport:{width:1100,height:900},reducedMotion:'no-preference'});
   await lowPower.addInitScript({content:`Object.defineProperty(Navigator.prototype,'hardwareConcurrency',{get:()=>2});`});
   const glbRequests:string[]=[];const lowPage=await lowPower.newPage();lowPage.on('request',(request:any)=>{if(request.url().endsWith('.glb'))glbRequests.push(request.url());});
   await lowPage.goto(origin);await lowPage.locator('.c-hero-bust[data-poster-only][data-scene-state="fallback"]').waitFor();
@@ -227,7 +231,7 @@ try {
   await lowPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await lowPage.getByLabel('Email address',{exact:true}).waitFor();await lowPower.close();
   result.lowPower='Low-power devices show the Blender poster without creating WebGL or downloading the GLB; the candidate entry path works.';
   // Real Web Audio synthesis: observe generated samples, not mocked playback.
-  const soundContext=await browser.newContext({viewport:{width:1100,height:900},reducedMotion:'reduce'});
+  const soundContext=await browser.newContext({colorScheme:'dark',viewport:{width:1100,height:900},reducedMotion:'reduce'});
   await soundContext.addInitScript({content:`window.audioChecks={contexts:[],peaks:[]};const nativeStart=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...args){if(this.buffer){let max=0;for(const value of this.buffer.getChannelData(0))max=Math.max(max,Math.abs(value));window.audioChecks.peaks.push(max);}return nativeStart.apply(this,args);};const NativeAudio=window.AudioContext;window.AudioContext=class extends NativeAudio{constructor(options){super(options);window.audioChecks.contexts.push(this);}createGain(){const gain=super.createGain();const analyser=this.createAnalyser();analyser.fftSize=256;gain.connect(analyser);const samples=new Float32Array(256);const index=window.audioChecks.peaks.push(0)-1;const sample=()=>{if(this.state==='closed'){analyser.disconnect();return;}analyser.getFloatTimeDomainData(samples);window.audioChecks.peaks[index]=Math.max(window.audioChecks.peaks[index],...samples.map(Math.abs));requestAnimationFrame(sample);};requestAnimationFrame(sample);return gain;}};`});
   const audioPage=await soundContext.newPage();const audioErrors:string[]=[];audioPage.on('pageerror',(e:Error)=>audioErrors.push(e.message));await audioPage.goto(origin);
   const soundToggle=audioPage.getByRole('button',{name:'Interface sounds',exact:true});await soundToggle.waitFor();assert.equal(await soundToggle.getAttribute('aria-pressed'),'false');
@@ -250,7 +254,7 @@ try {
   await remembered.click();await audioPage.goto(origin);assert.equal(await audioPage.getByRole('button',{name:'Interface sounds',exact:true}).getAttribute('aria-pressed'),'false');
   assert.deepEqual(audioErrors,[]);await soundContext.close();
   for(const failure of ['unsupported','blocked']) {
-    const silentContext=await browser.newContext({reducedMotion:'reduce'});
+    const silentContext=await browser.newContext({colorScheme:'dark',reducedMotion:'reduce'});
     await silentContext.addInitScript({content:failure==='unsupported'?`window.AudioContext=undefined;`:`AudioContext.prototype.resume=function(){return Promise.reject(new Error('Audio blocked'));};`});
     const silentPage=await silentContext.newPage();const silentErrors:string[]=[];silentPage.on('pageerror',(e:Error)=>silentErrors.push(e.message));await silentPage.goto(origin);
     await silentPage.getByRole('button',{name:'Interface sounds',exact:true}).click();await silentPage.getByRole('status').filter({hasText:'Sound unavailable.'}).waitFor();

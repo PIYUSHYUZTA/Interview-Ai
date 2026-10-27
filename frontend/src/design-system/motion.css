@@ -231,6 +231,17 @@ details[open]::details-content { block-size: auto; }
 @keyframes ds-caret { 50% { opacity: 0; } }
 @keyframes ds-gradient-drift { to { background-position: 100% 0; } }
 
+/* ── Theme switch: every surface eases its colours together (300ms), only while switching ── */
+:root[data-theme-switching], :root[data-theme-switching] *, :root[data-theme-switching] *::before, :root[data-theme-switching] *::after {
+  transition: background-color var(--duration-theme) ease, color var(--duration-theme) ease, border-color var(--duration-theme) ease,
+    outline-color var(--duration-theme) ease, fill var(--duration-theme) ease, stroke var(--duration-theme) ease,
+    stop-color var(--duration-theme) ease, box-shadow var(--duration-theme) ease, text-decoration-color var(--duration-theme) ease !important;
+}
+/* The toggle's icon morphs: the moon turns away and shrinks as the sun turns in (and back). */
+.ds-theme-icon > .ds-icon { transition: opacity var(--duration-slow) var(--ease-out), rotate var(--duration-slow) var(--ease-spring), scale var(--duration-slow) var(--ease-spring); }
+[data-theme-icon="dark"] .ds-theme-sun, [data-theme-icon="light"] .ds-theme-moon { opacity: 0; rotate: -90deg; scale: 0.4; }
+[data-theme-icon="dark"] .ds-theme-moon, [data-theme-icon="light"] .ds-theme-sun { opacity: 1; rotate: 0deg; scale: 1; }
+
 /* Reduced motion: the token durations are already zero; switch off what would still move or loop. */
 @media (prefers-reduced-motion: reduce) {
   :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled) { scale: none; }

@@ -115,7 +115,7 @@ export function DataTable<Row extends Record<string, string | number>>({ caption
     {!loading && sorted.length > pageSize && <nav className="ds-pagination" aria-label={`${caption} pages`}>
       <span aria-live="polite">{current * pageSize + 1}–{Math.min(sorted.length, (current + 1) * pageSize)} of {sorted.length}</span>
       <IconButton icon={ChevronLeft} label="Previous page" disabled={current === 0} onClick={() => go(current - 1)} />
-      {Array.from({ length: pages }, (_, index) => <button key={index} type="button" className="ds-page" aria-current={index === current ? 'page' : undefined} aria-label={`Page ${index + 1}`} onClick={() => go(index)}>{index + 1}</button>)}
+      {Array.from({ length: pages }, (_, index) => <button key={index} type="button" className="ds-page-button" aria-current={index === current ? 'page' : undefined} aria-label={`Page ${index + 1}`} onClick={() => go(index)}>{index + 1}</button>)}
       <IconButton icon={ChevronRight} label="Next page" disabled={current === pages - 1} onClick={() => go(current + 1)} />
     </nav>}
   </div>;

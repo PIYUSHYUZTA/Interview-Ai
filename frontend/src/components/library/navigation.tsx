@@ -1,34 +1,22 @@
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { motionTokens, usePrefersReducedMotion } from '../../design-system/motion';
-import { Icon, IconButton, MenuToggleIcon } from '../icon/Icon';
+import { Icon, MenuToggleIcon, ripple } from '../icon/Icon';
+import { setTheme, useTheme, type Theme } from '../../design-system/theme';
 import { ArrowRight, ChevronRight, Moon, Sun, type LucideIcon } from '../icon/icons';
 import { SoundToggle } from '../sound/SoundToggle';
 import { playSound } from '../sound/sound';
 
-/* ── Theme: dark by default; the choice is remembered ── */
-export type Theme = 'dark' | 'light';
-const THEME_KEY = 'interview-ai.theme';
-const themeListeners = new Set<() => void>();
-const readTheme = (): Theme => { try { return window.localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; } catch { return 'dark'; } };
-let theme: Theme = typeof window === 'undefined' ? 'dark' : readTheme();
-/** Applies a theme to `root` (the whole document by default) through the tokens' data-theme switch. */
-export function setTheme(next: Theme, root: HTMLElement = document.documentElement) {
-  theme = next;
-  root.dataset.theme = next;
-  try { window.localStorage.setItem(THEME_KEY, next); } catch { /* in-memory only */ }
-  themeListeners.forEach((listener) => listener());
-}
-export function useTheme() {
-  return useSyncExternalStore((l) => { themeListeners.add(l); return () => { themeListeners.delete(l); }; }, () => theme, () => 'dark' as Theme);
-}
-export function ThemeToggle({ root }: { root?: () => HTMLElement }) {
+/* ── Theme toggle: the moon turns away and the sun turns in (and back) ── */
+export function ThemeToggle({ tooltipSide = 'bottom' }: { tooltipSide?: 'bottom' | 'left' }) {
   const current = useTheme();
   const next: Theme = current === 'dark' ? 'light' : 'dark';
-  useEffect(() => { (root?.() ?? document.documentElement).dataset.theme = current; }, [current, root]);
-  return <IconButton icon={current === 'dark' ? Moon : Sun} label={`Switch to ${next} theme`} data-tooltip-side="bottom"
-    onClick={() => { playSound('toggle'); setTheme(next, root?.()); }} />;
+  return <button type="button" className="ds-icon-button ds-theme-toggle" data-theme-icon={current} aria-label={`Switch to ${next} theme`} data-tooltip={`Switch to ${next} theme`} data-tooltip-side={tooltipSide} data-tooltip-align="end"
+    onPointerDown={ripple} onClick={() => { playSound('toggle'); setTheme(next); }}>
+    <span className="ds-icon-swap ds-theme-icon" aria-hidden="true"><Icon icon={Moon} size="standalone" className="ds-theme-moon" /><Icon icon={Sun} size="standalone" className="ds-theme-sun" /></span>
+    <span className="ds-ripple-host" aria-hidden="true" />
+  </button>;
 }
 
 /* ── Top navbar ── */
@@ -37,7 +25,7 @@ export interface NavLink { href: string; label: string; current?: boolean }
  * Logo, links, call to action, theme and sound toggles. Condenses past 80px of scroll (without moving the
  * page) and collapses to a full-screen menu on small screens.
  */
-export function Navbar({ logo, links, cta, onCta, themeRoot }: { logo: ReactNode; links: NavLink[]; cta: string; onCta: () => void; themeRoot?: () => HTMLElement }) {
+export function Navbar({ logo, links, cta, onCta }: { logo: ReactNode; links: NavLink[]; cta: string; onCta: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -49,7 +37,7 @@ export function Navbar({ logo, links, cta, onCta, themeRoot }: { logo: ReactNode
     <a className="ds-navbar-logo" href="#top">{logo}</a>
     <nav aria-label="Primary" className="ds-navbar-links">{links.map((link) => <a key={link.href} href={link.href} aria-current={link.current ? 'page' : undefined}>{link.label}</a>)}</nav>
     <div className="ds-navbar-actions">
-      <ThemeToggle root={themeRoot} />
+      <ThemeToggle />
       <SoundToggle />
       <button type="button" className="ds-button ds-button-primary ds-navbar-cta" onClick={onCta}>{cta}<Icon icon={ArrowRight} /></button>
       <button type="button" className="ds-navbar-menu ds-icon-button ds-has-tooltip" aria-expanded={open} aria-controls="ds-mobile-menu" aria-label={open ? 'Close menu' : 'Open menu'} data-tooltip={open ? 'Close menu' : 'Open menu'} data-tooltip-side={open ? 'left' : 'bottom'} data-tooltip-align="end" onClick={() => setOpen((value) => !value)}><MenuToggleIcon open={open} /></button>
