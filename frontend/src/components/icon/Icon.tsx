@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, PointerEvent } from 'react';
 import { Bell, CircleCheck, LoaderCircle, Menu, Search, X, type LucideIcon } from './icons';
 
 /** 16px beside text, 20px on its own, 24px for feature marks. Nothing else. */
@@ -21,11 +21,30 @@ export function Icon({ icon: Glyph, size = 'inline', label, className }: IconPro
     {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })} />;
 }
 
-/** Icon-only button: the label is required and doubles as the visible tooltip. */
-export function IconButton({ icon, label, size = 'standalone', className, ...button }: { icon: LucideIcon; label: string; size?: IconSize } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'children'>) {
-  return <button type="button" {...button} aria-label={label} data-tooltip={label} className={['ds-icon-button', className].filter(Boolean).join(' ')}>
-    <Icon icon={icon} size={size} />
+/**
+ * Icon-only button: a circle, the label is required and doubles as the visible tooltip. A ripple spreads
+ * from the pointer on press; `loading` swaps the glyph for a spinner and disables the button.
+ */
+export function IconButton({ icon, label, size = 'standalone', className, loading = false, disabled, onPointerDown, ...button }: { icon: LucideIcon; label: string; size?: IconSize; loading?: boolean } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'children'>) {
+  return <button type="button" {...button} disabled={disabled || loading} aria-busy={loading || undefined} aria-label={label} data-tooltip={label} className={['ds-icon-button', className].filter(Boolean).join(' ')}
+    onPointerDown={(event) => { ripple(event); onPointerDown?.(event); }}>
+    {loading ? <Spinner size={size} /> : <Icon icon={icon} size={size} />}
+    <span className="ds-ripple-host" aria-hidden="true" />
   </button>;
+}
+
+/** Press feedback: a circle that grows from the pointer and fades (removed when its animation ends). */
+export function ripple(event: PointerEvent<HTMLElement>) {
+  // Ripples are clipped by a host layer so the tooltip outside the button stays visible.
+  const host = event.currentTarget.querySelector<HTMLElement>(':scope > .ds-ripple-host') ?? event.currentTarget;
+  const bounds = event.currentTarget.getBoundingClientRect();
+  const wave = document.createElement('span');
+  wave.className = 'ds-ripple';
+  wave.style.left = `${event.clientX - bounds.left}px`;
+  wave.style.top = `${event.clientY - bounds.top}px`;
+  wave.addEventListener('animationend', () => wave.remove(), { once: true });
+  host.append(wave);
+  window.setTimeout(() => wave.remove(), 1000); // also when animations are off
 }
 
 /** Menu ↔ close: the bars turn 45° into the X. */

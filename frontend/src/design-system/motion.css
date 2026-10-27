@@ -148,6 +148,10 @@ dialog.ds-modal[data-closing]::backdrop { animation: ds-fade-out var(--duration-
 .ds-toast[data-tone="success"] > .ds-icon { color: var(--color-success); }
 .ds-toast[data-tone="error"] { border-color: var(--color-error-border); }
 .ds-toast[data-tone="error"] > .ds-icon { color: var(--color-error); }
+.ds-toast[data-tone="warning"] { border-color: var(--color-warning-border); }
+.ds-toast[data-tone="warning"] > .ds-icon { color: var(--color-warning); }
+.ds-toast[data-tone="info"] { border-color: var(--color-info-border); }
+.ds-toast[data-tone="info"] > .ds-icon { color: var(--color-info); }
 .ds-toast[data-leaving] { animation: ds-toast-out var(--duration-modal-out) var(--ease-in) forwards; }
 .ds-toast-progress {
   position: absolute;

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { IconButton } from '../components/icon/Icon';
 import { X } from '../components/icon/icons';
-import { ActionButton, FloatingField, Skeleton, SkeletonScreen, ToastProvider, holdSuccess, useShake, useToast, type ActionState } from '../components/motion/feedback';
+import { ActionButton, Skeleton, SkeletonScreen, ToastProvider, holdSuccess, useShake, useToast, type ActionState } from '../components/motion/feedback';
 import { CountUp, RevealGroup, Typewriter, WordReveal, revealItem } from '../components/motion/reveal';
 import { Button, Card, Modal } from '../components/ui';
+import { TextField } from '../components/library/forms';
 
 /** The motion system on the reference page: the real components, so timing can be checked here. */
 export function ReferenceMotion() {
@@ -36,7 +37,7 @@ function MotionLab() {
 
     <p className="ds-label">Feedback</p>
     <div className="ds-cluster" ref={form}>
-      <FloatingField label="Email address" type="email" data-testid="float" />
+      <TextField label="Email address" type="email" data-testid="float" />
       <ActionButton state={state} busyLabel="Saving…" successLabel="Saved" onClick={() => { void submit(); }} data-testid="action">Save profile</ActionButton>
       <Button variant="secondary" onClick={shake} data-testid="shake">Show an error</Button>
       <Button variant="secondary" onClick={() => notify('Signed in as Ada Lovelace.')} data-testid="toast">Show a toast</Button>

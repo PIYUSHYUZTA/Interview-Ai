@@ -6,6 +6,7 @@ import './base.css';
 import './icons.css';
 import './motion.css';
 import './sound.css';
+import './components.css';
 import './reference.css';
 import { createRoot } from 'react-dom/client';
 import { ReferenceIcons } from './ReferenceIcons';

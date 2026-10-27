@@ -2,13 +2,20 @@ import { RetroButton } from './vendor/retro-button';
 import { Spinner } from './icon/Icon';
 import { motionTokens, prefersReducedMotion } from '../design-system/motion';
 import { playSound } from './sound/sound';
+import { EmptyState as LibraryEmptyState } from './library/overlays';
+import { Inbox } from './icon/icons';
 import './vendor/vendor.css';
 import { useEffect, useRef } from 'react';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
-/** A soft tick confirms the press; buttons that switch something on or off (aria-pressed) click instead. */
-export function Button({ variant = 'primary', className = '', onClick, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }) {
-  return <RetroButton type="button" variant={variant === 'primary' ? 'default' : variant === 'danger' ? 'destructive' : variant} className={`btn btn-${variant} ${className}`} {...props} onClick={(event) => { playSound(props['aria-pressed'] === undefined ? 'click' : 'toggle'); onClick?.(event); }} />;
+/**
+ * A soft tick confirms the press; buttons that switch something on or off (aria-pressed) click instead.
+ * `loading` shows a spinner beside the label and disables the button until the work finishes.
+ */
+export function Button({ variant = 'primary', className = '', onClick, loading = false, disabled, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; loading?: boolean }) {
+  return <RetroButton type="button" variant={variant === 'primary' ? 'default' : variant === 'danger' ? 'destructive' : variant} className={`btn btn-${variant} ${className}`} {...props}
+    disabled={disabled || loading} aria-busy={loading || undefined}
+    onClick={(event) => { playSound(props['aria-pressed'] === undefined ? 'click' : 'toggle'); onClick?.(event); }}>{loading && <Spinner size="inline" />}{children}</RetroButton>;
 }
 export function Card({ children, className = '', ...section }: { children: ReactNode; className?: string } & HTMLAttributes<HTMLElement>) { return <section {...section} className={`card ${className}`}>{children}</section>; }
 export function Status({ children, tone = '' }: { children: ReactNode; tone?: string }) { return <span className={`status ${tone}`}><i />{children}</span>; }
@@ -16,7 +23,8 @@ export function ErrorNotice({ message, retry }: { message: string | null; retry?
   return message ? <div role="alert" className="notice error">{message}{retry && <Button variant="ghost" onClick={retry}>Try again</Button>}</div> : null;
 }
 export function Loading({ label = 'Loading…' }: { label?: string }) { return <div className="loading" role="status" aria-live="polite"><Spinner /><span>{label}</span></div>; }
-export function EmptyState({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) { return <div className="empty-state"><span className="empty-mark">↗</span><h3>{title}</h3><p>{children}</p>{action}</div>; }
+/** Kept for existing call sites; renders the library empty state (illustration, message, one action). */
+export function EmptyState({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) { return <LibraryEmptyState icon={Inbox} title={title} action={action}>{children}</LibraryEmptyState>; }
 /** Opens at 96% scale and settles (200ms); closes the same way (150ms) before handing back control. */
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode | ((close: () => void) => ReactNode); onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);

@@ -6,8 +6,9 @@ import { getInterviewResults } from '../api';
 import { IntegrityReview } from './IntegrityReview';
 import { Icon } from './icon/Icon';
 import { ArrowRight, CircleCheck, Target } from './icon/icons';
-import { Button, Card, ErrorNotice, Meter, ScoreRing, Status, labelFor } from './ui';
+import { Button, Card, Meter, ScoreRing, Status, labelFor } from './ui';
 import { Skeleton, SkeletonScreen } from './motion/feedback';
+import { ErrorState } from './library/overlays';
 interface Props { interviewId: string; initialResults?: InterviewResultsResponse | null; onRestart: () => void }
 export function ResultsScreen({ interviewId, initialResults, onRestart }: Props) {
   const [results, setResults] = useState<InterviewResultsResponse | null>(initialResults ?? null);
@@ -19,7 +20,7 @@ export function ResultsScreen({ interviewId, initialResults, onRestart }: Props)
     <header className="page-heading"><div><Skeleton width="200px" height="12px" /><Skeleton width="min(480px, 80%)" height="40px" /><Skeleton width="240px" height="14px" /></div></header>
     <Card><Skeleton width="160px" height="12px" /><Skeleton height="180px" /><Skeleton width="60%" height="14px" /></Card>
   </SkeletonScreen>;
-  if (error || !results) return <ErrorNotice message={error ?? 'No assessment is available.'} retry={load} />;
+  if (error || !results) return <ErrorState title="The assessment did not load" message={error ?? 'No assessment is available.'} onRetry={load} />;
   const strengths = results.details.strengths;
   return <div className="page results-page"><header className="page-heading"><div><p className="eyebrow">YOUR INTELLIGENCE REPORT</p><h1>A clearer picture. A next step.</h1><p>{results.candidateName} · {results.roleTitle}</p></div><Button onClick={onRestart}>Practice again <Icon icon={ArrowRight} /></Button></header>
     <div className="report-hero"><Card className="assessment-overview"><Status tone="success">Interview completed</Status><div className="assessment-score"><ScoreRing score={results.overallScore} /><div><p className="eyebrow">OVERALL ASSESSMENT</p><h2>{labelFor(results.performanceBand)}</h2><p>{results.evidence.length} answers contributed to this assessment.</p></div></div><p className="fine-print">{results.providerName === 'deterministic' ? 'Deterministic demo: heuristic evaluation, not a live LLM assessment.' : `Configured evaluation provider: ${results.providerName}.`} Scores summarize observed answers, not your potential.</p></Card><Card><p className="eyebrow">HOW YOU PERFORMED</p><h2>Component breakdown</h2><div className="component-grid">{Object.entries(results.componentScores).map(([id, value]) => <Meter key={id} label={`${labelFor(id)} · ${Math.round((results.details.scoringWeights[id] ?? 0) * 100)}%`} value={value} />)}</div></Card></div>

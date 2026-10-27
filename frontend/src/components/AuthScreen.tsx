@@ -4,7 +4,8 @@ import { loginCandidate, registerCandidate } from '../api';
 import { Icon } from './icon/Icon';
 import { ArrowRight, Brain } from './icon/icons';
 import { Button, Card, ErrorNotice, Loading } from './ui';
-import { ActionButton, FloatingField, holdSuccess, useShake, type ActionState } from './motion/feedback';
+import { ActionButton, holdSuccess, useShake, type ActionState } from './motion/feedback';
+import { PasswordField, TextField } from './library/forms';
 
 interface Props {
   checkingSession: boolean;
@@ -49,9 +50,9 @@ export function AuthScreen({ checkingSession, sessionError, onAuthenticated, onB
         <p className="eyebrow">CANDIDATE ACCOUNT</p><h2>{mode === 'register' ? 'Create your account' : 'Welcome back'}</h2><p className="muted">{mode === 'register' ? 'Save your profile and return to your interview development over time.' : 'Sign in to continue to your interview workspace.'}</p>
         <ErrorNotice message={error ?? sessionError} />
         <form ref={form} className="auth-form" onSubmit={(event) => { void submit(event); }}>
-          {mode === 'register' && <FloatingField label="Full name" autoComplete="name" required minLength={2} maxLength={100} value={name} disabled={busy} onChange={(event) => setName(event.target.value)} />}
-          <FloatingField label="Email address" type="email" autoComplete="email" required maxLength={254} value={email} disabled={busy} onChange={(event) => setEmail(event.target.value)} />
-          <FloatingField label="Password" type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required minLength={mode === 'register' ? 10 : 1} maxLength={128} value={password} disabled={busy} onChange={(event) => setPassword(event.target.value)} hint={mode === 'register' ? 'Use at least 10 characters.' : undefined} />
+          {mode === 'register' && <TextField label="Full name" autoComplete="name" required minLength={2} maxLength={100} value={name} disabled={busy} onChange={(event) => setName(event.target.value)} />}
+          <TextField label="Email address" type="email" autoComplete="email" required maxLength={254} value={email} disabled={busy} onChange={(event) => setEmail(event.target.value)} />
+          <PasswordField autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required minLength={mode === 'register' ? 10 : 1} maxLength={128} value={password} disabled={busy} onChange={(event) => setPassword(event.target.value)} hint={mode === 'register' ? 'Use at least 10 characters.' : undefined} />
           <ActionButton type="submit" state={state} disabled={checkingSession} busyLabel={mode === 'register' ? 'Creating your account…' : 'Signing you in…'} successLabel={mode === 'register' ? 'Account created' : 'Signed in'}>{mode === 'register' ? 'Create candidate account' : 'Sign in'}<Icon icon={ArrowRight} /></ActionButton>
         </form>
         <div className="auth-switch"><span>{mode === 'register' ? 'Already have an account?' : 'New to Interview AI?'}</span><Button variant="ghost" disabled={busy} onClick={() => { setError(null); setMode(mode === 'register' ? 'login' : 'register'); }}> {mode === 'register' ? 'Sign in' : 'Create account'}</Button></div>

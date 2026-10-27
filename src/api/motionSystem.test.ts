@@ -101,7 +101,7 @@ describe('motion system', () => {
     expect(app).toContain('<ToastProvider>');
     expect(app).toContain("notify(`Signed in as ${result.candidate.name}.`, 'success', { silent: true });");
     const auth = read('components/AuthScreen.tsx');
-    for (const used of ['<ActionButton type="submit"', '<FloatingField label="Email address"', 'useShake<HTMLFormElement>()', 'await holdSuccess();']) expect(auth).toContain(used);
+    for (const used of ['<ActionButton type="submit"', '<TextField label="Email address"', '<PasswordField ', 'useShake<HTMLFormElement>()', 'await holdSuccess();']) expect(auth).toContain(used);
     expect(read('components/ui.tsx')).toContain('className="modal ds-modal"');
     expect(read('components/Dashboard.tsx')).toContain('<CountUp value={completed.length} />');
     expect(read('components/Dashboard.tsx')).toContain('<SkeletonScreen label="Loading your workspace…"');

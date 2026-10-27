@@ -10,6 +10,7 @@ import './design-system/sound.css'
 import './index.css'
 import './product-design.css'
 import './candidate-product.css'
+import './design-system/components.css'
 import './design-system/motion.css'
 import App from './App.tsx'
 

@@ -5,9 +5,10 @@ import { getSessions, getCandidateProgress } from '../api';
 import type { SessionSummary, InterviewResultsResponse } from '../types';
 import { Icon } from './icon/Icon';
 import { ArrowRight, FileText } from './icon/icons';
-import { Button, Card, EmptyState, ErrorNotice, ScoreRing, Status, labelFor } from './ui';
+import { Button, Card, EmptyState, ScoreRing, Status, labelFor } from './ui';
 import { Skeleton, SkeletonScreen } from './motion/feedback';
 import { CountUp, RevealGroup, revealItem } from './motion/reveal';
+import { ErrorState } from './library/overlays';
 import { SkillDevelopment } from './SkillDevelopment';
 interface Props { onStartNewInterview: (preset?: string) => void; onViewInterviewResults: (id: string) => void }
 export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props) {
@@ -35,7 +36,7 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
   const completed = history.filter((s) => s.state === 'COMPLETED' && s.overallScore !== null);
   const visible = history.filter((s) => filter === 'all' || (filter === 'completed' ? s.state === 'COMPLETED' && s.overallScore !== null : (s.state !== 'COMPLETED' || s.overallScore === null)));
   if (loading) return <DashboardSkeleton />;
-  if (error) return <ErrorNotice message={error} retry={load} />;
+  if (error) return <ErrorState title="Your workspace did not load" message={error} onRetry={load} />;
   return <div className="page dashboard-page"><header className="page-heading"><div><p className="eyebrow">YOUR PRACTICE, WITH PURPOSE</p><h1>{latest ? `Keep moving forward, ${latest.candidateName.split(' ')[0]}.` : 'Your next chapter starts here.'}</h1><p>{latest ? `${latest.roleTitle} · Your latest evidence and next steps, in one place.` : 'Build a baseline. Practice deliberately. See what develops.'}</p></div><Button onClick={() => onStartNewInterview()}>New interview <Icon icon={ArrowRight} /></Button></header>
     <div className="dashboard-summary"><Card className="readiness-card"><p className="eyebrow">ROLE READINESS</p><div className="readiness-layout"><ScoreRing label="Role readiness index" score={latest?.readiness?.score ?? null} /><div><h2>{latest?.readiness ? `${latest.readiness.assessedSkills} of ${latest.readiness.totalSkills} role skills assessed` : 'Start with evidence.'}</h2><p>{latest ? latest.roleTitle : 'Complete an interview to establish your readiness baseline.'}</p>{latest?.readiness && <><label className="coverage-label">Role-weighted evidence coverage <strong>{latest.readiness.coverage}%</strong></label><progress aria-label="Role-weighted evidence coverage" value={latest.readiness.coverage} max={100} /></>}</div></div><details className="score-explainer"><summary>How readiness is calculated</summary><p>{latest?.readiness?.methodology ?? 'A role-weighted index of demonstrated skill verdicts: full credit for meets, half for partially meets, and no credit for gaps or unassessed skills. No score is shown until there is evidence.'}</p><p>A practice indicator, not a hiring prediction. Limited coverage means important abilities remain untested.</p></details>{latest?.providerName === 'deterministic' && <small>Demo mode · heuristic evaluation</small>}</Card>
     <Card className="recent-assessment"><p className="eyebrow">RECENT ASSESSMENT</p>{latest ? <><div className="recent-score"><strong>{latest.overallScore.toFixed(1)}<small>/100</small></strong><Status>{labelFor(latest.performanceBand)}</Status></div><h2>{latest.candidateName}</h2><p>{latest.evidence.length} answers · {latest.gaps.length} identified gaps</p><Button variant="secondary" onClick={() => onViewInterviewResults(latest.sessionId)}>Explore assessment <Icon icon={ArrowRight} /></Button></> : <><h2>Meet your starting point.</h2><p>Your first interview brings together your experience, target role and answer evidence.</p><Button onClick={() => onStartNewInterview()}>Prepare my interview <Icon icon={ArrowRight} /></Button><Button variant="ghost" onClick={() => onStartNewInterview('senior_backend')}>Explore with a sample</Button></>}</Card></div>

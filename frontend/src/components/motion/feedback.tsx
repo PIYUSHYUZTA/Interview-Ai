@@ -1,14 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { AnimatePresence, motion, PresenceContext } from 'motion/react';
 import { motionTokens, prefersReducedMotion, usePrefersReducedMotion } from '../../design-system/motion';
 import { CheckDrawIcon, Icon, IconButton, Spinner } from '../icon/Icon';
-import { CircleCheck, CircleAlert, X } from '../icon/icons';
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from '../icon/icons';
 import { Button } from '../ui';
 import { playSound } from '../sound/sound';
 
 /* ── Toasts ── */
-type Tone = 'success' | 'error' | 'info';
+type Tone = 'success' | 'error' | 'warning' | 'info';
+const TOAST_ICONS = { success: CircleCheck, error: CircleAlert, warning: TriangleAlert, info: Info };
 interface Toast { id: number; message: string; tone: Tone; leaving: boolean }
 const ToastContext = createContext<(message: string, tone?: Tone, options?: { silent?: boolean }) => void>(() => undefined);
 export const useToast = () => useContext(ToastContext);
@@ -25,6 +26,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = ++nextId.current;
     setToasts((list) => [...list.slice(-2), { id, message, tone, leaving: false }]);
     if (!options.silent) playSound(tone === 'error' ? 'error' : 'notify');
+
   }, []);
   const dismiss = useCallback((id: number) => {
     setToasts((list) => list.map((toast) => (toast.id === id ? { ...toast, leaving: true } : toast)));
@@ -49,7 +51,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   }, [paused, toast.leaving, onDismiss]);
   return <div className="ds-toast" data-tone={toast.tone} data-leaving={toast.leaving ? '' : undefined} data-paused={paused ? '' : undefined}
     onPointerEnter={() => setPaused(true)} onPointerLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
-    <Icon icon={toast.tone === 'error' ? CircleAlert : CircleCheck} size="standalone" />
+    <Icon icon={TOAST_ICONS[toast.tone]} size="standalone" />
     <span>{toast.message}</span>
     <IconButton icon={X} label="Dismiss notification" data-tooltip-side="left" onClick={() => { playSound('remove'); onDismiss(); }} />
     <span className="ds-toast-progress" aria-hidden="true" />
@@ -102,17 +104,6 @@ export function useShake<T extends HTMLElement>() {
     return () => element?.removeEventListener('animationend', done);
   }, []);
   return [ref, shake] as const;
-}
-
-/* ── Floating label input ── */
-type FloatingFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'placeholder'> & { label: string; hint?: ReactNode };
-/** An input whose label sits inside it and floats up on focus or once filled. */
-export function FloatingField({ label, hint, ...input }: FloatingFieldProps) {
-  return <label className="field ds-float-field">
-    <input aria-label={label} placeholder=" " {...input} />
-    <span className="ds-float-label" aria-hidden="true">{label}</span>
-    {hint && <small>{hint}</small>}
-  </label>;
 }
 
 /* ── Page transitions ── */

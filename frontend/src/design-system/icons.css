@@ -26,7 +26,7 @@
   height: var(--space-10);
   padding: 0;
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background: var(--bg-surface);
   color: var(--text-secondary);
   cursor: pointer;
