@@ -248,6 +248,27 @@
   --space-20: 80px;
   --space-24: 96px;
 
+  /* Responsive (mobile-first). Layout starts at 375px and scales to 1920px. Media queries cannot read
+     custom properties, so these document the only widths any @media may use: min-width at the value,
+     max-width one pixel below it (src/api/responsive.test.ts enforces this). */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;   /* below this, navigation collapses to the menu button */
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --touch-target: 44px;     /* minimum width and height of anything tapped or clicked */
+
+  /* Fluid type: each heading step scales linearly from its 375px size to its 1440px size. */
+  --font-size-fluid-display: clamp(2.5rem, 1.8rem + 3vw, 4.5rem);    /* 40 → 72 */
+  --font-size-fluid-h1: clamp(2rem, 1.65rem + 1.5vw, 3rem);          /* 32 → 48 */
+  --font-size-fluid-h2: clamp(1.5rem, 1.32rem + 0.75vw, 2rem);       /* 24 → 32 */
+  --font-size-fluid-h3: clamp(1.25rem, 1.16rem + 0.38vw, 1.5rem);    /* 20 → 24 */
+  /* Responsive spacing: tighter on phones, roomier on large screens. */
+  --space-section: clamp(3rem, 1.95rem + 4.5vw, 6rem);              /* 48 → 96 between sections */
+  --space-block: clamp(1.5rem, 0.98rem + 2.25vw, 3rem);             /* 24 → 48 around blocks */
+  --space-gap: clamp(1rem, 0.83rem + 0.75vw, 1.5rem);               /* 16 → 24 between items */
+  --space-gutter: clamp(1rem, 0.4rem + 2.6vw, 3.5rem);              /* 16 → 56 page side padding */
+
   --container-max: 1280px;
   --container-padding: var(--space-6);   /* 24px; 48px from the desktop breakpoint */
   --grid-columns: 4;                      /* 4 mobile / 8 tablet / 12 desktop */

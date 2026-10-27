@@ -20,10 +20,11 @@
 .ds-has-tooltip { position: relative; }
 .ds-icon-button {
   position: relative;
+  flex-shrink: 0; /* never squeezed below the touch target */
   display: inline-grid;
   place-items: center;
-  width: var(--space-10);
-  height: var(--space-10);
+  width: var(--touch-target);
+  height: var(--touch-target);
   padding: 0;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-full);

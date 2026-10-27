@@ -24,5 +24,5 @@ body { margin: 0; background: var(--bg-base); color: var(--text-primary); font-f
 dialog.ds-modal { max-width: 440px; padding: var(--space-6); border: 1px solid var(--border-default); border-radius: var(--radius-xl); background: var(--bg-elevated); color: var(--text-primary); box-shadow: var(--shadow-lg); }
 dialog.ds-modal h2 { margin-top: 0; }
 /* The product's submit button (ActionButton) carries product styles that this page does not load. */
-.sc-form .btn { min-height: var(--space-10); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-primary-contrast); font-weight: var(--font-weight-medium); }
+.sc-form .btn { min-height: var(--touch-target); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-primary-contrast); font-weight: var(--font-weight-medium); }
 .sc-form .btn[data-state="success"] { background: var(--color-success); border-color: var(--color-success); }

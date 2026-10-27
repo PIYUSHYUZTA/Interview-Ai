@@ -4,10 +4,10 @@
  */
 
 /* ── Type styles: size / line height / tracking / weight from the scale ── */
-.ds-display { font: var(--font-weight-bold) var(--font-size-6xl) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
-.ds-h1 { font: var(--font-weight-semibold) var(--font-size-5xl) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
-.ds-h2 { font: var(--font-weight-semibold) var(--font-size-3xl) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
-.ds-h3 { font: var(--font-weight-semibold) var(--font-size-2xl) / var(--leading-tight) var(--font-sans); letter-spacing: -0.02em; }
+.ds-display { font: var(--font-weight-bold) var(--font-size-fluid-display) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
+.ds-h1 { font: var(--font-weight-semibold) var(--font-size-fluid-h1) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
+.ds-h2 { font: var(--font-weight-semibold) var(--font-size-fluid-h2) / var(--leading-tight) var(--font-sans); letter-spacing: var(--tracking-tight); }
+.ds-h3 { font: var(--font-weight-semibold) var(--font-size-fluid-h3) / var(--leading-tight) var(--font-sans); letter-spacing: -0.02em; }
 .ds-h4 { font: var(--font-weight-semibold) var(--font-size-xl) / var(--leading-tight) var(--font-sans); letter-spacing: -0.01em; }
 .ds-body-lg { font: var(--font-weight-regular) var(--font-size-lg) / var(--leading-relaxed) var(--font-sans); letter-spacing: var(--tracking-normal); }
 .ds-body { font: var(--font-weight-regular) var(--font-size-base) / var(--leading-normal) var(--font-sans); letter-spacing: var(--tracking-normal); }
@@ -17,12 +17,7 @@
 /* Exact values: timers, scores, warning counts, angles. Tabular figures keep columns aligned. */
 .ds-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-normal); }
 
-/* The largest steps scale down on small screens so they never overflow. */
-@media (max-width: 767px) {
-  .ds-display { font-size: var(--font-size-4xl); }
-  .ds-h1 { font-size: var(--font-size-3xl); }
-  .ds-h2 { font-size: var(--font-size-2xl); letter-spacing: -0.02em; }
-}
+/* Headings use the fluid sizes: they shrink smoothly to their phone size, so they never overflow. */
 
 /* ── Layout ── */
 /* Self-contained sizing: utilities must not depend on a global box-sizing reset. */

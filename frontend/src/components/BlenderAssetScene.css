@@ -10,7 +10,7 @@
 
 .voice-interviewer .interviewer-visual.has-blender-studio { width:100%; height:auto; margin:0 auto 18px; }
 
-@media(max-width:760px) { .blender-studio { height:220px; } .interview-active .voice-interviewer .interviewer-visual.has-blender-studio { height:auto; } }
+@media(max-width: 767px) { .blender-studio { height:220px; } .interview-active .voice-interviewer .interviewer-visual.has-blender-studio { height:auto; } }
 
 
 
