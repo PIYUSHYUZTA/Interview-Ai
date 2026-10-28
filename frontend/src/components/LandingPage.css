@@ -26,7 +26,7 @@
 .cinema .c-nav-cta { min-height: var(--touch-target); padding: 9px 15px; }
 .cinema .c-primary { min-height: 52px; padding: 15px 23px; gap: 24px; font-size: 13px; }
 .c-hero { display: grid; grid-template-columns: 1.08fr .92fr; align-items: center; position: relative; max-width: 1600px; min-height: calc(100svh - 88px); padding-top: 45px; padding-bottom: 85px; gap: 8px; }
-.c-hero-backdrop { position: absolute; width: 75%; height: 90%; pointer-events: none; top: -8%; right: -20%; background: radial-gradient(ellipse, color-mix(in srgb, var(--paint-ink) 14.5%, transparent), transparent 67%); z-index: -1; }
+.c-hero-backdrop { will-change: transform; position: absolute; width: 75%; height: 90%; pointer-events: none; top: -8%; right: -20%; background: radial-gradient(ellipse, color-mix(in srgb, var(--paint-ink) 14.5%, transparent), transparent 67%); z-index: -1; }
 .c-hero-copy { position: relative; z-index: 2; padding-top: 0; }
 .c-eyebrow { font-size: 9px; letter-spacing: .17em; font-weight: 550; color: var(--paint-ivory); line-height: 1.7; }
 .c-hero-eyebrow { display: flex; gap: 11px; align-items: center; margin-bottom: 28px; }
@@ -473,11 +473,16 @@ html:has(.cinema) { scroll-behavior:smooth; }
 @media(max-width: 767px) { .c-footer { grid-template-columns: 1fr; } .c-footer-groups { grid-template-columns: 1fr 1fr; } }
 
 /* Motion pass: a sticky navigation that condenses after scrolling and marks the current section. */
-.cinema > .c-nav { position: sticky; top: 0; z-index: 30; margin-bottom: 0; animation: c-nav-arrive var(--duration-reveal) var(--ease-out) backwards; transition: height var(--duration-nav) var(--ease-out), margin-bottom var(--duration-nav) var(--ease-out), background-color var(--duration-nav) var(--ease-out), border-color var(--duration-nav) var(--ease-out), backdrop-filter var(--duration-nav) var(--ease-out); }
+/* Condensing moves layers, never layout: the bar's background is a layer that slides up 24px and the
+   contents shift up 12px (transform only, GPU-composited), so the box and everything below stay put. */
+.cinema > .c-nav { position: sticky; top: 0; z-index: 30; isolation: isolate; background: transparent; border-bottom-color: transparent; pointer-events: none; animation: c-nav-arrive var(--duration-reveal) var(--ease-out) backwards; }
+.cinema > .c-nav > * { pointer-events: auto; transition: translate var(--duration-nav) var(--ease-out); }
+.cinema > .c-nav::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: color-mix(in srgb, var(--paint-jet) 92%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--paint-cerulean-text) 25%, transparent); transition: translate var(--duration-nav) var(--ease-out), background-color var(--duration-nav) var(--ease-out), border-color var(--duration-nav) var(--ease-out); will-change: translate; }
 /* Past 80px the bar condenses: shorter, frosted (12px blur) and edged with a thin line. */
 /* The margin gives back the height the bar loses, so nothing below it moves (no layout shift). */
-.cinema > .c-nav.is-scrolled { height: 64px; margin-bottom: 24px; background: color-mix(in srgb, var(--paint-jet) 82%, transparent); border-color: color-mix(in srgb, var(--paint-cerulean-text) 30%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-@media(max-width: 767px) { .cinema > .c-nav.is-scrolled { height: 60px; margin-bottom: 14px; } }
+.cinema > .c-nav.is-scrolled::before { translate: 0 -24px; background: color-mix(in srgb, var(--paint-jet) 82%, transparent); border-color: color-mix(in srgb, var(--paint-cerulean-text) 30%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.cinema > .c-nav.is-scrolled > * { translate: 0 -12px; }
+@media(max-width: 767px) { .cinema > .c-nav.is-scrolled::before { translate: 0 -14px; } .cinema > .c-nav.is-scrolled > * { translate: 0 -7px; } }
 @keyframes c-nav-arrive { from { transform: translateY(-100%); } }
 .c-nav nav a { position: relative; padding-block: 6px; }
 /* The underline grows outward from the centre of the link. */
@@ -504,6 +509,7 @@ html:has(.cinema) { scroll-behavior:smooth; }
 
 @media(prefers-reduced-motion:reduce) {
   .cinema > .c-nav { animation: none; }
+  .cinema > .c-nav::before, .cinema > .c-nav > * { transition: none; }
   .cinema > .c-nav, .c-nav nav a::after, .c-step-card, .c-step-visual, .c-step-number, .c-practice-states span, .c-portrait, .c-type { transition: none; }
 }
 

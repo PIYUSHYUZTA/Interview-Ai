@@ -6,6 +6,7 @@ import './icons.css';
 import './sound.css';
 import './components.css';
 import './motion.css';
+import './a11y.css';
 import './showcase.css';
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -41,7 +42,7 @@ function NavigationSection() {
   const [current, setCurrent] = useState('overview');
   return <Section id="navigation" title="Navigation">
     <Demo title="Sidebar · current, badge, disabled, loading">
-      <Sidebar label="Library sidebar" current={current} onSelect={setCurrent} footer={<div className="ds-cluster"><Avatar name="Ada Lovelace" status="online" size="sm" /><span className="ds-body-sm">Ada Lovelace</span></div>}
+      <Sidebar landmark={false} label="Library sidebar" current={current} onSelect={setCurrent} footer={<div className="ds-cluster"><Avatar name="Ada Lovelace" status="online" size="sm" /><span className="ds-body-sm">Ada Lovelace</span></div>}
         items={[{ id: 'overview', label: 'Overview', icon: LayoutDashboard }, { id: 'setup', label: 'Interview setup', icon: SlidersHorizontal, badge: 'New' }, { id: 'reports', label: 'Reports', icon: ChartColumn, loading: true }, { id: 'settings', label: 'Settings', icon: Settings, disabled: true }]} />
     </Demo>
     <Demo title="Breadcrumbs"><Breadcrumbs items={[{ label: 'Workspace', onSelect: () => undefined }, { label: 'Reports', onSelect: () => undefined }, { label: 'Senior backend · 12 Oct' }]} /></Demo>
@@ -166,7 +167,7 @@ function FeedbackSection() {
     <Demo title="Skeletons · text, avatar, image, button, card" wide><div className="sc-skeletons"><SkeletonCard /><div className="ds-stack"><SkeletonAvatar size={56} /><SkeletonText lines={4} /><SkeletonImage ratio="4 / 3" /><SkeletonButton /></div></div></Demo>
     <Demo title="Empty state"><Panel><EmptyState icon={Inbox} title="No interviews yet" action={<DsButton iconEnd={ArrowRight}>Set up an interview</DsButton>}>Your first practice builds a baseline you can measure against.</EmptyState></Panel></Demo>
     <Demo title="Error state · retry"><Panel><ErrorState message={failures ? `Still unavailable (attempt ${failures + 1}).` : 'The report service did not respond.'} onRetry={() => new Promise((r) => setTimeout(() => { setFailures((n) => n + 1); r(null); }, 900))} /></Panel></Demo>
-    <Demo title="404 page" wide><div className="sc-404"><NotFound path="/reports/old-link" onHome={() => undefined} onWorkspace={() => undefined} /></div></Demo>
+    <Demo title="404 page" wide><div className="sc-404"><NotFound embedded path="/reports/old-link" onHome={() => undefined} onWorkspace={() => undefined} /></div></Demo>
   </Section>;
 }
 

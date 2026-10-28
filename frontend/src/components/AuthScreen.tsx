@@ -43,7 +43,7 @@ export function AuthScreen({ checkingSession, sessionError, onAuthenticated, onB
     }
   };
 
-  return <div className="page auth-page">
+  return <main className="page auth-page" id="auth-main" tabIndex={-1}>
     <div className="auth-intro"><span className="auth-brand-mark"><Icon icon={Brain} size="feature" /></span><p className="eyebrow">YOUR PRACTICE, YOUR PROGRESS</p><h1>Make every answer part of your story.</h1><p>Your interview plans, resume profiles and evidence-backed reports stay with your candidate account.</p><div className="auth-points"><span><i /> Resume profiles saved to your workspace</span><span><i /> Interview history available after restart</span><span><i /> Private sign-in with secure password hashing</span></div></div>
     <Card className="auth-card">
       {checkingSession ? <Loading label="Checking your account…" /> : <>
@@ -59,5 +59,5 @@ export function AuthScreen({ checkingSession, sessionError, onAuthenticated, onB
         <Button className="auth-back" variant="ghost" disabled={busy} onClick={onBack}>Back to home</Button>
       </>}
     </Card>
-  </div>;
+  </main>;
 }

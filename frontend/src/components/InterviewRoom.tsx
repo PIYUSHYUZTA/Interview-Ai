@@ -62,7 +62,7 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
 
-  const root = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLElement>(null);
 
 
 
@@ -681,7 +681,7 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
 
-  return <div ref={root} className={`immersive-room ${phase !== 'ready' ? 'interview-active' : ''} ${fullscreen ? 'is-fullscreen' : ''}`}>
+  return <main ref={root} id="room-main" tabIndex={-1} className={`immersive-room ${phase !== 'ready' ? 'interview-active' : ''} ${fullscreen ? 'is-fullscreen' : ''}`}>
 
 
 
@@ -724,7 +724,7 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
 
-      </section><aside className="voice-candidate"><div className="camera-preview"><video ref={video} autoPlay muted playsInline aria-label="Local camera preview" className={media.camera ? '' : 'hidden-video'} />{media.camera && consent && showOverlays && vision.observation && <VisionOverlay observation={vision.observation} size={vision.frameSize} />}{!media.camera && <div className="camera-placeholder"><p>Camera off</p></div>}{media.camera && (consent && vision.observation ? <small className={`camera-tracking-badge face-status-${faceStatus(vision.observation).tone}`} role="status">{faceStatus(vision.observation).label}</small> : <small className={`camera-tracking-badge ${consent ? 'is-on' : 'is-off'}`}>{consent ? 'Sampled for face, eye and hand tracking' : 'Preview only · not analysed'}</small>)}</div><div className="media-buttons"><Button variant="secondary" disabled={media.cameraPending} onClick={() => { setCheckingFace(false); vision.invalidate(); void media.toggleCamera(); }}>{media.camera ? 'Turn camera off' : 'Request camera'}</Button><Button variant="secondary" disabled={['ready','preparing','transcribing','evaluating','complete'].includes(phase)} onClick={() => { if (media.listening || media.micPending) { clearVoiceTimers(); media.stopMicrophone(); setPhase('paused'); } else listenRef.current(); }}>{media.listening ? 'Mute microphone' : media.micPending ? 'Cancel microphone' : 'Unmute microphone'}</Button></div><p role="status">{media.camera ? 'Camera capture active' : 'Camera capture off'} · {media.listening ? 'Microphone capture active' : 'Microphone not listening'}</p><p className={`tracking-state ${consent ? 'is-on' : 'is-off'}`}>Face, eye and hand tracking: <strong>{consent ? 'on' : 'off'}</strong>{!consent && phase !== 'ready' ? ' · visual monitoring was not enabled before this interview started' : ''}</p><MonitoringStatus camera={media.camera} cameraPending={media.cameraPending} consent={consent} checking={checkingFace} observation={vision.observation} observedAt={vision.observedAt} readiness={vision.faceReadiness} warnings={state.integrity.warningCount} maximumWarnings={integrityPolicy.maximumWarnings} cameraWarnings={state.integrity.visionWarningCount ?? 0} cameraNotice={vision.notice} overlays={showOverlays} onOverlays={setShowOverlays} />
+      </section><aside className="voice-candidate"><div className="camera-preview"><video ref={video} width={640} height={480} autoPlay muted playsInline aria-label="Local camera preview" className={media.camera ? '' : 'hidden-video'} />{media.camera && consent && showOverlays && vision.observation && <VisionOverlay observation={vision.observation} size={vision.frameSize} />}{!media.camera && <div className="camera-placeholder"><p>Camera off</p></div>}{media.camera && (consent && vision.observation ? <small className={`camera-tracking-badge face-status-${faceStatus(vision.observation).tone}`} role="status">{faceStatus(vision.observation).label}</small> : <small className={`camera-tracking-badge ${consent ? 'is-on' : 'is-off'}`}>{consent ? 'Sampled for face, eye and hand tracking' : 'Preview only · not analysed'}</small>)}</div><div className="media-buttons"><Button variant="secondary" disabled={media.cameraPending} onClick={() => { setCheckingFace(false); vision.invalidate(); void media.toggleCamera(); }}>{media.camera ? 'Turn camera off' : 'Request camera'}</Button><Button variant="secondary" disabled={['ready','preparing','transcribing','evaluating','complete'].includes(phase)} onClick={() => { if (media.listening || media.micPending) { clearVoiceTimers(); media.stopMicrophone(); setPhase('paused'); } else listenRef.current(); }}>{media.listening ? 'Mute microphone' : media.micPending ? 'Cancel microphone' : 'Unmute microphone'}</Button></div><p role="status">{media.camera ? 'Camera capture active' : 'Camera capture off'} · {media.listening ? 'Microphone capture active' : 'Microphone not listening'}</p><p className={`tracking-state ${consent ? 'is-on' : 'is-off'}`}>Face, eye and hand tracking: <strong>{consent ? 'on' : 'off'}</strong>{!consent && phase !== 'ready' ? ' · visual monitoring was not enabled before this interview started' : ''}</p><MonitoringStatus camera={media.camera} cameraPending={media.cameraPending} consent={consent} checking={checkingFace} observation={vision.observation} observedAt={vision.observedAt} readiness={vision.faceReadiness} warnings={state.integrity.warningCount} maximumWarnings={integrityPolicy.maximumWarnings} cameraWarnings={state.integrity.visionWarningCount ?? 0} cameraNotice={vision.notice} overlays={showOverlays} onOverlays={setShowOverlays} />
 
       <details className="proctoring-diagnostics"><summary>Technical details</summary>
 
@@ -753,7 +753,7 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
 
-  </div>;
+  </main>;
 
 
 

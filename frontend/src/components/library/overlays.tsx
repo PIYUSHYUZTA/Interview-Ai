@@ -16,7 +16,12 @@ export function Drawer({ title, side = 'right', onClose, children, footer }: { t
   const ref = useRef<HTMLDialogElement>(null);
   const closing = useRef(false);
   const titleId = useId();
-  useEffect(() => { const dialog = ref.current!; dialog.showModal(); playSound('modalOpen'); return () => dialog.close(); }, []);
+  useEffect(() => {
+    const dialog = ref.current!;
+    const opener = document.activeElement as HTMLElement | null; // focus returns here on close
+    dialog.showModal(); playSound('modalOpen');
+    return () => { dialog.close(); if (opener?.isConnected) opener.focus(); };
+  }, []);
   const close = () => {
     if (closing.current) return;
     closing.current = true; playSound('modalClose');

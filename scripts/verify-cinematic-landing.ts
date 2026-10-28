@@ -20,7 +20,7 @@ const result:Record<string,unknown>={};
 try {
   const context=await browser.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
   await context.addInitScript({content:`window.firstCtaOpacity=null;new MutationObserver(()=>{const action=document.querySelector('.c-hero-actions');if(action&&window.firstCtaOpacity===null)window.firstCtaOpacity=Number(getComputedStyle(action).opacity);}).observe(document,{subtree:true,childList:true});window.sceneDraws=0;window.disposedScenePrograms=0;for(const Context of [WebGLRenderingContext,WebGL2RenderingContext]){const dispose=Context.prototype.deleteProgram;Context.prototype.deleteProgram=function(program){window.disposedScenePrograms++;return dispose.call(this,program);};for(const method of ['drawArrays','drawElements']){const draw=Context.prototype[method];Context.prototype[method]=function(...args){window.sceneDraws++;return draw.apply(this,args);};}}`});
-  await context.addInitScript({content:`window.layoutShift=0;new PerformanceObserver(list=>{for(const entry of list.getEntries())if(!entry.hadRecentInput)window.layoutShift+=entry.value;}).observe({type:'layout-shift',buffered:true});`});
+  await context.addInitScript({content:`window.layoutShift=0;window.layoutShiftSources=[];new PerformanceObserver(list=>{for(const entry of list.getEntries())if(!entry.hadRecentInput){window.layoutShift+=entry.value;if(entry.value>.002)window.layoutShiftSources.push({value:+entry.value.toFixed(4),at:Math.round(entry.startTime),scrollY:Math.round(scrollY),sources:entry.sources.map(source=>String(source.node?.className||source.node?.nodeName||'?').slice(0,40)+' '+Math.round(source.previousRect.y)+'>'+Math.round(source.currentRect.y))});}}).observe({type:'layout-shift',buffered:true});`});
   const page=await context.newPage();page.setDefaultTimeout(30000);
   const errors:string[]=[];page.on('pageerror',(error:Error)=>errors.push(error.message));
   await page.goto(origin);
@@ -94,7 +94,8 @@ try {
   for(const label of ['Complete interview','Technical deep dive','Behavioral & communication'])assert.equal(await page.locator('#how-it-works .c-type strong',{hasText:label}).count(),1);
   assert.equal(await page.locator('.c-step-review .c-preview-example').innerText(),'EXAMPLE DATA');
   // D. Features: only the four implemented capabilities, plus what depends on configuration.
-  assert.deepEqual(await page.locator('#capabilities .c-capability-grid h3').allInnerTexts(),['Voice-based interview practice','Technical and behavioral preparation','Feedback and performance analysis','History and progress tracking']);
+  // Below-fold sections render lazily (content-visibility: auto), so read DOM text, not rendered innerText.
+  assert.deepEqual((await page.locator('#capabilities .c-capability-grid h3').allTextContents()).map((t)=>t.trim()),['Voice-based interview practice','Technical and behavioral preparation','Feedback and performance analysis','History and progress tracking']);
   await page.locator('#capabilities .c-availability').getByText('deterministic demo mode',{exact:false}).waitFor();
   await page.getByRole('button',{name:'Weak answer',exact:true}).click();await page.getByRole('heading',{name:'If a payment succeeds but its response is lost, what could happen when the client sends it again?'}).waitFor();
   await page.getByRole('button',{name:'Partial answer',exact:true}).click();await page.getByRole('heading',{name:'What should the server return when it receives the same idempotency key again?'}).waitFor();
@@ -148,7 +149,7 @@ try {
   const loading=await page.evaluate(()=>{const fcp=performance.getEntriesByName('first-contentful-paint')[0]?.startTime??Infinity;const heavy=performance.getEntriesByType('resource').filter((entry)=>/three|GLTFLoader|RoomEnvironment|hero-bust\.glb/.test(entry.name));return {fcp,heavy:heavy.map((entry)=>({name:entry.name.split('/').pop(),start:entry.startTime})),cls:(window as any).layoutShift};});
   assert.ok(loading.heavy.length>=2,'3D chunks and model should be observed');
   assert.ok(loading.heavy.every((entry:any)=>entry.start>loading.fcp),`3D work must start after first contentful paint (${Math.round(loading.fcp)} ms): ${JSON.stringify(loading.heavy)}`);
-  assert.ok(loading.cls<.05,`cumulative layout shift ${loading.cls}`);
+  assert.ok(loading.cls<.05,`cumulative layout shift ${loading.cls}: ${JSON.stringify(await page.evaluate(()=>(window as any).layoutShiftSources))}`);
   // Contrast: every visible text element meets WCAG AA (4.5:1, or 3:1 for large text).
   const contrastSource=fs.readFileSync(path.resolve('scripts/contrast-audit.js'),'utf8');
   const contrast=await page.evaluate(`${contrastSource}('.cinema')`) as {checked:number;failing:number;failures:unknown};

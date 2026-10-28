@@ -72,8 +72,12 @@ describe('motion system', () => {
   it('the landing navigation arrives once and condenses past 80px', () => {
     const landingCss = read('components/LandingPage.css');
     expect(landingCss).toContain('@keyframes c-nav-arrive { from { transform: translateY(-100%); } }');
-    expect(landingCss).toMatch(/\.cinema > \.c-nav \{[^}]*animation: c-nav-arrive[^}]*backwards;[^}]*transition: height var\(--duration-nav\)/);
-    expect(landingCss).toMatch(/\.cinema > \.c-nav\.is-scrolled \{ height: 64px;[^}]*backdrop-filter: blur\(12px\);/);
+    expect(landingCss).toMatch(/\.cinema > \.c-nav \{[^}]*animation: c-nav-arrive[^}]*backwards;/);
+    // Condensing is transform-only: the bar's background layer slides up 24px (to a 64px bar) and the contents
+    // 12px, with a 12px blur and the 250ms nav duration; the box itself never changes size.
+    expect(landingCss).toMatch(/\.cinema > \.c-nav::before \{[^}]*transition: translate var\(--duration-nav\)/);
+    expect(landingCss).toMatch(/\.cinema > \.c-nav\.is-scrolled::before \{ translate: 0 -24px;[^}]*backdrop-filter: blur\(12px\);/);
+    expect(landingCss).toContain('.cinema > .c-nav.is-scrolled > * { translate: 0 -12px; }');
     expect(landingCss).toContain('transform-origin: center; transition: transform var(--duration-normal) var(--ease-out); }');
   });
 

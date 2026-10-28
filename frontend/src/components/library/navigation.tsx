@@ -71,15 +71,16 @@ export function MobileMenu({ id, open, onClose, links, cta, onCta }: { id: strin
 
 /* ── Sidebar ── */
 export interface SidebarItem { id: string; label: string; icon: LucideIcon; badge?: string; disabled?: boolean; loading?: boolean }
-export function Sidebar({ label, items, current, onSelect, footer }: { label: string; items: SidebarItem[]; current: string; onSelect: (id: string) => void; footer?: ReactNode }) {
-  return <aside className="ds-sidebar">
+export function Sidebar({ label, items, current, onSelect, footer, landmark = true }: { label: string; items: SidebarItem[]; current: string; onSelect: (id: string) => void; footer?: ReactNode; landmark?: boolean }) {
+  const Root = landmark ? 'aside' : 'div'; // a page-level sidebar is complementary content; a demo is not
+  return <Root className="ds-sidebar">
     <nav aria-label={label}><ul>{items.map((item) => <li key={item.id}>
       <button type="button" className="ds-sidebar-item" aria-current={item.id === current ? 'page' : undefined} disabled={item.disabled || item.loading} aria-busy={item.loading || undefined} onClick={() => { playSound('click'); onSelect(item.id); }}>
         <Icon icon={item.icon} size="standalone" /><span>{item.label}</span>{item.badge && <span className="ds-badge ds-badge-subtle" data-tone="primary">{item.badge}</span>}
       </button>
     </li>)}</ul></nav>
     {footer && <div className="ds-sidebar-footer">{footer}</div>}
-  </aside>;
+  </Root>;
 }
 
 /* ── Breadcrumbs ── */

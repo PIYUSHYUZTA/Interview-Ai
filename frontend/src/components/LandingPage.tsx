@@ -120,8 +120,8 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
   const spotlight = (event: PointerEvent<HTMLElement>) => {
     if (reduced || event.pointerType !== 'mouse') return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.style.setProperty('--spotlight-x', `${event.clientX - bounds.left}px`);
-    event.currentTarget.style.setProperty('--spotlight-y', `${event.clientY - bounds.top}px`);
+    const glow = event.currentTarget.querySelector<HTMLElement>('.ds-spotlight-glow');
+    if (glow) glow.style.translate = `${event.clientX - bounds.left}px ${event.clientY - bounds.top}px`;
     event.currentTarget.style.setProperty('--spotlight-opacity', '1');
   };
   const revealItem = revealVariants(!!reduced);
@@ -151,7 +151,7 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
     <main id="cinema-main" tabIndex={-1}>
       <section className="c-hero c-container" ref={hero} aria-labelledby="c-hero-title" onPointerMove={spotlight} onPointerLeave={(event) => event.currentTarget.style.setProperty('--spotlight-opacity', '0')}>
         <motion.div className="c-hero-backdrop" aria-hidden="true" style={{ y: reduced ? 0 : backdropY }} />
-        <div className="ds-spotlight" aria-hidden="true" />
+        <div className="ds-spotlight" aria-hidden="true"><i className="ds-spotlight-glow" /></div>
         <div className="c-hero-copy">
           <motion.p className="c-eyebrow c-hero-eyebrow" {...reveal(timing.entrance.eyebrow)}><span className="c-signal" /> AI MOCK INTERVIEW STUDIO</motion.p>
           <h1 id="c-hero-title"><span><WordReveal text="Interview practice" delay={timing.entrance.headline} /></span><span className="c-heading-soft"><WordReveal text="that feels real." delay={timing.entrance.headline} startIndex={2} /></span></h1>

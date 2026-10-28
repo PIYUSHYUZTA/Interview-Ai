@@ -81,7 +81,7 @@
 .ds-button-ghost:is(:hover, :focus-visible):not(:disabled) { color: var(--text-primary); }
 .ds-button-ghost:is(:hover, :focus-visible):not(:disabled)::before { transform: scaleX(1); }
 /* Destructive: quiet by default (it should never be the loudest thing on screen); bold when meant. */
-.ds-button-danger { background: var(--color-error-subtle); border-color: var(--color-error-border); color: var(--color-error); }
+.ds-button-danger { background: var(--color-error-subtle); border-color: var(--color-error-border); color: color-mix(in srgb, var(--color-error) 80%, var(--text-primary)); }
 .ds-button-danger:is(:hover, :focus-visible):not(:disabled) { background: var(--color-error); border-color: var(--color-error); color: var(--color-primary-contrast); }
 .ds-button[aria-busy="true"] { opacity: 0.8; }
 /* Copy: the icon turns into a check. */
@@ -97,17 +97,19 @@
   position: sticky;
   top: 0;
   z-index: 40;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: var(--space-6);
   height: 72px;
-  margin-bottom: 0;
   padding-inline: var(--container-padding);
-  border-bottom: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--bg-base) 88%, transparent);
-  transition: height var(--duration-nav) var(--ease-out), margin-bottom var(--duration-nav) var(--ease-out), backdrop-filter var(--duration-nav) var(--ease-out);
+  pointer-events: none;
 }
-.ds-navbar.is-scrolled { height: 56px; margin-bottom: 16px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom-color: var(--border-default); }
+.ds-navbar > * { pointer-events: auto; transition: translate var(--duration-nav) var(--ease-out); }
+/* Condensing moves layers, never layout: the background slides up 16px, the contents 8px. */
+.ds-navbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-bottom: 1px solid var(--border-subtle); background: color-mix(in srgb, var(--bg-base) 88%, transparent); transition: translate var(--duration-nav) var(--ease-out), border-color var(--duration-nav) var(--ease-out); will-change: translate; }
+.ds-navbar.is-scrolled::before { translate: 0 -16px; border-bottom-color: var(--border-default); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.ds-navbar.is-scrolled > * { translate: 0 -8px; }
 .ds-navbar-logo { display: inline-flex; align-items: center; min-height: var(--touch-target); gap: var(--space-2); color: var(--text-primary); font-weight: var(--font-weight-semibold); text-decoration: none; }
 .ds-navbar-links { display: flex; gap: var(--space-6); margin-inline: auto; }
 .ds-navbar-links a { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: var(--touch-target); min-width: var(--touch-target); padding-block: var(--space-2); color: var(--text-secondary); font-size: var(--font-size-sm); text-decoration: none; transition: color var(--duration-fast) var(--ease-out); }
@@ -170,7 +172,7 @@
 .ds-tab:hover:not(:disabled) { color: var(--text-primary); }
 .ds-tab:active:not(:disabled) { color: var(--color-primary-text); }
 .ds-tab[aria-selected="true"] { color: var(--text-primary); }
-.ds-tab-indicator { position: absolute; left: var(--space-2); right: var(--space-2); bottom: -1px; height: 2px; border-radius: var(--radius-full); background: var(--color-primary); }
+.ds-tab-indicator { will-change: transform; position: absolute; left: var(--space-2); right: var(--space-2); bottom: -1px; height: 2px; border-radius: var(--radius-full); background: var(--color-primary); }
 .ds-tabpanel { padding-top: var(--space-4); color: var(--text-secondary); }
 .ds-tabpanel:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 4px; border-radius: var(--radius-sm); }
 
@@ -190,11 +192,11 @@
   transition: border-color var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out), background-color var(--duration-normal) var(--ease-out);
 }
 .ds-input:hover:not(:disabled) { border-color: var(--border-strong); }
-.ds-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); outline: none; }
+.ds-input:focus { border-color: var(--color-primary);  }
 .ds-input:disabled { background: var(--bg-base); color: var(--text-disabled); cursor: not-allowed; }
 .ds-field .ds-float-field > .ds-input { padding-top: 22px; padding-bottom: 6px; }
 .ds-field .ds-float-field > .ds-float-label { top: 24px; font-size: var(--font-size-sm); }
-.ds-field .ds-float-field > .ds-input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { top: 13px; }
+.ds-field .ds-float-field > .ds-input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { top: 24px; translate: 0 calc(-50% - 11px); }
 .ds-field .ds-float-field > .ds-input:disabled + .ds-float-label { color: var(--text-disabled); }
 .ds-field-trailing { position: absolute; right: var(--space-2); top: 24px; translate: 0 -50%; display: flex; align-items: center; gap: var(--space-1); color: var(--text-muted); }
 .ds-field-action { display: inline-grid; place-items: center; width: var(--touch-target); height: var(--touch-target); border: 0; border-radius: var(--radius-full); background: none; color: var(--text-secondary); cursor: pointer; transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
@@ -203,7 +205,7 @@
 .ds-field-action[aria-pressed="true"] { color: var(--color-primary-text); }
 .ds-field-message { margin: 0; color: var(--text-muted); font-size: var(--font-size-xs); }
 .ds-field[data-status="error"] .ds-input, .ds-field[data-status="error"] .ds-select-trigger { border-color: var(--color-error-border); }
-.ds-field[data-status="error"] .ds-input:focus { border-color: var(--color-error); box-shadow: 0 0 0 3px var(--color-error-subtle); }
+.ds-field[data-status="error"] .ds-input:focus { border-color: var(--color-error); }
 .ds-field[data-status="error"] :is(.ds-field-message, .ds-field-trailing > .ds-icon), .ds-field-message[data-status="error"] { color: var(--color-error); }
 .ds-field[data-status="error"] .ds-float-field > .ds-input:focus + .ds-float-label { color: var(--color-error); }
 .ds-field[data-status="success"] .ds-input { border-color: var(--color-success-border); }
@@ -223,7 +225,7 @@
 .ds-select { position: relative; }
 .ds-select-trigger { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-primary); font: var(--font-size-sm) / 1 var(--font-sans); text-align: left; cursor: pointer; transition: border-color var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out); }
 .ds-select-trigger:hover:not(:disabled) { border-color: var(--border-strong); }
-.ds-select-trigger:focus-visible, .ds-select[data-open] .ds-select-trigger { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); outline: none; }
+.ds-select-trigger:focus-visible, .ds-select[data-open] .ds-select-trigger { border-color: var(--color-primary);  }
 .ds-select-placeholder { color: var(--text-muted); }
 .ds-select-chevron { transition: rotate var(--duration-normal) var(--ease-out); }
 .ds-select[data-open] .ds-select-chevron { rotate: 180deg; }
@@ -282,12 +284,12 @@
 .ds-switch { position: relative; flex: none; width: 52px; height: var(--touch-target); padding: 0; border: 0; background: none; cursor: pointer; }
 /* The visible pill (44x24) sits inside the 52x44 touch target. */
 .ds-switch::before { content: ''; position: absolute; left: 4px; right: 4px; top: 10px; height: 24px; border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--bg-elevated); transition: background-color var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
-.ds-switch-thumb { position: absolute; top: 13px; left: 7px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--text-secondary); color: var(--bg-base); box-shadow: var(--shadow-sm); transition: translate var(--duration-normal) var(--ease-spring), background-color var(--duration-normal) var(--ease-out), width var(--duration-press) var(--ease-out); }
+.ds-switch-thumb { position: absolute; top: 13px; left: 7px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--text-secondary); color: var(--bg-base); box-shadow: var(--shadow-sm); transform-origin: left center; transition: translate var(--duration-normal) var(--ease-spring), scale var(--duration-press) var(--ease-out), background-color var(--duration-normal) var(--ease-out); }
 .ds-switch:hover:not(:disabled)::before { border-color: var(--color-primary); }
-.ds-switch:active:not(:disabled) .ds-switch-thumb { width: 22px; }
+.ds-switch:active:not(:disabled) .ds-switch-thumb { scale: 1.22 1; }
 .ds-switch[aria-checked="true"]::before { background: var(--color-primary); border-color: var(--color-primary); }
 .ds-switch[aria-checked="true"] .ds-switch-thumb { translate: 20px 0; background: var(--color-primary-contrast); color: var(--color-primary); }
-.ds-switch[aria-checked="true"]:active:not(:disabled) .ds-switch-thumb { translate: 16px 0; }
+.ds-switch[aria-checked="true"] .ds-switch-thumb { transform-origin: right center; }
 .ds-switch-thumb .ds-spinner { width: 12px; height: 12px; }
 .ds-switch-label { display: grid; gap: 2px; color: var(--text-primary); font-size: var(--font-size-sm); cursor: pointer; }
 .ds-switch-label small { color: var(--text-muted); font-size: var(--font-size-xs); }
@@ -313,7 +315,7 @@
 /* ── Overlays ── */
 dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .ds-drawer { width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: var(--text-primary); }
-.ds-drawer-panel { position: absolute; display: flex; flex-direction: column; background: var(--bg-elevated); box-shadow: var(--shadow-lg); }
+.ds-drawer-panel { will-change: translate; position: absolute; display: flex; flex-direction: column; background: var(--bg-elevated); box-shadow: var(--shadow-lg); }
 .ds-drawer[data-side="right"] .ds-drawer-panel { top: 0; right: 0; bottom: 0; width: min(420px, 100%); border-left: 1px solid var(--border-default); }
 .ds-drawer[data-side="bottom"] .ds-drawer-panel { left: 0; right: 0; bottom: 0; max-height: 80%; border-top: 1px solid var(--border-default); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
 .ds-drawer-head { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); }
@@ -456,8 +458,8 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
 .ds-badge[data-tone="success"] { --tone: var(--color-success); --tone-subtle: var(--color-success-subtle); --tone-border: var(--color-success-border); }
 .ds-badge[data-tone="warning"] { --tone: var(--color-warning); --tone-subtle: var(--color-warning-subtle); --tone-border: var(--color-warning-border); }
 .ds-badge[data-tone="error"] { --tone: var(--color-error); --tone-subtle: var(--color-error-subtle); --tone-border: var(--color-error-border); }
-.ds-badge-subtle { background: var(--tone-subtle); color: var(--tone); }
-.ds-badge-outline { border-color: var(--tone-border); color: var(--tone); }
+.ds-badge-subtle { background: var(--tone-subtle); color: color-mix(in srgb, var(--tone) 80%, var(--text-primary)); }
+.ds-badge-outline { border-color: var(--tone-border); color: color-mix(in srgb, var(--tone) 80%, var(--text-primary)); }
 .ds-badge-solid { background: var(--tone); color: var(--bg-base); }
 .ds-badge-solid[data-tone="neutral"] { background: var(--text-secondary); }
 .ds-tag { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--bg-elevated); color: var(--text-secondary); font: var(--font-size-xs) / 1.2 var(--font-mono); }
@@ -474,7 +476,7 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
 .ds-progress-head { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: var(--font-size-sm); font-variant-numeric: tabular-nums; }
 .ds-progress-track { position: relative; height: 8px; overflow: hidden; border-radius: var(--radius-full); background: var(--bg-elevated); }
 .ds-progress[data-compact] .ds-progress-track { height: 4px; }
-.ds-progress-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--color-primary); transform-origin: left center; transform: scaleX(0); transition: transform 900ms var(--ease-out); }
+.ds-progress-fill { will-change: transform; position: absolute; inset: 0; border-radius: inherit; background: var(--color-primary); transform-origin: left center; transform: scaleX(0); transition: transform 900ms var(--ease-out); }
 .ds-progress[data-tone="success"] .ds-progress-fill { background: var(--color-success); }
 .ds-progress[data-tone="warning"] .ds-progress-fill { background: var(--color-warning); }
 .ds-progress[data-tone="error"] .ds-progress-fill { background: var(--color-error); }
@@ -520,7 +522,7 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
 .ds-not-found-mark span { font: var(--font-weight-semibold) clamp(64px, 12vw, 104px) / 1 var(--font-sans); letter-spacing: -0.06em; background: linear-gradient(120deg, var(--text-primary), var(--color-primary-text)); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ds-ripple, .ds-empty-art i, .ds-not-found-mark i { animation: none; }
+  .ds-ripple, .ds-empty-art i, .ds-empty-art i:nth-child(2), .ds-not-found-mark i, .ds-not-found-mark i:nth-child(2) { animation: none; }
   .ds-ripple { display: none; }
   .ds-progress-fill { transition: none; }
   .ds-progress-fill[data-indeterminate] { animation: none; transform: scaleX(1); opacity: 0.4; }

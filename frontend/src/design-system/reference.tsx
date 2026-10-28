@@ -5,6 +5,7 @@ import './tokens.css';
 import './base.css';
 import './icons.css';
 import './motion.css';
+import './a11y.css';
 import './sound.css';
 import './components.css';
 import './reference.css';

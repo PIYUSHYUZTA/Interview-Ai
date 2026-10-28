@@ -40,7 +40,7 @@ export function Avatar({ name, src, status, size = 'md', loading }: { name: stri
   const [failed, setFailed] = useState(false);
   if (loading) return <SkeletonAvatar size={{ sm: 28, md: 40, lg: 56 }[size]} />;
   return <span className="ds-avatar" data-size={size} role="img" aria-label={status ? `${name}, ${status}` : name}>
-    {src && !failed ? <img src={src} alt="" onError={() => setFailed(true)} /> : <span aria-hidden="true">{initials(name)}</span>}
+    {src && !failed ? <img src={src} alt="" width={{ sm: 28, md: 40, lg: 56 }[size]} height={{ sm: 28, md: 40, lg: 56 }[size]} loading="lazy" decoding="async" onError={() => setFailed(true)} /> : <span aria-hidden="true">{initials(name)}</span>}
     {status && <i className="ds-avatar-status" data-status={status} aria-hidden="true" />}
   </span>;
 }

@@ -1,0 +1,15 @@
+/*
+ * Accessibility layer, imported last. Focus is always visible and always the same: a 2px outline in the
+ * brand colour (--border-focus: teal on dark, deep teal on light, at least 3:1 against every surface),
+ * 2px away from the element. !important because a focus indicator must never be styled away by a
+ * component rule; elements that draw their ring elsewhere (the custom checkbox box, the drop zone) keep
+ * their own, and their real inputs are invisible.
+ */
+:focus-visible {
+  outline: 2px solid var(--border-focus) !important;
+  outline-offset: 2px !important;
+}
+/* Mouse and touch focus never shows a ring (keyboard focus always does, via :focus-visible). */
+:focus:not(:focus-visible) { outline: none; }
+/* Programmatic focus targets (main regions after navigation) are announced, not outlined. */
+main[tabindex="-1"]:focus-visible, [role="tabpanel"][tabindex="-1"]:focus-visible { outline: none !important; }

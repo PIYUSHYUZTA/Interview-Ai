@@ -86,7 +86,7 @@
 
 /* ── Inputs: the border answers focus; the label floats out of the way ── */
 :where(.field) :is(input, textarea, select) { transition: border-color var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out); }
-:where(.field) :is(input, textarea, select):focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); outline: none; }
+:where(.field) :is(input, textarea, select):focus { border-color: var(--color-primary);  }
 .ds-float-field { position: relative; }
 .ds-float-field > input { padding-top: var(--space-5); padding-bottom: var(--space-2); }
 .ds-float-field > .ds-float-label {
@@ -97,9 +97,9 @@
   color: var(--text-muted);
   pointer-events: none;
   transform-origin: left center;
-  transition: top var(--duration-normal) var(--ease-out), scale var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out);
+  transition: translate var(--duration-normal) var(--ease-out), scale var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out);
 }
-.ds-float-field > input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { top: 12px; scale: 0.82; color: var(--color-primary-text); }
+.ds-float-field > input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { translate: 0 calc(-50% - 10px); scale: 0.82; color: var(--color-primary-text); }
 .ds-float-field > input:not(:focus):not(:placeholder-shown) + .ds-float-label { color: var(--text-secondary); }
 
 /* ── Feedback: submit button (text -> spinner -> checkmark) ── */
@@ -204,10 +204,12 @@ details[open]::details-content { block-size: auto; }
   position: absolute;
   inset: 0;
   pointer-events: none;
+  overflow: hidden;
   opacity: var(--spotlight-opacity, 0);
-  background: radial-gradient(circle 360px at var(--spotlight-x, 50%) var(--spotlight-y, 50%), color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 70%);
   transition: opacity var(--duration-slow) var(--ease-out);
 }
+/* The glow is drawn once and moved with translate, so following the pointer never repaints it. */
+.ds-spotlight-glow { position: absolute; left: -360px; top: -360px; width: 720px; height: 720px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 70%); will-change: translate; }
 .ds-count { font-variant-numeric: tabular-nums; }
 
 @keyframes ds-glow-pulse {
@@ -241,6 +243,12 @@ details[open]::details-content { block-size: auto; }
 .ds-theme-icon > .ds-icon { transition: opacity var(--duration-slow) var(--ease-out), rotate var(--duration-slow) var(--ease-spring), scale var(--duration-slow) var(--ease-spring); }
 [data-theme-icon="dark"] .ds-theme-sun, [data-theme-icon="light"] .ds-theme-moon { opacity: 0; rotate: -90deg; scale: 0.4; }
 [data-theme-icon="dark"] .ds-theme-moon, [data-theme-icon="light"] .ds-theme-sun { opacity: 1; rotate: 0deg; scale: 1; }
+
+/* ── Compositing hints: elements that move again and again get their own GPU layer up front.
+   (One-off entrances are animated by the Motion library, which adds and removes will-change itself.) ── */
+.ds-ripple, .ds-toast, .ds-toast-progress, dialog.ds-modal, .ds-skeleton, .ds-spinner, .ds-icon-pulse, .ds-bell-ring { will-change: transform, opacity; }
+.ds-reveal { will-change: transform, opacity; }
+.is-revealed-group .ds-reveal { will-change: auto; }
 
 /* Reduced motion: the token durations are already zero; switch off what would still move or loop. */
 @media (prefers-reduced-motion: reduce) {

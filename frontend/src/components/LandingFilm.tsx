@@ -56,7 +56,7 @@ export function LandingFilm({ onStart }: { onStart: () => void }) {
 
   return <section className="c-film" id="the-interviewer" ref={section} aria-labelledby="c-film-title" data-film={failed ? 'failed' : playing ? 'playing' : 'paused'}>
     <div className="c-film-frame" ref={frame}>
-      <video ref={video} className="c-film-video" muted loop playsInline preload="none" poster="/media/hero-film-poster.webp" aria-hidden="true" onPlaying={() => setPlaying(true)} onPause={() => setPlaying(false)}>
+      <video ref={video} className="c-film-video" width={1280} height={720} muted loop playsInline preload="none" poster="/media/hero-film-poster.webp" aria-hidden="true" onPlaying={() => setPlaying(true)} onPause={() => setPlaying(false)}>
         {near && <source src="/media/hero-film.mp4" type="video/mp4" onError={() => { setFailed(true); setPlaying(false); }} />}
       </video>
       <div className="c-film-shade" aria-hidden="true" />

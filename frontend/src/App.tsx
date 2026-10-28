@@ -17,6 +17,15 @@ import { Icon } from './components/icon/Icon';
 import { ArrowRight, Brain, ChartColumn, SlidersHorizontal, Sparkles } from './components/icon/icons';
 import { Button, Loading, Status } from './components/ui';
 type View = 'landing' | 'auth' | 'dashboard' | 'setup' | 'room' | 'results';
+/**
+ * After a screen change, move focus to the new screen's <main> so a screen reader starts reading there.
+ * Screens load lazily, so wait (a frame at a time, up to about two seconds) until the main region exists.
+ */
+function focusMain(frames = 120) {
+  const main = document.querySelector<HTMLElement>('main');
+  if (main) { main.focus({ preventScroll: true }); return; }
+  if (frames > 0) requestAnimationFrame(() => focusMain(frames - 1));
+}
 type ProtectedDestination = { view: 'dashboard' } | { view: 'setup'; preset?: string };
 export default function App() {
   return <ToastProvider><Screens /></ToastProvider>;
@@ -41,7 +50,7 @@ function Screens() {
     window.scrollTo(0, 0);
     if (!navigated.current || announced.current === currentView.current) return; // outer and inner screens both mount
     announced.current = currentView.current;
-    document.querySelector<HTMLElement>('main')?.focus({ preventScroll: true });
+    focusMain();
     // A finished interview gets the completion chime; other screen changes a soft swipe. Never the room.
     if (completed.current && currentView.current === 'results') { completed.current = false; playSound('done'); }
     else if (currentView.current !== 'room') playSound('page');

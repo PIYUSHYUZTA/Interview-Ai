@@ -32,7 +32,7 @@ function MotionLab() {
       <Button variant="ghost" data-testid="ghost">Explore with a sample</Button>
       <IconButton icon={X} label="Close panel" data-testid="motion-icon-button" />
       <button type="button" className="ref-lift ds-lift" data-testid="lift">Interactive card</button>
-      <span className="ref-media ds-media-zoom" data-testid="media"><img src="/models/hero-bust-poster.webp" alt="Interviewer poster" /></span>
+      <span className="ref-media ds-media-zoom" data-testid="media"><img src="/models/hero-bust-poster.webp" alt="Interviewer poster" width={96} height={96} loading="lazy" decoding="async" /></span>
     </div>
 
     <p className="ds-label">Feedback</p>
