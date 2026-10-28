@@ -129,6 +129,10 @@
   --paint-earth-text: var(--palette-earth);
   --paint-shadow: var(--palette-jet);
   --paint-on-accent: var(--palette-jet);
+
+  /* Interaction states that never depend on motion (they stay under reduced motion). */
+  --state-hover-filter: brightness(1.14);
+  --state-active-filter: brightness(0.86);
 }
 
 /* ── Colour tokens: light mirror ── */
@@ -201,6 +205,9 @@
   --paint-earth-text: var(--palette-earth);
   --paint-shadow: color-mix(in srgb, var(--palette-ink) 28%, transparent);
   --paint-on-accent: var(--palette-jet);
+
+  --state-hover-filter: brightness(0.95);
+  --state-active-filter: brightness(0.88);
 }
 
 /* ── Typography, space, grid, shape, motion (theme-independent) ── */

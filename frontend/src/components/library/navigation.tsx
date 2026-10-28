@@ -13,7 +13,7 @@ export function ThemeToggle({ tooltipSide = 'bottom' }: { tooltipSide?: 'bottom'
   const current = useTheme();
   const next: Theme = current === 'dark' ? 'light' : 'dark';
   return <button type="button" className="ds-icon-button ds-theme-toggle" data-theme-icon={current} aria-label={`Switch to ${next} theme`} data-tooltip={`Switch to ${next} theme`} data-tooltip-side={tooltipSide} data-tooltip-align="end"
-    onPointerDown={ripple} onClick={() => { playSound('toggle'); setTheme(next); }}>
+    onPointerDown={ripple} onClick={(event) => { playSound('toggle'); setTheme(next, event.currentTarget.querySelector<HTMLElement>('.ds-theme-icon')); }}>
     <span className="ds-icon-swap ds-theme-icon" aria-hidden="true"><Icon icon={Moon} size="standalone" className="ds-theme-moon" /><Icon icon={Sun} size="standalone" className="ds-theme-sun" /></span>
     <span className="ds-ripple-host" aria-hidden="true" />
   </button>;

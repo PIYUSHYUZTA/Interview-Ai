@@ -61,8 +61,12 @@ describe('motion system', () => {
     expect(e.background).toBe(0.4);
     expect(e.headline < e.copy && e.copy < e.action && e.action < e.descriptor).toBe(true);
     const landing = read('components/LandingPage.tsx');
-    expect(landing).toContain('<WordReveal text="Interview practice" delay={timing.entrance.headline} />');
-    expect(landing).toContain('<WordReveal text="that feels real." delay={timing.entrance.headline} startIndex={2} />');
+    expect(landing).toContain('<WordReveal text="Interview practice" delay={timing.entrance.headline} play={heroInView} />');
+    expect(landing).toContain('<WordReveal text="that feels real." delay={timing.entrance.headline} startIndex={2} play={heroInView} />');
+    // The film opens the page; the live-3D section is second, so its entrance plays when it scrolls into view.
+    expect(landing.indexOf('<LandingFilm onStart={onStart} />')).toBeLessThan(landing.indexOf('<section className="c-hero c-container"'));
+    expect(landing).toContain('const heroInView = useInView(hero, { once: true, amount: 0.25 });');
+    expect(read('components/LandingFilm.tsx')).toContain('<h1 id="c-film-title">');
     expect(landing).toMatch(/initial=\{reduced \? false : \{ opacity: \.72, scale: \.95 \}\}/); // CTA never starts invisible
     expect(landing).toContain('window.scrollY > 80');
     for (const advanced of ['{...magnetic(!!reduced)}', 'className="ds-spotlight"', '<Typewriter', 'variants={bento} custom={index}', 'timing.parallax', 'className="ds-gradient-text"']) expect(landing).toContain(advanced);

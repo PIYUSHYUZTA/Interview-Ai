@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icon/Icon';
-import { ArrowRight } from './icon/icons';
+import { ArrowRight, Pause, Play } from './icon/icons';
 import { loadGsap } from './landing-gsap';
 import { useLandingReducedMotion } from './landing-motion';
 import { Button } from './ui';
 
 const prefersData = () => !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
 
-/** Full-bleed interlude built around the Cycles-rendered interviewer film (scripts/blender/render_hero_film.py).
- * The video loads only near the viewport, plays only while visible, never autoplays under reduced motion or
+/** The landing's opening screen, built around the Cycles-rendered interviewer film (scripts/blender/render_hero_film.py).
+ * Being first, the video loads at once; it plays only while visible, never autoplays under reduced motion or
  * data saver, and always has a real pause/play control. GSAP scrubs the reveal when motion is allowed. */
 export function LandingFilm({ onStart }: { onStart: () => void }) {
   const reduced = !!useLandingReducedMotion();
   const section = useRef<HTMLElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  const [near, setNear] = useState(false);
+  const [near, setNear] = useState(true); // the opening screen: load the film immediately
   const [visible, setVisible] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [userChoice, setUserChoice] = useState<'play' | 'pause' | null>(null);
@@ -63,11 +63,11 @@ export function LandingFilm({ onStart }: { onStart: () => void }) {
     </div>
     <div className="c-film-copy c-container">
       <p className="c-eyebrow">THE INTERVIEWER</p>
-      <h2 id="c-film-title"><span className="c-film-line"><span>Someone to talk to.</span></span><span className="c-film-line"><span>Not a form to fill in.</span></span></h2>
+      <h1 id="c-film-title"><span className="c-film-line"><span>Someone to talk to.</span></span><span className="c-film-line"><span>Not a form to fill in.</span></span></h1>
       <p className="c-film-text">This film is rendered in Blender with Cycles. In the interview room the same character is drawn live in your browser and speaks each question, with lip movement driven by the spoken audio.</p>
       <div className="c-film-actions">
         <Button className="c-primary" onClick={onStart}>Meet your interviewer <Icon icon={ArrowRight} /></Button>
-        {!failed && <button type="button" className="c-film-toggle" aria-pressed={playing} onClick={() => { const next = playing ? 'pause' : 'play'; setUserChoice(next); if (next === 'play') { setNear(true); setVisible(true); } }}><span aria-hidden="true">{playing ? 'Ⅱ' : '▷'}</span>{playing ? 'Pause film' : 'Play film'}</button>}
+        {!failed && <button type="button" className="c-film-toggle" aria-pressed={playing} onClick={() => { const next = playing ? 'pause' : 'play'; setUserChoice(next); if (next === 'play') { setNear(true); setVisible(true); } }}><Icon icon={playing ? Pause : Play} />{playing ? 'Pause film' : 'Play film'}</button>}
       </div>
       <p className="c-film-note">{failed ? 'Film unavailable · showing a still frame' : 'Pre-rendered film · silent · 10-second loop'}</p>
     </div>

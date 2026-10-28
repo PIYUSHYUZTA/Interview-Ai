@@ -19,11 +19,17 @@ fs.mkdirSync('.browser-verification',{recursive:true});
 const result:Record<string,unknown>={};
 try {
   const context=await browser.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
-  await context.addInitScript({content:`window.firstCtaOpacity=null;new MutationObserver(()=>{const action=document.querySelector('.c-hero-actions');if(action&&window.firstCtaOpacity===null)window.firstCtaOpacity=Number(getComputedStyle(action).opacity);}).observe(document,{subtree:true,childList:true});window.sceneDraws=0;window.disposedScenePrograms=0;for(const Context of [WebGLRenderingContext,WebGL2RenderingContext]){const dispose=Context.prototype.deleteProgram;Context.prototype.deleteProgram=function(program){window.disposedScenePrograms++;return dispose.call(this,program);};for(const method of ['drawArrays','drawElements']){const draw=Context.prototype[method];Context.prototype[method]=function(...args){window.sceneDraws++;return draw.apply(this,args);};}}`});
+  await context.addInitScript({content:`window.firstCtaOpacity=null;new MutationObserver(()=>{const action=document.querySelector('.c-film-actions');if(action&&window.firstCtaOpacity===null)window.firstCtaOpacity=Number(getComputedStyle(action).opacity);}).observe(document,{subtree:true,childList:true});window.sceneDraws=0;window.disposedScenePrograms=0;for(const Context of [WebGLRenderingContext,WebGL2RenderingContext]){const dispose=Context.prototype.deleteProgram;Context.prototype.deleteProgram=function(program){window.disposedScenePrograms++;return dispose.call(this,program);};for(const method of ['drawArrays','drawElements']){const draw=Context.prototype[method];Context.prototype[method]=function(...args){window.sceneDraws++;return draw.apply(this,args);};}}`});
   await context.addInitScript({content:`window.layoutShift=0;window.layoutShiftSources=[];new PerformanceObserver(list=>{for(const entry of list.getEntries())if(!entry.hadRecentInput){window.layoutShift+=entry.value;if(entry.value>.002)window.layoutShiftSources.push({value:+entry.value.toFixed(4),at:Math.round(entry.startTime),scrollY:Math.round(scrollY),sources:entry.sources.map(source=>String(source.node?.className||source.node?.nodeName||'?').slice(0,40)+' '+Math.round(source.previousRect.y)+'>'+Math.round(source.currentRect.y))});}}).observe({type:'layout-shift',buffered:true});`});
   const page=await context.newPage();page.setDefaultTimeout(30000);
   const errors:string[]=[];page.on('pageerror',(error:Error)=>errors.push(error.message));
   await page.goto(origin);
+  // The film is the opening screen: its heading is the page's h1 and its call to action is usable at once.
+  await page.getByRole('heading',{level:1,name:'Someone to talk to. Not a form to fill in.'}).waitFor();
+  assert.equal(await page.locator('main > section').first().getAttribute('id'),'the-interviewer');
+  // The live 3D scene is second and initialises only as its section approaches the viewport.
+  assert.equal(await page.locator('[data-scene-state="ready"]').count(),0);
+  await page.locator('.c-hero').scrollIntoViewIfNeeded();
   await page.locator('[data-scene-state="ready"]').waitFor();
   await page.getByRole('img',{name:'Digital human interviewer framed by illuminated orbital rings',exact:true}).waitFor();
   const drawingBuffer=await page.locator('.c-sculpture canvas').evaluate((canvas:HTMLCanvasElement)=>({width:canvas.width,height:canvas.height}));
@@ -37,8 +43,9 @@ try {
   assert.equal(await page.locator('#approach [data-reveal-group="single"]').first().evaluate((el:HTMLElement)=>getComputedStyle(el).opacity),'0');
   result.entrance='CTA is visible and usable on its first render; CSS/JS share motion tokens; below-fold sections wait for intersection.';
   await page.waitForTimeout(1500);
-  const ctaBox=await page.getByRole('button',{name:'Start Your Interview',exact:true}).boundingBox();assert.ok(ctaBox&&ctaBox.y+ctaBox.height<=1000);
+  await page.evaluate(()=>window.scrollTo(0,0));const ctaBox=await page.getByRole('button',{name:'Meet your interviewer',exact:true}).boundingBox();assert.ok(ctaBox&&ctaBox.y+ctaBox.height<=1000,'opening call to action in the first viewport');
   assert.equal(await page.getByText('Realistic voice conversation',{exact:true}).count(),1);
+  await page.locator('.c-hero').scrollIntoViewIfNeeded();await page.waitForTimeout(400); // the scene renders only while on screen
   const artBox=await page.locator('.c-sculpture canvas').boundingBox();assert.ok(artBox);await page.mouse.move(artBox.x+artBox.width*.75,artBox.y+artBox.height*.4);await page.waitForTimeout(350);
   const rotation=await page.locator('.c-sculpture').getAttribute('data-rotation');assert.ok(rotation && Math.abs(Number(rotation.split(',')[1]))>.01);assert.ok(Number(await page.locator('.c-sculpture').getAttribute('data-triangles'))>0);assert.ok(Number(await page.locator('.c-sculpture').getAttribute('data-animation-clips'))>0);
   result.pointer='Pointer input changes the loaded Blender model rotation; exported animation clips and actual rendered triangles are present.';
@@ -77,7 +84,7 @@ try {
 
   await page.getByRole('button',{name:'Resume scene motion',exact:true}).click();await page.waitForTimeout(150);
   await page.locator('#approach').scrollIntoViewIfNeeded();await page.waitForTimeout(450);const offscreen=await page.evaluate(()=>(window as any).sceneDraws);await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>(window as any).sceneDraws),offscreen);
-  await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(250);assert.ok(await page.evaluate(()=>(window as any).sceneDraws)>offscreen);
+  await page.locator('.c-hero').scrollIntoViewIfNeeded();await page.waitForTimeout(250);assert.ok(await page.evaluate(()=>(window as any).sceneDraws)>offscreen); // back on screen: drawing resumes
   result.visibility='Rendering suspends offscreen and restarts on return. Keyboard skip-link focus passed.';
   const programsBeforePreference=await page.evaluate(()=>(window as any).disposedScenePrograms);
   await page.emulateMedia({reducedMotion:'reduce'});await page.locator('.cinema[data-motion-policy="reduced"]').waitFor();await page.waitForTimeout(150);
@@ -129,8 +136,9 @@ try {
   assert.equal(await page.locator('.c-hero-bust').getAttribute('data-particles'),'520');
   // Cinematic film: lazy, plays only on screen, real pause/play, GSAP opens the frame.
   await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(300);
-  const fresh=await context.newPage();await fresh.goto(origin);await fresh.locator('[data-scene-state="ready"],[data-scene-state="fallback"]').first().waitFor();await fresh.waitForTimeout(1500);
+  const fresh=await context.newPage();await fresh.goto(origin);await fresh.locator('#c-film-title').waitFor();await fresh.waitForTimeout(1500);
   const filmRequestedEarly=await fresh.evaluate(()=>performance.getEntriesByType('resource').some((entry)=>entry.name.endsWith('/media/hero-film.mp4')));await fresh.close();
+  assert.equal(filmRequestedEarly,true,'the opening film loads with the page');
   await page.locator('#the-interviewer').scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>(document.getElementById('the-interviewer') as HTMLElement).dataset.film==='playing',undefined,{timeout:20000});
   await page.waitForFunction(()=>getComputedStyle(document.querySelector('.c-film-frame')!).clipPath.replace(/\s/g,'').startsWith('inset(0'),undefined,{timeout:6000});
@@ -140,8 +148,7 @@ try {
   await page.getByRole('button',{name:'Play film',exact:true}).waitFor();
   await page.locator('#capabilities').scrollIntoViewIfNeeded();await page.locator('#the-interviewer').scrollIntoViewIfNeeded();await page.waitForTimeout(600);
   assert.equal(await page.locator('.c-film-video').evaluate((video:HTMLVideoElement)=>video.paused),true,'a paused film stays paused when scrolled back into view');
-  result.cinema=`All nine palette tokens defined and used by role (Ivory type, Jet page, Ink steps, Charcoal features, Teal buttons, Amber numerals, Earth Brown rules); 520 shader particles; film requested only near its section (early request: ${filmRequestedEarly}); plays on screen (${filmTime.toFixed(2)} s), GSAP opens the frame to full bleed, Pause film holds.`;
-  assert.equal(filmRequestedEarly,false);
+  result.cinema=`All nine palette tokens defined and used by role (Ivory type, Jet page, Ink steps, Charcoal features, Teal buttons, Amber numerals, Earth Brown rules); 520 shader particles; the opening film loads with the page (requested at load: ${filmRequestedEarly}); plays on screen (${filmTime.toFixed(2)} s), GSAP opens the frame to full bleed, Pause film holds.`;
   await page.getByRole('link',{name:'About',exact:true}).click();assert.ok(page.url().endsWith('#approach'));
   await page.getByRole('heading',{name:'Structure sets the stage. Your thinking leads the way.'}).waitFor();
   for(const selector of ['#how-it-works','#capabilities','#approach','#interview-room','.c-development','.c-report-preview','#start','.c-footer']){await page.locator(selector).scrollIntoViewIfNeeded();await page.waitForTimeout(800);}
@@ -159,7 +166,7 @@ try {
   for(const [selector, name] of [['.c-adaptive-demo','adaptive'],['.c-room-preview','room'],['.c-report-preview','report']]) { await page.locator(selector).screenshot({path:path.resolve(`.browser-verification/landing-${name}.png`)}); }
   assert.equal(await page.locator('.cinema a[href^="#"]').evaluateAll((links:HTMLAnchorElement[])=>links.every(link=>!!document.getElementById(link.hash.slice(1)))),true);
   await page.getByRole('button',{name:'Set up an interview',exact:true}).click();await page.getByLabel('Email address',{exact:true}).waitFor();await page.goto(origin);
-  await page.getByRole('button',{name:'Start Practicing',exact:true}).click();await page.getByLabel('Email address',{exact:true}).waitFor();await page.goto(origin);await page.locator('[data-scene-state="ready"]').waitFor();
+  await page.getByRole('button',{name:'Start Practicing',exact:true}).click();await page.getByLabel('Email address',{exact:true}).waitFor();await page.goto(origin);await page.locator('.c-hero').scrollIntoViewIfNeeded();await page.locator('[data-scene-state="ready"]').waitFor();
   await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(300);
   const disposalCount=await page.evaluate(()=>(window as any).disposedScenePrograms);await page.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await page.getByLabel('Email address',{exact:true}).waitFor();assert.ok(await page.evaluate(()=>(window as any).disposedScenePrograms)>disposalCount);result.cleanup='Navigating into the product deletes scene GPU resources.';
   await page.goto(origin);await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByLabel('Email address',{exact:true}).waitFor();
@@ -176,7 +183,7 @@ try {
   await form.getByRole('heading',{name:'Interview history',exact:true}).waitFor();await formContext.close();
   result.navigation='Primary CTA, Sign in, the real sign-up form (short password rejected, valid account created and signed in), workspace and resume routes passed.';console.log('Existing app navigation and GPU cleanup passed');
   const mobile=await browser.newContext({colorScheme:'dark',viewport:{width:390,height:844},reducedMotion:'reduce',isMobile:true,deviceScaleFactor:1});const phone=await mobile.newPage();
-  await phone.goto(origin);await phone.locator('[data-scene-state="ready"][data-motion="still"]').waitFor();assert.equal(await phone.getByRole('button',{name:'Motion reduced',exact:true}).isDisabled(),true);
+  await phone.goto(origin);await phone.locator('.c-hero').scrollIntoViewIfNeeded();await phone.locator('[data-scene-state="ready"][data-motion="still"]').waitFor();assert.equal(await phone.getByRole('button',{name:'Motion reduced',exact:true}).isDisabled(),true);
   assert.equal(await phone.locator('.cinema').getAttribute('data-motion-policy'),'reduced');
   assert.equal(await phone.locator('.c-method li,.c-evidence-stack article,.c-capability-grid article').evaluateAll((elements:Element[])=>elements.every(el=>Number(getComputedStyle(el).opacity)===1)),true);
   for(const selector of ['.c-hero','#how-it-works','#capabilities','#approach','#interview-room','.c-development','.c-report-preview','#start','.c-footer']){await phone.locator(selector).scrollIntoViewIfNeeded();assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}
@@ -202,20 +209,20 @@ try {
   await mobileMenu.waitFor({state:'detached'});await phone.waitForFunction(()=>location.hash==='#capabilities');
   await phone.evaluate(()=>window.scrollTo(0,0));await phone.screenshot({path:path.resolve('.browser-verification/cinematic-mobile.png')});await mobile.close();result.mobileNavigation='Reduced motion: the film does not autoplay, GSAP is never downloaded, and Play/Pause film work; it also keeps the turn-taking illustration and skill bars still. Phone menu opens, lists How it works / Features / About, closes on Escape with focus returned, and navigates.';console.log('Mobile checks passed');
   const narrow=await browser.newContext({colorScheme:'dark',viewport:{width:320,height:740},reducedMotion:'reduce'});const small=await narrow.newPage();await small.goto(origin);await small.getByRole('heading',{name:'Interview practice that feels real.'}).waitFor();assert.equal(await small.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await narrow.close();console.log('Narrow checks passed');
-  for(const [width,height] of [[768,1024],[1024,768]]){const tabletContext=await browser.newContext({colorScheme:'dark',viewport:{width,height},reducedMotion:'reduce'});const tablet=await tabletContext.newPage();await tablet.goto(origin);await tablet.locator('[data-scene-state="ready"],[data-scene-state="fallback"]').first().waitFor();
+  for(const [width,height] of [[768,1024],[1024,768]]){const tabletContext=await browser.newContext({colorScheme:'dark',viewport:{width,height},reducedMotion:'reduce'});const tablet=await tabletContext.newPage();await tablet.goto(origin);await tablet.locator('.c-hero').scrollIntoViewIfNeeded();await tablet.locator('[data-scene-state="ready"],[data-scene-state="fallback"]').first().waitFor();
     for(const selector of ['.c-hero','#how-it-works','#capabilities','#approach','#interview-room','.c-report-preview','#start','.c-footer']){await tablet.locator(selector).scrollIntoViewIfNeeded();assert.equal(await tablet.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${width}x${height} overflows at ${selector}`);}
-    await tablet.evaluate(()=>window.scrollTo(0,0));const cta=await tablet.getByRole('button',{name:'Start Your Interview',exact:true}).boundingBox();assert.ok(cta&&cta.y+cta.height<=height);
+    await tablet.evaluate(()=>window.scrollTo(0,0));const cta=await tablet.getByRole('button',{name:'Meet your interviewer',exact:true}).boundingBox();assert.ok(cta&&cta.y+cta.height<=height);
     assert.equal(await tablet.getByRole('link',{name:'How it works',exact:true}).first().isVisible(),true);await tablet.screenshot({path:path.resolve(`.browser-verification/cinematic-tablet-${width}x${height}.png`)});await tabletContext.close();}
   result.tablet='Portrait 768x1024 and landscape 1024x768: no horizontal overflow in any section, CTA in the first viewport, desktop navigation visible.';
-  const laptop=await browser.newContext({colorScheme:'dark',viewport:{width:1366,height:768},reducedMotion:'reduce'});const laptopPage=await laptop.newPage();await laptopPage.goto(origin);await laptopPage.locator('[data-scene-state="ready"]').waitFor();const heroBounds=await laptopPage.locator('.c-hero').boundingBox();console.log('Laptop hero bounds',heroBounds);assert.ok(heroBounds&&heroBounds.y+heroBounds.height<=770);await laptopPage.screenshot({path:path.resolve('.browser-verification/cinematic-laptop.png')});await laptop.close();
+  const laptop=await browser.newContext({colorScheme:'dark',viewport:{width:1366,height:768},reducedMotion:'reduce'});const laptopPage=await laptop.newPage();await laptopPage.goto(origin);await laptopPage.getByRole('heading',{level:1}).waitFor();const openingCta=await laptopPage.getByRole('button',{name:'Meet your interviewer',exact:true}).boundingBox();const openingHeading=await laptopPage.getByRole('heading',{level:1}).boundingBox();console.log('Laptop opening screen',{openingHeading,openingCta});assert.ok(openingHeading&&openingCta&&openingHeading.y>=0&&openingCta.y+openingCta.height<=768,'opening heading and call to action fit the laptop viewport');await laptopPage.screenshot({path:path.resolve('.browser-verification/cinematic-laptop.png')});await laptop.close();
   result.responsive='Desktop first-viewport, 1366px laptop, 390px/320px overflow and reduced-motion checks passed.';
   const fallback=await browser.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},reducedMotion:'reduce'});
   await fallback.addInitScript({content:`const context=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){if(type==='webgl'||type==='webgl2')return null;return context.call(this,type,...args);};`});
-  const staticPage=await fallback.newPage();await staticPage.goto(origin);await staticPage.locator('[data-scene-state="fallback"]').waitFor();await staticPage.getByRole('button',{name:'Static visual',exact:true}).waitFor();await staticPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await staticPage.getByLabel('Email address',{exact:true}).waitFor();
+  const staticPage=await fallback.newPage();await staticPage.goto(origin);await staticPage.locator('.c-hero').scrollIntoViewIfNeeded();await staticPage.locator('[data-scene-state="fallback"]').waitFor();await staticPage.getByRole('button',{name:'Static visual',exact:true}).waitFor();await staticPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await staticPage.getByLabel('Email address',{exact:true}).waitFor();
   result.fallback='No-WebGL static art preserves the candidate entry path.';
   const missingAsset=await browser.newContext({colorScheme:'dark',reducedMotion:'reduce'});
   await missingAsset.route('**/models/hero-bust.glb',(route:any)=>route.fulfill({status:404,body:'Asset unavailable'}));
-  const missingPage=await missingAsset.newPage();await missingPage.goto(origin);await missingPage.locator('[data-scene-state="fallback"]').waitFor();
+  const missingPage=await missingAsset.newPage();await missingPage.goto(origin);await missingPage.locator('.c-hero').scrollIntoViewIfNeeded();await missingPage.locator('[data-scene-state="fallback"]').waitFor();
   await missingPage.getByRole('button',{name:'Static visual',exact:true}).waitFor();await missingPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await missingPage.getByLabel('Email address',{exact:true}).waitFor();await missingAsset.close();
   const noFilm=await browser.newContext({colorScheme:'dark',viewport:{width:1280,height:900},reducedMotion:'reduce'});await noFilm.route('**/media/hero-film.mp4',(route:any)=>route.fulfill({status:404,body:'missing'}));
   const noFilmPage=await noFilm.newPage();await noFilmPage.goto(origin);await noFilmPage.locator('#the-interviewer').scrollIntoViewIfNeeded();
@@ -226,7 +233,7 @@ try {
   const lowPower=await browser.newContext({colorScheme:'dark',viewport:{width:1100,height:900},reducedMotion:'no-preference'});
   await lowPower.addInitScript({content:`Object.defineProperty(Navigator.prototype,'hardwareConcurrency',{get:()=>2});`});
   const glbRequests:string[]=[];const lowPage=await lowPower.newPage();lowPage.on('request',(request:any)=>{if(request.url().endsWith('.glb'))glbRequests.push(request.url());});
-  await lowPage.goto(origin);await lowPage.locator('.c-hero-bust[data-poster-only][data-scene-state="fallback"]').waitFor();
+  await lowPage.goto(origin);await lowPage.locator('.c-hero').scrollIntoViewIfNeeded();await lowPage.locator('.c-hero-bust[data-poster-only][data-scene-state="fallback"]').waitFor();
   assert.ok(await lowPage.locator('.c-hero-bust .blender-poster').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0));
   assert.equal(await lowPage.locator('.c-hero-bust canvas').count(),0);assert.deepEqual(glbRequests,[]);
   await lowPage.getByRole('button',{name:'Start Your Interview',exact:true}).first().click();await lowPage.getByLabel('Email address',{exact:true}).waitFor();await lowPower.close();

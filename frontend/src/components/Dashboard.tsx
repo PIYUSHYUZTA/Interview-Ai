@@ -51,8 +51,8 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
 /** The dashboard's shape while it loads: heading, the two summary cards and the three metrics. */
 function DashboardSkeleton() {
   return <SkeletonScreen label="Loading your workspace…" className="page dashboard-page">
-    <header className="page-heading"><div><Skeleton width="180px" height="12px" /><Skeleton width="min(520px, 80%)" height="40px" /><Skeleton width="min(360px, 60%)" height="14px" /></div></header>
-    <div className="dashboard-summary">{[0, 1].map((card) => <Card key={card}><Skeleton width="120px" height="12px" /><Skeleton height="120px" /><Skeleton width="70%" height="14px" /></Card>)}</div>
+    <header className="page-heading"><div><Skeleton width="180px" height="12px" /><Skeleton width="min(520px, 80%)" height="40px" /><Skeleton width="min(360px, 60%)" height="16px" /></div></header>
+    <div className="dashboard-summary">{[0, 1].map((card) => <Card key={card}><Skeleton width="120px" height="12px" /><Skeleton height="120px" /><Skeleton width="70%" height="16px" /></Card>)}</div>
     <div className="metrics-grid">{[0, 1, 2].map((card) => <Card key={card}><Skeleton width="140px" height="12px" /><Skeleton width="64px" height="36px" /><Skeleton width="80%" height="12px" /></Card>)}</div>
   </SkeletonScreen>;
 }

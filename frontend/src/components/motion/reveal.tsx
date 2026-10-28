@@ -5,11 +5,10 @@ import { motionTokens, usePrefersReducedMotion } from '../../design-system/motio
 
 /** True once the element has entered the viewport; never resets (entrances play once). */
 export function useInViewOnce<T extends Element>(ref: RefObject<T | null>, rootMargin = '0px 0px -10% 0px') {
-  const [seen, setSeen] = useState(false);
+  const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined');
   useEffect(() => {
     const element = ref.current;
     if (!element || seen) return;
-    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return; }
     const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setSeen(true); observer.disconnect(); } }, { rootMargin });
     observer.observe(element);
     return () => observer.disconnect();
@@ -57,7 +56,7 @@ export function CountUp({ value, decimals = 0, signed = false }: { value: number
 }
 
 /** A headline that arrives word by word, 60ms apart. The heading's accessible text is unchanged. */
-export function WordReveal({ text, delay = 0, startIndex = 0 }: { text: string; delay?: number; startIndex?: number }) {
+export function WordReveal({ text, delay = 0, startIndex = 0, play = true }: { text: string; delay?: number; startIndex?: number; play?: boolean }) {
   const reduced = usePrefersReducedMotion();
   const words = text.split(' ');
   return <>{words.map((word, index) => <Fragment key={`${word}-${index}`}>
@@ -66,18 +65,18 @@ export function WordReveal({ text, delay = 0, startIndex = 0 }: { text: string; 
       className="ds-word"
       style={{ display: 'inline-block' }}
       initial={reduced ? false : { opacity: 0, y: motionTokens.distance.reveal }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={play || reduced ? { opacity: 1, y: 0 } : undefined}
       transition={{ duration: reduced ? 0 : motionTokens.duration.reveal, delay: reduced ? 0 : delay + (startIndex + index) * motionTokens.stagger.word, ease: motionTokens.ease.out }}
     >{word}</motion.span>
   </Fragment>)}</>;
 }
 
 /** Types `text` one character at a time after `delay` seconds, then lets the caret fade. */
-export function Typewriter({ text, delay = 0, perCharacter = 0.04 }: { text: string; delay?: number; perCharacter?: number }) {
+export function Typewriter({ text, delay = 0, perCharacter = 0.04, active = true }: { text: string; delay?: number; perCharacter?: number; active?: boolean }) {
   const reduced = usePrefersReducedMotion();
   const [count, setCount] = useState(0);
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || !active) return;
     let typed = 0, interval = 0;
     const start = window.setTimeout(() => {
       interval = window.setInterval(() => {
@@ -86,7 +85,7 @@ export function Typewriter({ text, delay = 0, perCharacter = 0.04 }: { text: str
       }, perCharacter * 1000);
     }, delay * 1000);
     return () => { window.clearTimeout(start); window.clearInterval(interval); setCount(0); };
-  }, [text, delay, perCharacter, reduced]);
+  }, [text, delay, perCharacter, reduced, active]);
   const typed = reduced ? text.length : count;
   const done = typed >= text.length;
   // The full text, invisible, holds the final size so typing never moves the layout.

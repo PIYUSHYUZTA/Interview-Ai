@@ -14,7 +14,7 @@ export const toneIcon: Record<Tone, LucideIcon> = { info: Info, success: CircleC
 /** A modal panel that slides in from the right (or up from the bottom); focus stays inside until closed. */
 export function Drawer({ title, side = 'right', onClose, children, footer }: { title: string; side?: 'right' | 'bottom'; onClose: () => void; children: ReactNode | ((close: () => void) => ReactNode); footer?: (close: () => void) => ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const closing = useRef(false);
+  const [closing, setClosing] = useState(false);
   const titleId = useId();
   useEffect(() => {
     const dialog = ref.current!;
@@ -23,13 +23,12 @@ export function Drawer({ title, side = 'right', onClose, children, footer }: { t
     return () => { dialog.close(); if (opener?.isConnected) opener.focus(); };
   }, []);
   const close = () => {
-    if (closing.current) return;
-    closing.current = true; playSound('modalClose');
-    ref.current?.setAttribute('data-closing', '');
+    if (closing) return;
+    setClosing(true); playSound('modalClose');
     window.setTimeout(onClose, prefersReducedMotion() ? 0 : motionTokens.duration.modalOut * 1000);
   };
-  return <dialog ref={ref} className="ds-drawer" data-side={side} aria-labelledby={titleId} onCancel={(e) => { e.preventDefault(); close(); }}
-    onClick={(event) => { if (event.target === ref.current) close(); }}>
+  return <dialog ref={ref} className="ds-drawer" data-side={side} data-closing={closing || undefined} aria-labelledby={titleId} onCancel={(e) => { e.preventDefault(); close(); }}
+    onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
     <div className="ds-drawer-panel">
       <header className="ds-drawer-head"><h2 id={titleId}>{title}</h2><IconButton icon={X} label="Close" data-tooltip-side="left" onClick={close} /></header>
       <div className="ds-drawer-body">{typeof children === 'function' ? children(close) : children}</div>

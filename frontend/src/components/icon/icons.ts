@@ -2,6 +2,7 @@
 // src/api/iconSystem.test.ts enforces it. Add an icon by re-exporting it below.
 export {
   ArrowDown,
+  ArrowDownRight,
   ArrowRight,
   ArrowUp,
   ArrowUpDown,
@@ -30,6 +31,8 @@ export {
   Mic,
   MicOff,
   Moon,
+  Pause,
+  Play,
   Search,
   Settings,
   SlidersHorizontal,

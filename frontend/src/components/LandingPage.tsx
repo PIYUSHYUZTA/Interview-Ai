@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { AnimatePresence, motion, useScroll, useTransform, useMotionValue, useSpring, useInView, useAnimationControls } from 'motion/react';
 import { Icon, MenuToggleIcon } from './icon/Icon';
-import { ArrowRight, ChartColumn, FileText, Mic, Target } from './icon/icons';
+import { ArrowDown, ArrowDownRight, ArrowRight, ChartColumn, FileText, Mic, Pause, Play, Target } from './icon/icons';
 import { AdaptivePreview, RoomPreview, ReportPreview } from './LandingProductPreviews';
 import { BlenderAssetScene } from './BlenderAssetScene';
 import { LandingFilm } from './LandingFilm';
@@ -41,6 +41,8 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
   const hero = useRef<HTMLElement>(null);
   const art = useRef<HTMLDivElement>(null);
   const artVisible = useInView(art, { margin: '60px' });
+  // The live-3D section is second on the page: its entrance plays when it scrolls into view.
+  const heroInView = useInView(hero, { once: true, amount: 0.25 });
   const reduced = useLandingReducedMotion();
   const [paused, setPaused] = useState(false);
   const [sceneStatus, setSceneStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
@@ -104,11 +106,11 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
       sceneEntrance.stop(); sceneEntrance.set({ opacity: 1, scale: 1, rotate: 0 });
       panelX.stop(); panelY.stop();
       if (reduced) { panelPointerX.jump(0); panelPointerY.jump(0); panelX.jump(0); panelY.jump(0); }
-    } else {
+    } else if (heroInView) {
       void sceneEntrance.start({ opacity: 1, scale: 1, rotate: 0, transition: { duration: timing.duration.scene, delay: timing.entrance.scene, ease: timing.ease } });
     }
     return () => sceneEntrance.stop();
-  }, [reduced, paused, sceneEntrance, panelX, panelY, panelPointerX, panelPointerY]);
+  }, [reduced, paused, heroInView, sceneEntrance, panelX, panelY, panelPointerX, panelPointerY]);
   const { scrollYProgress } = useScroll({ target: hero, offset: ['start start', 'end start'] });
   const sceneY = useTransform(scrollYProgress, [0, 1], [0, timing.distance.heroDrift]);
   const sceneScale = useTransform(scrollYProgress, [0, 1], [1, .965]);
@@ -131,7 +133,7 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
     const timer = setInterval(() => setTurn((value) => (value + 1) % 3), 2200);
     return () => clearInterval(timer);
   }, [reduced, practiceVisible]);
-  const reveal = (delay: number) => ({ initial: reduced ? false as const : { opacity: 0, y: timing.distance.reveal }, animate: { opacity: 1, y: 0 }, transition: { duration: reduced ? 0 : timing.duration.reveal, delay: reduced ? 0 : delay, ease: timing.ease } });
+  const reveal = (delay: number) => ({ initial: reduced ? false as const : { opacity: 0, y: timing.distance.reveal }, animate: heroInView || reduced ? { opacity: 1, y: 0 } : undefined, transition: { duration: reduced ? 0 : timing.duration.reveal, delay: reduced ? 0 : delay, ease: timing.ease } });
 
   return <div className="cinema" id="top" style={landingMotionStyles} data-motion-policy={reduced ? 'reduced' : 'full'}>
     <a className="c-skip" href="#cinema-main">Skip to content</a>
@@ -149,14 +151,16 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
     </motion.div>}</AnimatePresence>
 
     <main id="cinema-main" tabIndex={-1}>
+      <LandingFilm onStart={onStart} />
+
       <section className="c-hero c-container" ref={hero} aria-labelledby="c-hero-title" onPointerMove={spotlight} onPointerLeave={(event) => event.currentTarget.style.setProperty('--spotlight-opacity', '0')}>
         <motion.div className="c-hero-backdrop" aria-hidden="true" style={{ y: reduced ? 0 : backdropY }} />
         <div className="ds-spotlight" aria-hidden="true"><i className="ds-spotlight-glow" /></div>
         <div className="c-hero-copy">
           <motion.p className="c-eyebrow c-hero-eyebrow" {...reveal(timing.entrance.eyebrow)}><span className="c-signal" /> AI MOCK INTERVIEW STUDIO</motion.p>
-          <h1 id="c-hero-title"><span><WordReveal text="Interview practice" delay={timing.entrance.headline} /></span><span className="c-heading-soft"><WordReveal text="that feels real." delay={timing.entrance.headline} startIndex={2} /></span></h1>
+          <h2 id="c-hero-title" className="c-hero-title"><span><WordReveal text="Interview practice" delay={timing.entrance.headline} play={heroInView} /></span><span className="c-heading-soft"><WordReveal text="that feels real." delay={timing.entrance.headline} startIndex={2} play={heroInView} /></span></h2>
           <motion.p className="c-hero-description" {...reveal(timing.entrance.copy)}>Speak with a lifelike AI interviewer that adapts to your skills, challenges your thinking, and helps you improve with every answer.</motion.p>
-          <motion.div className="c-hero-actions" style={{ transformOrigin: 'left center' }} initial={reduced ? false : { opacity: .72, scale: .95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reduced ? 0 : timing.duration.reveal, delay: reduced ? 0 : timing.entrance.action, ease: timing.ease }}><Button className="c-primary" onClick={onStart} {...magnetic(!!reduced)}>Start Your Interview <Icon icon={ArrowRight} /></Button><a className="c-text-link" href="#how-it-works">Explore the Platform <span aria-hidden="true">↘</span></a></motion.div>
+          <motion.div className="c-hero-actions" style={{ transformOrigin: 'left center' }} initial={reduced ? false : { opacity: .72, scale: .95 }} animate={heroInView || reduced ? { opacity: 1, scale: 1 } : undefined} transition={{ duration: reduced ? 0 : timing.duration.reveal, delay: reduced ? 0 : timing.entrance.action, ease: timing.ease }}><Button className="c-primary" onClick={onStart} {...magnetic(!!reduced)}>Start Your Interview <Icon icon={ArrowRight} /></Button><a className="c-text-link" href="#how-it-works">Explore the Platform <Icon icon={ArrowDownRight} /></a></motion.div>
           <motion.p className="c-hero-descriptor" {...reveal(timing.entrance.descriptor)}><span>Realistic voice conversation</span><i aria-hidden="true">·</i><span>Adaptive questions</span><i aria-hidden="true">·</i><span>Actionable feedback</span></motion.p>
         </div>
         <motion.div ref={art} className="c-hero-art" data-motion={paused || reduced || !artVisible || sceneStatus !== 'ready' ? 'still' : 'active'} style={{ y: reduced || paused ? 0 : sceneY, scale: reduced || paused ? 1 : sceneScale }} onPointerMove={(event) => {
@@ -165,20 +169,20 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
           panelPointerX.set(((event.clientX - bounds.left) / bounds.width - .5) * 18);
           panelPointerY.set(((event.clientY - bounds.top) / bounds.height - .5) * 12);
         }} onPointerLeave={() => { if (!paused && !reduced) { panelPointerX.set(0); panelPointerY.set(0); } }}>
-          <motion.div className="c-hero-atmosphere" aria-hidden="true" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : timing.duration.atmosphere, delay: reduced ? 0 : timing.entrance.background, ease: timing.ease }} />
+          <motion.div className="c-hero-atmosphere" aria-hidden="true" initial={reduced ? false : { opacity: 0 }} animate={heroInView || reduced ? { opacity: 1 } : undefined} transition={{ duration: reduced ? 0 : timing.duration.atmosphere, delay: reduced ? 0 : timing.entrance.background, ease: timing.ease }} />
           <div className="c-light-stage" aria-hidden="true"><i /><i /><span /></div>
           <motion.div className="c-core-entrance" initial={reduced ? false : { opacity: 0, scale: .92, rotate: -4 }} animate={sceneEntrance}>
             <BlenderAssetScene variant="hero" paused={paused} onStatusChange={setSceneStatus} />
           </motion.div>
-          <motion.div className="c-hero-glass c-voice-glass" aria-hidden="true" style={{ x: panelX, y: panelY }} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : timing.duration.reveal, delay: reduced ? 0 : timing.entrance.panel, ease: timing.ease }}>
+          <motion.div className="c-hero-glass c-voice-glass" aria-hidden="true" style={{ x: panelX, y: panelY }} initial={reduced ? false : { opacity: 0 }} animate={heroInView || reduced ? { opacity: 1 } : undefined} transition={{ duration: reduced ? 0 : timing.duration.reveal, delay: reduced ? 0 : timing.entrance.panel, ease: timing.ease }}>
             <div className="c-glass-label"><Icon icon={Mic} /><span>AN ADAPTIVE FOLLOW-UP</span></div>
             <div className="c-hero-waveform">{Array.from({ length: 25 }, (_, index) => <i key={index} style={{ height: `${8 + Math.sin(index * .59) ** 2 * 24}px`, animationDelay: `${index * -.09}s` }} />)}</div>
-            <p><Typewriter text="“What shaped that decision?”" delay={timing.entrance.followUp} /></p>
+            <p><Typewriter text="“What shaped that decision?”" delay={timing.entrance.followUp} active={heroInView} /></p>
           </motion.div>
           <div className="c-scene-disclosure">CONCEPT VISUAL · WAVEFORM IS ILLUSTRATIVE</div>
-          <div className="c-art-bottom"><button type="button" aria-pressed={paused || !!reduced} disabled={!!reduced || sceneStatus !== 'ready'} onClick={() => setPaused((value) => !value)} aria-label={sceneStatus === 'fallback' ? 'Static visual' : reduced ? 'Motion reduced' : paused ? 'Resume scene motion' : 'Pause scene motion'}><span aria-hidden="true">{paused || reduced ? '▷' : 'Ⅱ'}</span> {sceneStatus === 'fallback' ? 'Static visual' : sceneStatus === 'loading' ? 'Loading visual' : reduced ? 'Reduced motion' : paused ? 'Resume motion' : 'Pause motion'}</button></div>
+          <div className="c-art-bottom"><button type="button" aria-pressed={paused || !!reduced} disabled={!!reduced || sceneStatus !== 'ready'} onClick={() => setPaused((value) => !value)} aria-label={sceneStatus === 'fallback' ? 'Static visual' : reduced ? 'Motion reduced' : paused ? 'Resume scene motion' : 'Pause scene motion'}><Icon icon={paused || reduced ? Play : Pause} /> {sceneStatus === 'fallback' ? 'Static visual' : sceneStatus === 'loading' ? 'Loading visual' : reduced ? 'Reduced motion' : paused ? 'Resume motion' : 'Pause motion'}</button></div>
         </motion.div>
-        <div className="c-hero-index"><span className="c-editorial-index"><b>01</b> UNDERSTAND <i /> <b>02</b> ADAPT <i /> <b>03</b> DEVELOP</span><a href="#how-it-works">SCROLL TO EXPLORE <span aria-hidden="true">↓</span></a></div>
+        <div className="c-hero-index"><span className="c-editorial-index"><b>01</b> UNDERSTAND <i /> <b>02</b> ADAPT <i /> <b>03</b> DEVELOP</span><a href="#how-it-works">SCROLL TO EXPLORE <Icon icon={ArrowDown} /></a></div>
       </section>
 
       <section className="c-steps c-container" id="how-it-works" aria-labelledby="c-steps-title">
@@ -214,7 +218,6 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
         <div className="c-steps-cta"><Button onClick={onStart}>Set up an interview <Icon icon={ArrowRight} /></Button></div>
       </section>
 
-      <LandingFilm onStart={onStart} />
 
       <section className="c-capabilities c-container" id="capabilities" aria-labelledby="c-capabilities-title">
         <Reveal className="c-capabilities-intro" from="left"><p className="c-eyebrow">FEATURES</p><h2 id="c-capabilities-title">Built like a real interview.<br /><span>Designed to help you improve.</span></h2></Reveal>
@@ -234,7 +237,7 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
 
       <section className="c-development c-container" id="intelligence-report" aria-labelledby="c-development-title">
         <Reveal className="c-development-copy" from="left"><p className="c-eyebrow">AFTER THE CONVERSATION</p><h2 id="c-development-title">See your potential.<br /><span>Know your next move.</span></h2><p>A useful assessment shows its working. Revisit your answers, understand what they demonstrated and see where focused practice can make a difference.</p><a className="c-text-link" href="#start">Make your next move <Icon icon={ArrowRight} /></a></Reveal>
-        <Reveal className="c-evidence-stack" stagger><div className="c-evidence-head"><span className="c-crosshair" /> THE DEVELOPMENT LOOP</div><motion.article variants={revealItem}><span>01</span><div><h3>Evidence, in context.</h3><p>Question-by-question feedback linked to what you actually said.</p></div><Icon icon={FileText} size="standalone" /></motion.article><motion.article variants={revealItem}><span>02</span><div><h3>Priorities, made clear.</h3><p>Demonstrated strengths and gaps, organized by relevant skills.</p></div><Icon icon={Target} size="standalone" /></motion.article><motion.article variants={revealItem}><span>03</span><div><h3>Practice, with purpose.</h3><p>Learning sequences, exercises and checkpoints to guide your next step.</p></div><Icon icon={ArrowRight} size="standalone" /></motion.article><div className="c-evidence-end">YOUR ANSWERS <span>→</span> YOUR EVIDENCE <span>→</span> YOUR DIRECTION</div></Reveal>
+        <Reveal className="c-evidence-stack" stagger><div className="c-evidence-head"><span className="c-crosshair" /> THE DEVELOPMENT LOOP</div><motion.article variants={revealItem}><span>01</span><div><h3>Evidence, in context.</h3><p>Question-by-question feedback linked to what you actually said.</p></div><Icon icon={FileText} size="standalone" /></motion.article><motion.article variants={revealItem}><span>02</span><div><h3>Priorities, made clear.</h3><p>Demonstrated strengths and gaps, organized by relevant skills.</p></div><Icon icon={Target} size="standalone" /></motion.article><motion.article variants={revealItem}><span>03</span><div><h3>Practice, with purpose.</h3><p>Learning sequences, exercises and checkpoints to guide your next step.</p></div><Icon icon={ArrowRight} size="standalone" /></motion.article><div className="c-evidence-end">YOUR ANSWERS <Icon icon={ArrowRight} /> YOUR EVIDENCE <Icon icon={ArrowRight} /> YOUR DIRECTION</div></Reveal>
       </section>
 
       <div className="c-container c-report-section"><ReportPreview /></div>

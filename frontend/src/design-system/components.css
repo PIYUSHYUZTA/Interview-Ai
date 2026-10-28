@@ -57,9 +57,11 @@
 .ds-button-primary::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; box-shadow: var(--shadow-brand); transition: opacity var(--duration-press) var(--ease-out); }
 @media (hover: hover) {
   .ds-button-primary:hover:not(:disabled) { background: var(--color-primary-hover); scale: 1.02; }
-  .ds-button-primary:hover:not(:disabled)::after { opacity: 1; animation: ds-glow-pulse var(--duration-shimmer) var(--ease-out) 1; }
+  .ds-button-primary:hover:not(:disabled)::after { opacity: 1; }
+  .ds-button-primary:hover:not(:disabled)::before { animation: ds-glow-ring var(--duration-shimmer) var(--ease-out) 1; }
 }
 .ds-button-primary:focus-visible::after { opacity: 1; }
+.ds-button-primary::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 55%, transparent); will-change: transform, opacity; }
 .ds-button-primary:active:not(:disabled) { scale: 0.98; }
 /* Secondary: outlined; on hover the border is drawn around the button in the brand colour. */
 .ds-button-secondary { border-color: var(--border-default); background: var(--bg-surface); }
@@ -183,7 +185,7 @@
 .ds-input {
   width: 100%;
   min-height: 48px;
-  padding: var(--space-3) var(--space-10) var(--space-3) 13px;
+  padding: var(--space-3) var(--space-10) var(--space-3) 12px;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
@@ -194,9 +196,9 @@
 .ds-input:hover:not(:disabled) { border-color: var(--border-strong); }
 .ds-input:focus { border-color: var(--color-primary);  }
 .ds-input:disabled { background: var(--bg-base); color: var(--text-disabled); cursor: not-allowed; }
-.ds-field .ds-float-field > .ds-input { padding-top: 22px; padding-bottom: 6px; }
+.ds-field .ds-float-field > .ds-input { padding-top: 24px; padding-bottom: 8px; }
 .ds-field .ds-float-field > .ds-float-label { top: 24px; font-size: var(--font-size-sm); }
-.ds-field .ds-float-field > .ds-input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { top: 24px; translate: 0 calc(-50% - 11px); }
+.ds-field .ds-float-field > .ds-input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { top: 24px; translate: 0 calc(-50% - 12px); }
 .ds-field .ds-float-field > .ds-input:disabled + .ds-float-label { color: var(--text-disabled); }
 .ds-field-trailing { position: absolute; right: var(--space-2); top: 24px; translate: 0 -50%; display: flex; align-items: center; gap: var(--space-1); color: var(--text-muted); }
 .ds-field-action { display: inline-grid; place-items: center; width: var(--touch-target); height: var(--touch-target); border: 0; border-radius: var(--radius-full); background: none; color: var(--text-secondary); cursor: pointer; transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
@@ -273,7 +275,7 @@
 .ds-check-text small { color: var(--text-muted); font-size: var(--font-size-xs); }
 .ds-radio-group { display: grid; gap: var(--space-3); margin: 0; padding: 0; border: 0; }
 .ds-radio > input { appearance: none; flex: none; display: grid; place-items: center; width: 20px; height: 20px; margin: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--bg-surface); cursor: inherit; transition: border-color var(--duration-fast) var(--ease-out); }
-.ds-radio > input::before { content: ''; width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--color-primary); scale: 0; transition: scale var(--duration-normal) var(--ease-spring); }
+.ds-radio > input::before { content: ''; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-primary); scale: 0; transition: scale var(--duration-normal) var(--ease-spring); }
 .ds-radio > input:checked { border-color: var(--color-primary); }
 .ds-radio > input:checked::before { scale: 1; }
 .ds-radio:hover > input:not(:disabled) { border-color: var(--color-primary); }
@@ -282,13 +284,13 @@
 /* Switch */
 .ds-switch-row { display: inline-flex; align-items: center; gap: var(--space-2); }
 .ds-switch { position: relative; flex: none; width: 52px; height: var(--touch-target); padding: 0; border: 0; background: none; cursor: pointer; }
-/* The visible pill (44x24) sits inside the 52x44 touch target. */
-.ds-switch::before { content: ''; position: absolute; left: 4px; right: 4px; top: 10px; height: 24px; border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--bg-elevated); transition: background-color var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
-.ds-switch-thumb { position: absolute; top: 13px; left: 7px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: var(--radius-full); background: var(--text-secondary); color: var(--bg-base); box-shadow: var(--shadow-sm); transform-origin: left center; transition: translate var(--duration-normal) var(--ease-spring), scale var(--duration-press) var(--ease-out), background-color var(--duration-normal) var(--ease-out); }
+/* On the 4pt grid: a 44x28 pill at 8px and a 20px thumb at 12px share the centre line (22px); travel is 16px. */
+.ds-switch::before { content: ''; position: absolute; left: 4px; right: 4px; top: 8px; height: 28px; border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--bg-elevated); transition: background-color var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out); }
+.ds-switch-thumb { position: absolute; top: 12px; left: 8px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--text-secondary); color: var(--bg-base); box-shadow: var(--shadow-sm); transform-origin: left center; transition: translate var(--duration-normal) var(--ease-spring), scale var(--duration-press) var(--ease-out), background-color var(--duration-normal) var(--ease-out); }
 .ds-switch:hover:not(:disabled)::before { border-color: var(--color-primary); }
 .ds-switch:active:not(:disabled) .ds-switch-thumb { scale: 1.22 1; }
 .ds-switch[aria-checked="true"]::before { background: var(--color-primary); border-color: var(--color-primary); }
-.ds-switch[aria-checked="true"] .ds-switch-thumb { translate: 20px 0; background: var(--color-primary-contrast); color: var(--color-primary); }
+.ds-switch[aria-checked="true"] .ds-switch-thumb { translate: 16px 0; background: var(--color-primary-contrast); color: var(--color-primary); }
 .ds-switch[aria-checked="true"] .ds-switch-thumb { transform-origin: right center; }
 .ds-switch-thumb .ds-spinner { width: 12px; height: 12px; }
 .ds-switch-label { display: grid; gap: 2px; color: var(--text-primary); font-size: var(--font-size-sm); cursor: pointer; }
@@ -351,7 +353,7 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
   translate: -50% var(--space-1);
   transition: opacity var(--duration-fast) var(--ease-out), translate var(--duration-fast) var(--ease-out), display var(--duration-fast) allow-discrete;
 }
-.ds-tooltip::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -5px; border: 5px solid transparent; border-top-color: var(--text-primary); }
+.ds-tooltip::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -4px; border: 5px solid transparent; border-top-color: var(--text-primary); }
 .ds-tooltip[data-side="bottom"] { bottom: auto; top: calc(100% + var(--space-3)); translate: -50% calc(var(--space-1) * -1); }
 .ds-tooltip[data-side="bottom"]::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--text-primary); }
 .ds-tooltip[data-shown] { display: block; opacity: 1; translate: -50% 0; }
@@ -431,7 +433,7 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
 .ds-choice:hover:not(:disabled) { border-color: var(--border-strong); }
 .ds-choice:active:not(:disabled) { translate: 0 -2px; }
 .ds-choice[aria-pressed="true"] { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-md); background: color-mix(in srgb, var(--color-primary) 6%, var(--bg-surface)); }
-.ds-choice[aria-pressed="true"]::after { content: ''; position: absolute; top: var(--space-4); right: var(--space-4); width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--color-primary); }
+.ds-choice[aria-pressed="true"]::after { content: ''; position: absolute; top: var(--space-4); right: var(--space-4); width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-primary); }
 .ds-choice-icon { display: inline-grid; place-items: center; width: var(--space-10); height: var(--space-10); border-radius: var(--radius-md); background: var(--color-primary-subtle); color: var(--color-primary-text); }
 .ds-bento { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: minmax(160px, auto); gap: var(--space-4); }
 .ds-bento-item { display: grid; align-content: start; gap: var(--space-2); }
@@ -518,7 +520,7 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
 .ds-not-found-actions { justify-content: center; margin-top: var(--space-4); }
 .ds-not-found-mark { position: relative; display: grid; place-items: center; width: 220px; height: 220px; margin-bottom: var(--space-4); }
 .ds-not-found-mark i { position: absolute; inset: 0; border: 1px solid var(--color-primary-border); border-radius: var(--radius-full); transform: rotateX(68deg) rotateZ(-24deg); }
-.ds-not-found-mark i:nth-child(2) { inset: 18px; border-color: var(--color-accent-text); opacity: 0.6; transform: rotateY(64deg) rotateZ(18deg); animation: ds-orbit 30s linear infinite; }
+.ds-not-found-mark i:nth-child(2) { inset: 16px; border-color: var(--color-accent-text); opacity: 0.6; transform: rotateY(64deg) rotateZ(18deg); animation: ds-orbit 30s linear infinite; }
 .ds-not-found-mark span { font: var(--font-weight-semibold) clamp(64px, 12vw, 104px) / 1 var(--font-sans); letter-spacing: -0.06em; background: linear-gradient(120deg, var(--text-primary), var(--color-primary-text)); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -527,6 +529,6 @@ dialog.ds-modal::backdrop, .ds-drawer::backdrop { background: var(--bg-scrim); b
   .ds-progress-fill { transition: none; }
   .ds-progress-fill[data-indeterminate] { animation: none; transform: scaleX(1); opacity: 0.4; }
   .ds-button-primary:hover:not(:disabled), .ds-button:active:not(:disabled), .ds-drop[data-state="over"], .ds-check:active .ds-check-box { scale: none; }
-  .ds-button-primary:hover:not(:disabled)::after { animation: none; }
+  .ds-button-primary:hover:not(:disabled)::before { animation: none; }
   .ds-search:focus-within .ds-search-icon { rotate: none; scale: none; }
 }

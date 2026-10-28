@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { flushSync } from 'react-dom';
 
 /**
  * Dark and light themes. The inline script in each HTML page applies the theme before first paint (the
@@ -7,34 +8,38 @@ import { useSyncExternalStore } from 'react';
  */
 export type Theme = 'dark' | 'light';
 export const THEME_KEY = 'interview-ai.theme';
-/** Every surface's colour change takes this long when the theme switches (tokens: --duration-theme). */
-const SWITCH_MS = 300;
 const THEME_COLOR: Record<Theme, string> = { dark: '#0A0A0A', light: '#F3F1E9' }; // browser chrome only
 
 const saved = (): Theme | null => { try { const value = window.localStorage.getItem(THEME_KEY); return value === 'light' || value === 'dark' ? value : null; } catch { return null; } };
 const system = (): Theme => (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 const listeners = new Set<() => void>();
 let theme: Theme = typeof document === 'undefined' ? 'dark' : (document.documentElement.dataset.theme as Theme | undefined) ?? saved() ?? system();
-let switchTimer = 0;
 
-function apply(next: Theme, animate: boolean) {
+/**
+ * Switches the theme. Animated switches use the View Transitions API: the browser snapshots the page before
+ * and after and cross-fades the two (300ms ease, --duration-theme), a single composited animation however
+ * many surfaces change. The toggle's icon, when given, gets its own layer so the moon turns into the sun.
+ * Without the API, or with reduced motion, the theme changes at once.
+ */
+function apply(next: Theme, animate: boolean, icon?: HTMLElement | null) {
   const root = document.documentElement;
-  if (animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // Only while switching: every surface eases its colours together, then normal transitions return.
-    root.dataset.themeSwitching = '';
-    window.clearTimeout(switchTimer);
-    switchTimer = window.setTimeout(() => { delete root.dataset.themeSwitching; }, SWITCH_MS + 50);
-  }
-  root.dataset.theme = next;
-  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[next]);
-  theme = next;
-  listeners.forEach((listener) => listener());
+  const swap = () => flushSync(() => {
+    root.dataset.theme = next;
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[next]);
+    theme = next;
+    listeners.forEach((listener) => listener());
+  });
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!animate || reduced || typeof document.startViewTransition !== 'function') { swap(); return; }
+  if (icon) icon.style.viewTransitionName = 'theme-icon';
+  const transition = document.startViewTransition(swap);
+  void transition.finished.finally(() => { if (icon) icon.style.viewTransitionName = ''; });
 }
 
 /** The person's explicit choice: applied with the transition and remembered. */
-export function setTheme(next: Theme) {
+export function setTheme(next: Theme, icon?: HTMLElement | null) {
   try { window.localStorage.setItem(THEME_KEY, next); } catch { /* in-memory only */ }
-  apply(next, true);
+  apply(next, true, icon);
 }
 
 if (typeof window !== 'undefined') {

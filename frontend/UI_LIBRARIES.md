@@ -11,8 +11,8 @@ These are real adapted upstream implementations, not CSS imitations or unused pa
 
 | Library | Source component | Used in the application | Local adaptations |
 | --- | --- | --- | --- |
-| [Magic UI](https://magicui.design) | [Blur Fade](https://magicui.design/r/blur-fade.json) | Landing hero and workspace screen transitions | Reduced-motion handling; restrained timing/blur |
-| [SmoothUI](https://smoothui.dev) | AI Loader, Siri Orb, AI Core | Resume/dashboard loading, interview evaluation/loading, actual interviewer state and explicitly illustrative landing preview | Scoped CSS, blue/cyan palette, application state mapping, no fake audio amplitude |
+| [Magic UI](https://magicui.design) | [Blur Fade](https://magicui.design/r/blur-fade.json) | **Retired.** Screen transitions now use the design system's `PageTransition` (`src/components/motion/feedback.tsx`) | Source snapshot kept in `vendor-sources/` for provenance |
+| [SmoothUI](https://smoothui.dev) | Siri Orb, AI Core (AI Loader **retired**: loading uses the design system's `Spinner` and skeletons) | Resume/dashboard loading, interview evaluation/loading, actual interviewer state and explicitly illustrative landing preview | Scoped CSS, blue/cyan palette, application state mapping, no fake audio amplitude |
 | [Retro UI / NeoBrutalism](https://retroui.dev) | [Base UI Button](https://neobrutalism.com/r/base/button.json) | Shared Button across landing, setup, room, dashboard and report | Existing button contract, navy/cyan variants, restrained offset shadows; Base UI semantics retained |
 
 Retro UI's website redirects to NeoBrutalism. Its official repository is https://github.com/neobrutalism/neobrutalism.

@@ -75,7 +75,14 @@ describe('dark mode', () => {
   it('switches with a 300ms ease on every surface and a morphing moon/sun icon', () => {
     expect(tokens).toContain('--duration-theme: 300ms;');
     const motion = read(`${SOURCE}/design-system/motion.css`);
-    expect(motion).toMatch(/:root\[data-theme-switching\] \*[^{]*\{\s*transition: background-color var\(--duration-theme\) ease, color var\(--duration-theme\) ease, border-color var\(--duration-theme\) ease/);
+    // Every surface changes together as one composited cross-fade (View Transitions), 300ms ease; the clicked
+    // toggle's icon morphs on its own layer. Without the API (or with reduced motion) the theme switches at once.
+    expect(motion).toContain('::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--duration-theme); animation-timing-function: ease; }');
+    expect(motion).toContain('::view-transition-old(theme-icon) { display: none; }');
+    const themeModule = read(`${SOURCE}/design-system/theme.ts`);
+    expect(themeModule).toContain("if (!animate || reduced || typeof document.startViewTransition !== 'function') { swap(); return; }");
+    expect(themeModule).toContain("if (icon) icon.style.viewTransitionName = 'theme-icon';");
+    expect(motion).not.toContain('data-theme-switching');
     expect(motion).toContain('[data-theme-icon="dark"] .ds-theme-sun, [data-theme-icon="light"] .ds-theme-moon { opacity: 0; rotate: -90deg; scale: 0.4; }');
     const nav = read(`${SOURCE}/components/library/navigation.tsx`);
     expect(nav).toContain('<Icon icon={Moon} size="standalone" className="ds-theme-moon" /><Icon icon={Sun} size="standalone" className="ds-theme-sun" />');

@@ -5,7 +5,7 @@ import { playSound } from './sound/sound';
 import { EmptyState as LibraryEmptyState } from './library/overlays';
 import { Inbox } from './icon/icons';
 import './vendor/vendor.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
 /**
@@ -28,7 +28,7 @@ export function EmptyState({ title, children, action }: { title: string; childre
 /** Opens at 96% scale and settles (200ms); closes the same way (150ms) before handing back control. */
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode | ((close: () => void) => ReactNode); onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const closing = useRef(false);
+  const [closing, setClosing] = useState(false);
   useEffect(() => {
     const dialog = ref.current!;
     const opener = document.activeElement as HTMLElement | null; // focus returns here on close
@@ -36,13 +36,12 @@ export function Modal({ title, children, onClose }: { title: string; children: R
     return () => { dialog.close(); if (opener?.isConnected) opener.focus(); };
   }, []);
   const close = () => {
-    if (closing.current) return;
-    closing.current = true;
+    if (closing) return;
+    setClosing(true);
     playSound('modalClose');
-    ref.current?.setAttribute('data-closing', '');
     window.setTimeout(onClose, prefersReducedMotion() ? 0 : motionTokens.duration.modalOut * 1000);
   };
-  return <dialog ref={ref} className="modal ds-modal" onCancel={(e) => { e.preventDefault(); close(); }} aria-labelledby="modal-title"><h2 id="modal-title">{title}</h2>{typeof children === 'function' ? children(close) : children}</dialog>;
+  return <dialog ref={ref} className="modal ds-modal" data-closing={closing || undefined} onCancel={(e) => { e.preventDefault(); close(); }} aria-labelledby="modal-title"><h2 id="modal-title">{title}</h2>{typeof children === 'function' ? children(close) : children}</dialog>;
 }
 export function Meter({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
   return <div className="meter"><div><span>{label}</span><strong>{value.toFixed(1)}<small> / {max}</small></strong></div><progress aria-label={label} max={max} value={value} /></div>;

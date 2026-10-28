@@ -13,3 +13,14 @@
 :focus:not(:focus-visible) { outline: none; }
 /* Programmatic focus targets (main regions after navigation) are announced, not outlined. */
 main[tabindex="-1"]:focus-visible, [role="tabpanel"][tabindex="-1"]:focus-visible { outline: none !important; }
+
+/*
+ * Interaction baseline: every control answers hover, press and disabled, even where a component defines
+ * no style for that state (a selected tab under the pointer, a native checkbox, a disclosure summary) and
+ * under reduced motion, where movement-based press feedback is switched off. :where() keeps specificity at
+ * zero, so any component's own state styling wins.
+ */
+:where(a[href], button, summary, select, input, textarea, label:has(> input), [role="tab"], [role="switch"], [role="option"]):hover:not(:disabled) { filter: var(--state-hover-filter); }
+:where(a[href], button, summary, select, input, textarea, label:has(> input), [role="tab"], [role="switch"], [role="option"]):active:not(:disabled) { filter: var(--state-active-filter); }
+:where(button, input, select, textarea):disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+:where(summary) { cursor: pointer; }

@@ -51,7 +51,7 @@ describe('component library', () => {
     expect(plain).toContain('.ds-search:focus-within, .ds-search[data-filled] { width: 360px; }'); // search expands
     expect(plain).toContain('field-sizing: content'); // textarea grows (JS fallback in TextArea)
     expect(plain).toContain('.ds-check > input:checked + .ds-check-box .ds-check-mark path { stroke-dashoffset: 0; }'); // tick draws
-    expect(plain).toContain('.ds-switch[aria-checked="true"] .ds-switch-thumb { translate: 20px 0;'); // sliding pill
+    expect(plain).toContain('.ds-switch[aria-checked="true"] .ds-switch-thumb { translate: 16px 0;'); // sliding pill
     expect(plain).toContain('clip-path: inset(0 100% 100% 0);'); // secondary border draws on hover
     expect(plain).toMatch(/\.ds-button-danger:is\(:hover, :focus-visible\):not\(:disabled\) \{ background: var\(--color-error\);/); // subtle, then bold
     expect(read('design-system/icons.css')).toContain('border-radius: var(--radius-full);'); // icon buttons are circles

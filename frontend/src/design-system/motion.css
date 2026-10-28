@@ -48,9 +48,12 @@
 }
 @media (hover: hover) {
   :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled) { scale: 1.02; }
-  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::after { opacity: 1; animation: ds-glow-pulse var(--duration-shimmer) var(--ease-out) 1; }
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::after { opacity: 1; }
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::before { animation: ds-glow-ring var(--duration-shimmer) var(--ease-out) 1; }
 }
 :is(.btn-primary, .c-primary, .c-nav-cta).btn:focus-visible::after { opacity: 1; }
+/* The pulse is a ring that scales out and fades: compositor-only (no box-shadow animation). */
+:is(.btn-primary, .c-primary, .c-nav-cta).btn::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 55%, transparent); }
 
 :is(.btn, .retro-button).btn-ghost::before {
   content: '';
@@ -91,15 +94,15 @@
 .ds-float-field > input { padding-top: var(--space-5); padding-bottom: var(--space-2); }
 .ds-float-field > .ds-float-label {
   position: absolute;
-  left: 13px;
-  top: 22px;
+  left: 12px;
+  top: 24px;
   translate: 0 -50%;
   color: var(--text-muted);
   pointer-events: none;
   transform-origin: left center;
   transition: translate var(--duration-normal) var(--ease-out), scale var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out);
 }
-.ds-float-field > input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { translate: 0 calc(-50% - 10px); scale: 0.82; color: var(--color-primary-text); }
+.ds-float-field > input:is(:focus, :not(:placeholder-shown)) + .ds-float-label { translate: 0 calc(-50% - 8px); scale: 0.82; color: var(--color-primary-text); }
 .ds-float-field > input:not(:focus):not(:placeholder-shown) + .ds-float-label { color: var(--text-secondary); }
 
 /* ── Feedback: submit button (text -> spinner -> checkmark) ── */
@@ -212,10 +215,7 @@ details[open]::details-content { block-size: auto; }
 .ds-spotlight-glow { position: absolute; left: -360px; top: -360px; width: 720px; height: 720px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 70%); will-change: translate; }
 .ds-count { font-variant-numeric: tabular-nums; }
 
-@keyframes ds-glow-pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 55%, transparent), 0 0 var(--space-6) color-mix(in srgb, var(--color-primary) 45%, transparent); }
-  100% { box-shadow: 0 0 0 var(--space-3) transparent, 0 0 var(--space-6) color-mix(in srgb, var(--color-primary) 45%, transparent); }
-}
+@keyframes ds-glow-ring { from { opacity: 1; scale: 1; } to { opacity: 0; scale: 1.08 1.32; } }
 @keyframes ds-shake {
   0%, 100% { translate: 0; }
   10%, 40%, 70% { translate: calc(var(--distance-shake) * -1) 0; }
@@ -233,12 +233,12 @@ details[open]::details-content { block-size: auto; }
 @keyframes ds-caret { 50% { opacity: 0; } }
 @keyframes ds-gradient-drift { to { background-position: 100% 0; } }
 
-/* ── Theme switch: every surface eases its colours together (300ms), only while switching ── */
-:root[data-theme-switching], :root[data-theme-switching] *, :root[data-theme-switching] *::before, :root[data-theme-switching] *::after {
-  transition: background-color var(--duration-theme) ease, color var(--duration-theme) ease, border-color var(--duration-theme) ease,
-    outline-color var(--duration-theme) ease, fill var(--duration-theme) ease, stroke var(--duration-theme) ease,
-    stop-color var(--duration-theme) ease, box-shadow var(--duration-theme) ease, text-decoration-color var(--duration-theme) ease !important;
-}
+/* ── Theme switch: the whole page cross-fades between the two themes (300ms ease) as one composited layer;
+   the clicked toggle's icon turns on its own layer (moon out, sun in). See design-system/theme.ts. ── */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--duration-theme); animation-timing-function: ease; }
+/* The new view is live, so the icon's own morph (below) plays in its layer; the old snapshot steps aside. */
+::view-transition-old(theme-icon) { display: none; }
+::view-transition-new(theme-icon) { animation: none; }
 /* The toggle's icon morphs: the moon turns away and shrinks as the sun turns in (and back). */
 .ds-theme-icon > .ds-icon { transition: opacity var(--duration-slow) var(--ease-out), rotate var(--duration-slow) var(--ease-spring), scale var(--duration-slow) var(--ease-spring); }
 [data-theme-icon="dark"] .ds-theme-sun, [data-theme-icon="light"] .ds-theme-moon { opacity: 0; rotate: -90deg; scale: 0.4; }
@@ -246,14 +246,14 @@ details[open]::details-content { block-size: auto; }
 
 /* ── Compositing hints: elements that move again and again get their own GPU layer up front.
    (One-off entrances are animated by the Motion library, which adds and removes will-change itself.) ── */
-.ds-ripple, .ds-toast, .ds-toast-progress, dialog.ds-modal, .ds-skeleton, .ds-spinner, .ds-icon-pulse, .ds-bell-ring { will-change: transform, opacity; }
+:is(.btn-primary, .c-primary, .c-nav-cta).btn::before, .ds-ripple, .ds-toast, .ds-toast-progress, dialog.ds-modal, .ds-skeleton, .ds-spinner, .ds-icon-pulse, .ds-bell-ring { will-change: transform, opacity; }
 .ds-reveal { will-change: transform, opacity; }
 .is-revealed-group .ds-reveal { will-change: auto; }
 
 /* Reduced motion: the token durations are already zero; switch off what would still move or loop. */
 @media (prefers-reduced-motion: reduce) {
   :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled) { scale: none; }
-  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::after,
+  :is(.btn-primary, .c-primary, .c-nav-cta).btn:hover:not(:disabled)::before,
   .ds-skeleton, .ds-typewriter-caret, .ds-gradient-text, .ds-toast, .ds-toast-progress, .ds-shake,
   dialog.ds-modal[open], dialog.ds-modal[open]::backdrop { animation: none; }
   .ds-media-zoom:hover img { scale: none; }
