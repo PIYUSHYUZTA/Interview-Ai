@@ -6,6 +6,9 @@ import { ArrowDown, ArrowDownRight, ArrowRight, ChartColumn, FileText, Mic, Paus
 import { AdaptivePreview, RoomPreview, ReportPreview } from './LandingProductPreviews';
 import { BlenderAssetScene } from './BlenderAssetScene';
 import { LandingFilm } from './LandingFilm';
+import { LandingOpening } from './LandingOpening';
+import { LandingMovements } from './LandingMovements';
+import { LandingCloseFilm } from './LandingCloseFilm';
 import { loadGsap } from './landing-gsap';
 import { LandingReveal as Reveal } from './LandingReveal';
 import { bentoVariants, landingMotion as timing, landingMotionStyles, revealVariants, useLandingReducedMotion } from './landing-motion';
@@ -150,6 +153,7 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
       <Button variant="secondary" onClick={() => { setMenuOpen(false); onWorkspace(); }}>{signedIn ? 'Open your workspace' : 'Sign in to your workspace'}</Button>
     </motion.div>}</AnimatePresence>
 
+    <LandingOpening />
     <main id="cinema-main" tabIndex={-1}>
       <LandingFilm onStart={onStart} />
 
@@ -184,6 +188,8 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
         </motion.div>
         <div className="c-hero-index"><span className="c-editorial-index"><b>01</b> UNDERSTAND <i /> <b>02</b> ADAPT <i /> <b>03</b> DEVELOP</span><a href="#how-it-works">SCROLL TO EXPLORE <Icon icon={ArrowDown} /></a></div>
       </section>
+
+      <LandingMovements />
 
       <section className="c-steps c-container" id="how-it-works" aria-labelledby="c-steps-title">
         <Reveal className="c-section-intro" from="left"><p className="c-eyebrow">HOW IT WORKS</p><div><h2 id="c-steps-title">Three steps.<br /><span>One realistic interview.</span></h2><p>Each step below is part of the current product, not a roadmap.</p></div></Reveal>
@@ -242,7 +248,7 @@ export function LandingPage({ onStart, onWorkspace, signedIn = false }: { onStar
 
       <div className="c-container c-report-section"><ReportPreview /></div>
 
-      <section className="c-close" id="start" aria-labelledby="c-close-title"><motion.div className="c-close-halo" aria-hidden="true" initial={reduced ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: .1 }} transition={{ duration: reduced ? 0 : timing.duration.atmosphere, ease: timing.ease }} /><Reveal><div className="c-closing-sculpture" aria-hidden="true"><i /><i /><i /><span /></div><p className="c-eyebrow">THE NEXT CHAPTER IS YOURS.</p><h2 id="c-close-title">Walk into your next<br /><span className="ds-gradient-text">interview prepared.</span></h2><p>Bring your experience. Find your words.<br />Take the next step with a clearer direction.</p><Button className="c-primary" onClick={onStart}>Start Practicing <Icon icon={ArrowRight} /></Button></Reveal></section>
+      <section className="c-close" id="start" data-theme="dark" aria-labelledby="c-close-title"><LandingCloseFilm /><div className="c-close-copy"><Reveal><p className="c-eyebrow">THE NEXT CHAPTER IS YOURS.</p><h2 id="c-close-title">Walk into your next<br /><span className="ds-gradient-text">interview prepared.</span></h2><p>Bring your experience. Find your words.<br />Take the next step with a clearer direction.</p><Button className="c-primary" onClick={onStart}>Start Practicing <Icon icon={ArrowRight} /></Button></Reveal></div></section>
     </main>
     <footer className="c-footer c-container">
       <div className="c-footer-brand"><a href="#top" className="c-wordmark" aria-label="Interview AI home"><Mark small /><span>interview<span className="c-wordmark-ai">ai</span></span></a><p>Realistic, voice-first interview practice with an AI interviewer.</p></div>

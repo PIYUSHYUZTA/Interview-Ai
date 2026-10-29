@@ -1,0 +1,84 @@
+{
+  "generator": "scripts/blender/build_landing_artifact.py",
+  "blender": "5.2.3 LTS",
+  "device": "GPU",
+  "model": {
+    "file": "/models/landing-instrument.glb",
+    "bytes": 428680,
+    "sha256": "6a2ef59e7f450f932bbe979172b5efdee5ca523766e859d6c05349b3d97e6030",
+    "objects": [
+      "ListeningLine",
+      "Monolith",
+      "Orbit",
+      "Pearl0",
+      "Pearl1",
+      "Pearl2",
+      "Pearl3",
+      "Pearl4",
+      "Pearl6",
+      "Pearl7",
+      "Plinth",
+      "RingInner",
+      "RingOuter",
+      "Shard0",
+      "Shard1",
+      "Shard2",
+      "Shard3",
+      "Shard4",
+      "Signal"
+    ]
+  },
+  "stills": {
+    "listen": {
+      "file": "/media/instrument-listen.webp",
+      "camera": [
+        0,
+        -6.4,
+        1.35
+      ],
+      "lens": 50,
+      "shift": [
+        0,
+        0
+      ]
+    },
+    "adapt": {
+      "file": "/media/instrument-adapt.webp",
+      "camera": [
+        4.6,
+        -4.4,
+        1.9
+      ],
+      "lens": 50,
+      "shift": [
+        0,
+        0
+      ]
+    },
+    "develop": {
+      "file": "/media/instrument-develop.webp",
+      "camera": [
+        1.1,
+        -3.6,
+        5.0
+      ],
+      "lens": 42,
+      "shift": [
+        0,
+        0
+      ]
+    }
+  },
+  "loop": {
+    "poster": "/media/instrument-loop-poster.webp",
+    "frames": 144,
+    "fps": 24,
+    "size": [
+      1280,
+      720
+    ],
+    "file": "/media/instrument-loop.mp4",
+    "bytes": 729478,
+    "sha256": "c21a0d51f5ef443525c877e4d6c428392b37d7b941429e29fa00596ce9d4d5c1"
+  }
+}

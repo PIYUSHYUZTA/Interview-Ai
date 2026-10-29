@@ -3,6 +3,7 @@ import { Icon } from './icon/Icon';
 import { ArrowRight, Pause, Play } from './icon/icons';
 import { loadGsap } from './landing-gsap';
 import { useLandingReducedMotion } from './landing-motion';
+import { openingDelay } from './LandingOpening';
 import { Button } from './ui';
 
 const prefersData = () => !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
@@ -47,7 +48,7 @@ export function LandingFilm({ onStart }: { onStart: () => void }) {
       const context = gsap.context(() => {
         gsap.fromTo(frame.current, { clipPath: 'inset(9% 7% 9% 7% round 28px)' }, { clipPath: 'inset(0% 0% 0% 0% round 0px)', ease: 'none', scrollTrigger: { trigger: section.current, start: 'top 88%', end: 'top 12%', scrub: .6 } });
         gsap.fromTo(video.current, { scale: 1.16, yPercent: -3 }, { scale: 1, yPercent: 3, ease: 'none', scrollTrigger: { trigger: section.current, start: 'top bottom', end: 'bottom top', scrub: true } });
-        gsap.from('.c-film-line > span', { yPercent: 105, opacity: 0, stagger: .12, duration: 1.1, ease: 'power3.out', scrollTrigger: { trigger: section.current, start: 'top 55%' } });
+        gsap.from('.c-film-line > span', { yPercent: 105, opacity: 0, stagger: .12, duration: 1.1, delay: openingDelay(reduced), ease: 'power3.out', scrollTrigger: { trigger: section.current, start: 'top 55%' } });
       }, section);
       undo = () => context.revert();
     });

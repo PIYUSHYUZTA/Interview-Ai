@@ -80,8 +80,6 @@
 .c-evidence-end { border-top: 1px solid color-mix(in srgb, var(--paint-ivory) 14.9%, transparent); padding-top: 20px; color: var(--paint-teal-text); font-size: 9px; letter-spacing: .08em; display: flex; justify-content: space-between; gap: 8px; }
 .c-evidence-end .ds-icon { color: var(--paint-ivory); vertical-align: -3px; }
 .c-close { position: relative; text-align: center; padding: 104px 24px 120px; border-top: 1px solid var(--c-line); overflow: hidden; }
-.c-close > div:not(.c-close-halo) { position: relative; z-index: 1; }
-.c-close-halo { position: absolute; width: 1100px; height: 648px; left: 50%; top: 60%; transform: translate(-50%,-50%); border-radius: 50%; border: 1px solid color-mix(in srgb, var(--paint-cerulean-text) 11%, transparent); background: radial-gradient(ellipse,color-mix(in srgb, var(--paint-cerulean) 12.9%, transparent),transparent 66%); box-shadow: 0 0 0 55px color-mix(in srgb, var(--paint-cerulean) 1.6%, transparent),0 0 0 110px color-mix(in srgb, var(--paint-cerulean) 1.2%, transparent); pointer-events: none; }
 .c-close .c-mark { width: 36px; height: 36px; margin-bottom: 24px; }
 .c-close h2 { font-size: clamp(48px,6vw,80px); line-height: 1.15; letter-spacing: -.06em; margin-top: 24px; }
 .c-close > div > p:not(.c-eyebrow) { margin: 24px auto 32px; font-size: 13px; line-height: 1.9; color: var(--paint-ivory); }
@@ -134,7 +132,6 @@
   .c-method li:last-child { border-color: transparent; padding-bottom: 0; }.c-method li::before { content: ''; position: absolute; top: 8px; left: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--paint-cerulean); border: 1px solid var(--paint-ivory); }
   .c-method h3 { font-size: 17px; margin-top: 12px; }.c-method li p { max-width: 420px; font-size: 12px; }
   .c-development { grid-template-columns: 1fr; gap: 44px; padding-block: 76px 80px; }.c-development-copy > p:not(.c-eyebrow) { font-size: 12px; }.c-evidence-stack p { max-width: 288px; }
-  .c-close { padding-block: 76px 84px; }.c-close h2 { font-size: clamp(44px,10vw,65px); }.c-close-halo { width: 720px; height: 500px; }
   .c-footer { grid-template-columns: 1fr; padding-top: 32px; gap: 28px; }.c-provider-note { font-size: 9px; }
 }
 @media(max-width: 639px) { .c-hero-actions { gap: 16px; }.c-art-bottom > span { gap: 4px; }.c-art-bottom button { font-size: 9px; } }
@@ -234,11 +231,6 @@
 .c-report-roadmap li > span { display: block; color: var(--paint-ivory); font-size: 9px; letter-spacing: .1em; }
 .c-report-roadmap strong { display: block; font-size: 13px; font-weight: 500; margin-top: 12px; color: var(--paint-ivory); }
 .c-report-roadmap p { font-size: 11px; color: var(--paint-ivory); line-height: 1.8; margin-top: 8px; }
-.c-closing-sculpture { position: relative; width: 140px; height: 120px; margin: 0 auto 36px; perspective: 600px; transform-style: preserve-3d; transform: rotateX(-15deg) rotateY(-20deg); }
-.c-closing-sculpture i { position: absolute; inset: 16px; border: 2px solid color-mix(in srgb, var(--paint-ivory) 52.2%, transparent); border-radius: 50%; box-shadow: inset 0 0 12px color-mix(in srgb, var(--paint-cerulean) 22%, transparent),0 0 18px color-mix(in srgb, var(--paint-cerulean) 14.9%, transparent); transform: rotateY(65deg) rotateZ(-30deg); }
-.c-closing-sculpture i:nth-child(2) { transform: rotateY(-55deg) rotateX(30deg); border-color: color-mix(in srgb, var(--paint-ivory) 43.9%, transparent); }
-.c-closing-sculpture i:nth-child(3) { transform: rotateX(70deg) rotateZ(25deg); }
-.c-closing-sculpture > span { position: absolute; inset: 44px 52px; border-radius: 50%; background: radial-gradient(circle at 30% 20%,var(--paint-ivory),var(--paint-cerulean) 35%,var(--paint-jet) 75%); box-shadow: 0 0 28px color-mix(in srgb, var(--paint-ivory) 22%, transparent); }
 .c-close h2 { font-size: clamp(38px,5.6vw,76px); }
 @media(max-width: 767px) {
   .c-adaptive-grid,.c-report-grid { grid-template-columns: 1fr; }
@@ -294,7 +286,6 @@
 }
 @media(forced-colors:active) { .c-heading-soft { -webkit-text-fill-color: CanvasText; background: none; } }
 
-.c-closing-sculpture > span { inset: 32px 48px; border-radius: 0; clip-path: polygon(50% 0,100% 42%,75% 82%,50% 100%,0 58%,25% 18%); background: linear-gradient(135deg,var(--paint-ivory),var(--paint-cerulean) 45%,var(--paint-jet) 65%,var(--paint-cerulean)); }
 
 /* Six-color visual system: ink establishes the atmosphere, charcoal separates
    surfaces, ivory carries reading, teal signals intelligence, and warm metals
@@ -335,9 +326,6 @@
 .c-report-preview .meter strong,.c-report-preview progress,.c-adaptive-output .c-decision,.c-report-roadmap li > span { color: var(--paint-teal-text); accent-color:var(--paint-cerulean-text); }
 .c-report-verdict > span,.c-feedback-detail > span,.c-report-roadmap li > span { color: var(--paint-teal-text); }
 .c-report-roadmap li { border-color:color-mix(in srgb, var(--paint-cerulean-text) 50%, transparent); }
-.c-close-halo { border-color:color-mix(in srgb, var(--paint-cerulean-text) 30%, transparent); background:radial-gradient(ellipse,color-mix(in srgb, var(--paint-cerulean) 9%, transparent),transparent 66%); }
-.c-closing-sculpture i { border-color:color-mix(in srgb, var(--paint-cerulean-text) 60%, transparent); }
-.c-closing-sculpture > span { background:linear-gradient(135deg,var(--paint-ivory) 0%,var(--paint-cerulean) 42%,var(--paint-jet) 68%,var(--paint-cerulean)); box-shadow:0 0 32px color-mix(in srgb, var(--paint-cerulean) 18%, transparent); }
 .c-sound-toggle { color:color-mix(in srgb, var(--paint-ivory) 80%, transparent); border-color:color-mix(in srgb, var(--paint-cerulean-text) 55%, transparent); background:var(--paint-ink); }
 .c-sound-toggle[aria-pressed="true"] { color: var(--paint-teal-text); border-color:var(--paint-cerulean-text); }
 .c-voice-glass { border-color:color-mix(in srgb, var(--paint-cerulean-text) 52%, transparent); background:linear-gradient(130deg,color-mix(in srgb, var(--paint-ink) 90%, transparent),color-mix(in srgb, var(--paint-jet) 88%, transparent)); }
@@ -397,7 +385,6 @@ html:has(.cinema) { scroll-behavior:smooth; }
 .c-room-interviewer .c-portrait { width: 112px; height: 112px; margin-top: 8px; }
 
 /* Closing: light, not an outlined ellipse. */
-.c-close-halo { border: 0; box-shadow: none; background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--paint-cerulean) 13%, transparent), color-mix(in srgb, var(--paint-rose) 2.5%, transparent) 45%, transparent 68%); }
 
 /* A. Navigation: a real menu on phones instead of hidden links. */
 .c-menu-toggle { display: none; position: relative; width: var(--touch-target); height: var(--touch-target); border: 1px solid color-mix(in srgb, var(--paint-cerulean-text) 45%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--paint-jet) 60%, transparent); cursor: pointer; padding: 0; place-items: center; color: var(--paint-ivory); }
@@ -635,3 +622,77 @@ html:has(.cinema) { scroll-behavior:smooth; }
   .c-report-roadmap ol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
   .c-report-roadmap ol > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
+
+/* ── Opening title: a teal line, the wordmark, then the frame parts like a letterbox ── */
+.c-opening { position: fixed; inset: 0; z-index: 40; pointer-events: none; display: grid; place-items: center; }
+.c-opening-leaf { position: absolute; left: 0; right: 0; height: 50.5%; background: var(--paint-jet); transition: translate 700ms cubic-bezier(.76,0,.24,1); }
+.c-opening-top { top: 0; }
+.c-opening-bottom { bottom: 0; }
+.c-opening[data-phase="part"] .c-opening-top { translate: 0 -100%; }
+.c-opening[data-phase="part"] .c-opening-bottom { translate: 0 100%; }
+.c-opening-title { position: relative; display: grid; justify-items: center; gap: 16px; transition: opacity 320ms ease, translate 700ms cubic-bezier(.76,0,.24,1); }
+.c-opening[data-phase="part"] .c-opening-title { opacity: 0; translate: 0 -12px; }
+.c-opening-word { font: 650 clamp(32px, 4.4vw, 56px)/1 var(--heading); letter-spacing: -.065em; color: var(--paint-ivory); clip-path: inset(100% 0 0 0); translate: 0 24px; animation: c-opening-rise 800ms cubic-bezier(.2,.8,.2,1) 380ms forwards; }
+.c-opening-word span { color: var(--paint-teal-text); }
+.c-opening-line { width: min(64vw, 480px); height: 1px; background: linear-gradient(90deg, transparent, var(--paint-teal) 30%, var(--paint-ivory) 50%, var(--paint-teal) 70%, transparent); scale: 0 1; animation: c-opening-draw 700ms cubic-bezier(.65,0,.35,1) forwards; }
+.c-opening-caption { font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--paint-amber-text); opacity: 0; animation: c-opening-fade 600ms ease 640ms forwards; }
+@keyframes c-opening-draw { to { scale: 1 1; } }
+@keyframes c-opening-rise { to { clip-path: inset(0 0 0 0); translate: 0 0; } }
+@keyframes c-opening-fade { to { opacity: 1; } }
+
+/* ── The instrument: a pinned, scroll-driven chapter scene ── */
+.c-movements { position: relative; height: 340vh; background: radial-gradient(ellipse 70% 60% at 64% 46%, color-mix(in srgb, var(--paint-teal) 9%, transparent), transparent 70%), var(--paint-jet); border-top: 1px solid var(--c-line); }
+.c-movements-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; display: grid; align-items: center; }
+.c-movements-scene { position: absolute; inset: 0; }
+.c-movements-still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; opacity: 0; transition: opacity 600ms ease; }
+.c-movements-still[data-active] { opacity: 1; }
+.c-movements-canvas { position: absolute; inset: 0; opacity: 0; transition: opacity 900ms ease; }
+.c-movements-canvas canvas { display: block; width: 100%; height: 100%; }
+.c-movements-scene[data-instrument-state="ready"] .c-movements-canvas { opacity: 1; }
+.c-movements-scene[data-instrument-state="ready"] .c-movements-still { opacity: 0; }
+.c-movements-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, var(--paint-jet) 0%, color-mix(in srgb, var(--paint-jet) 84%, transparent) 34%, transparent 58%), linear-gradient(0deg, var(--paint-jet), transparent 20%, transparent 84%, var(--paint-jet)); }
+.c-movements-copy { position: relative; z-index: 1; display: grid; align-content: center; justify-items: start; }
+.c-movements-copy > .c-eyebrow { margin-bottom: 24px; color: var(--paint-amber-text); }
+.c-movements-index { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 40px; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-muted); }
+.c-movements-index > span[data-active] { color: var(--paint-teal-text); }
+.c-movements-rail { flex-basis: 100%; height: 1px; max-width: 360px; background: var(--c-line); position: relative; }
+.c-movements-rail > span { position: absolute; inset: 0; background: linear-gradient(90deg, var(--paint-teal), var(--paint-amber)); transform-origin: left; scale: 0 1; }
+.c-movements-list { list-style: none; margin: 0; padding: 0; display: grid; max-width: 480px; }
+.c-movements-list li { grid-area: 1 / 1; opacity: 0; translate: 0 24px; transition: opacity 400ms ease, translate 600ms cubic-bezier(.2,.8,.2,1); }
+.c-movements-list li[data-before] { translate: 0 -24px; }
+.c-movements-list li[data-active] { opacity: 1; translate: 0 0; transition-delay: 120ms; }
+.c-movements-number { display: block; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--paint-teal-text); margin-bottom: 16px; }
+.c-movements-list h3 { font: 600 clamp(32px, 3.6vw, 56px)/1.06 var(--heading); letter-spacing: -.045em; color: var(--paint-ivory); margin: 0 0 20px; }
+.c-movements-list p { margin: 0; font-size: 15px; line-height: 1.7; color: color-mix(in srgb, var(--paint-ivory) 80%, transparent); max-width: 40ch; }
+@media(max-width: 767px) {
+  .c-movements { height: 300vh; }
+  .c-movements-stage { align-items: end; }
+  .c-movements-still { object-position: 50% 30%; }
+  .c-movements-shade { background: linear-gradient(0deg, var(--paint-jet) 0%, color-mix(in srgb, var(--paint-jet) 88%, transparent) 40%, transparent 68%), linear-gradient(180deg, var(--paint-jet), transparent 16%); }
+  .c-movements-copy { padding-bottom: 48px; }
+  .c-movements-copy > .c-eyebrow { margin-bottom: 16px; }
+  .c-movements-index { margin-bottom: 24px; }
+  .c-movements-list h3 { font-size: 30px; margin-bottom: 12px; }
+  .c-movements-list p { font-size: 14px; }
+}
+@media(prefers-reduced-motion:reduce) { .c-movements-still, .c-movements-canvas, .c-movements-list li { transition: none; translate: none; } }
+
+/* ── The closing scene: the instrument loop behind the final call to action ── */
+.c-close { background: var(--paint-jet); min-height: min(100svh, 920px); display: grid; align-items: center; }
+.c-close > :not(.c-close-film) { position: relative; z-index: 1; }
+.c-close-film { position: absolute; inset: 0; z-index: 0; }
+.c-close-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 64% 50%; }
+.c-close-shade { position: absolute; inset: 0; background: linear-gradient(90deg, var(--paint-jet) 8%, color-mix(in srgb, var(--paint-jet) 70%, transparent) 40%, transparent 62%), linear-gradient(0deg, var(--paint-jet), transparent 24%, transparent 80%, var(--paint-jet)); }
+.c-close { text-align: left; padding-inline: 0; }
+.c-close > .c-close-copy { width: min(100%, 1440px); margin-inline: auto; padding-inline: clamp(24px, 5.5vw, 88px); }
+.c-close .c-close-copy > div { max-width: 640px; }
+.c-close .c-close-copy p:not(.c-eyebrow) { margin: 24px 0 32px; font-size: 15px; line-height: 1.8; color: var(--paint-ivory); }
+@media(max-width: 767px) {
+  .c-close { align-items: end; }
+  .c-close-video { object-position: 72% 50%; }
+  .c-close-shade { background: linear-gradient(0deg, var(--paint-jet) 30%, color-mix(in srgb, var(--paint-jet) 70%, transparent) 60%, transparent), linear-gradient(180deg, var(--paint-jet), transparent 20%); }
+}
+
+/* The instrument and closing scenes are dark in both themes (like the film): re-resolve the landing's
+   colour variables inside them, since inherited custom properties keep the page theme's values. */
+.cinema [data-theme="dark"] { --ink: var(--paint-ink); --ivory: var(--paint-ivory); --teal: var(--paint-teal); --charcoal: var(--paint-charcoal); --earth: var(--paint-earth); --amber: var(--paint-amber); --jet: var(--paint-jet); --cerulean: var(--paint-cerulean); --rose: var(--paint-rose); --c-bg:var(--paint-jet); --c-white:var(--paint-ivory); --c-muted:color-mix(in srgb, var(--paint-ivory) 67%, transparent); --c-line:color-mix(in srgb, var(--paint-cerulean) 28%, transparent); --c-cyan:var(--paint-cerulean); color:var(--c-white); color-scheme: dark; }
