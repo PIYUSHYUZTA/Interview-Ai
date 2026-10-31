@@ -27,6 +27,32 @@ MEDIA.mkdir(parents=True, exist_ok=True)
 FRAMES, FPS = 240, 24
 
 scene = bpy.context.scene
+
+# Strict six colours: the source scene's cerulean and rose accents become Electric Teal and Burnt Amber
+# (materials and lights alike), so the film matches the brand palette.
+def to_linear(hex_value):
+    channel = lambda c: c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4
+    return tuple(channel(int(hex_value[i:i + 2], 16) / 255) for i in (1, 3, 5))
+TEAL, AMBER = to_linear('#00AEBB'), to_linear('#B99D73')
+def recolour(name):
+    lowered = name.lower()
+    return TEAL if 'cerulean' in lowered else AMBER if 'rose' in lowered else None
+for mat in bpy.data.materials:
+    colour = recolour(mat.name)
+    if colour and mat.use_nodes:
+        for node in mat.node_tree.nodes:
+            for socket in ('Base Color', 'Emission Color'):
+                if socket in node.inputs:
+                    node.inputs[socket].default_value = (*colour, 1)
+for light in bpy.data.lights:
+    colour = recolour(light.name)
+    if colour:
+        light.color = colour
+for obj in bpy.data.objects:
+    if obj.type == 'LIGHT':
+        colour = recolour(obj.name)
+        if colour:
+            obj.data.color = colour
 scene.frame_start, scene.frame_end = 1, FRAMES
 scene.render.fps = FPS
 rig = next(o for o in scene.objects if o.type == 'ARMATURE')

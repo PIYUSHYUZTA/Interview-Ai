@@ -40,15 +40,18 @@ describe('responsive', () => {
       expect([rule, /(min-)?height: var\(--touch-target\)/.test(body)]).toEqual([rule, true]);
     }
     expect(read(`${SOURCE}/design-system/sound.css`)).toContain('min-height: var(--touch-target);');
-    const landing = read(`${SOURCE}/components/LandingPage.css`);
-    expect(landing).toMatch(/\.c-nav nav a, \.c-hero-index a, \.c-footer-groups a, \.c-footer-groups button \{ min-height: var\(--touch-target\); min-width: var\(--touch-target\);/);
-    expect(landing).toContain('.c-menu-toggle { display: none; position: relative; width: var(--touch-target); height: var(--touch-target);');
+    const landing = read(`${SOURCE}/experience/landing.css`);
+    expect(landing).toMatch(/\.lx-pills > a, \.lx-pill-quiet \{[^}]*min-height: var\(--touch-target\);/);
+    expect(landing).toMatch(/\.lx-footer-links a, \.lx-footer-links button \{[^}]*min-height: var\(--touch-target\);/);
+    expect(landing).toMatch(/\.lx-menu \{ display: none; width: var\(--touch-target\); height: var\(--touch-target\);/);
+    expect(landing).toMatch(/\.lx-cta-sm \{ min-height: var\(--touch-target\);/);
     // No control is styled to a smaller fixed size.
     expect(landing.match(/min-height: ?(32|38|42)px/g) ?? []).toEqual([]);
   });
 
-  it('collapses navigation to the menu button below 768px', () => {
-    expect(read(`${SOURCE}/components/LandingPage.css`)).toMatch(/@media\(max-width: 767px\) \{ \.c-menu-toggle \{ display: grid; \}/);
+  it('collapses navigation to the menu button on narrow screens', () => {
+    // The landing's six-item pill bar collapses below the lg breakpoint (1024px), where it no longer fits.
+    expect(read(`${SOURCE}/experience/landing.css`)).toMatch(/@media \(max-width: 1023px\) \{\n  \.lx-pills \{[^}]*display: none; \}\n  \.lx-pills\.is-open \{ display: flex; \}\n  \.lx-menu \{ display: grid; \}/);
     expect(read(`${SOURCE}/design-system/components.css`)).toMatch(/@media \(max-width: 767px\) \{\n  \.ds-navbar-links, \.ds-navbar-cta, \.ds-navbar \.ds-sound-toggle \{ display: none; \}/);
   });
 
@@ -65,9 +68,8 @@ describe('responsive', () => {
     const product = read(`${SOURCE}/candidate-product.css`);
     expect(product).toMatch(/@media \(min-width: 640px\) and \(max-width: 1023px\) \{\n  \.app-shell :is\(\.metrics-grid, \.report-metadata\) \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
     expect(product).toContain('> :last-child:nth-child(odd) { grid-column: 1 / -1; }');
-    const landing = read(`${SOURCE}/components/LandingPage.css`);
-    expect(landing).toContain('.c-capability-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }');
-    expect(landing).toMatch(/@media\(max-width: 1279px\) \{ \.c-capability-grid \{ grid-template-columns: 1fr 1fr; \}/);
+    // The landing's two-column compositions (copy beside film, room beside copy) stack below 1024px.
+    expect(read(`${SOURCE}/experience/landing.css`)).toMatch(/@media \(max-width: 1023px\) \{[^@]*\.lx-split, \.lx-room \{ grid-template-columns: minmax\(0, 1fr\);/);
   });
 
   it('keeps sign-out reachable on phones', () => {

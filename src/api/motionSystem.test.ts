@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { motionTokens } from '../../frontend/src/design-system/motion';
-import { landingMotion } from '../../frontend/src/components/landing-motion';
 
 // Guards the motion system: one set of timing tokens shared by CSS and JavaScript, the specified
 // timings, reduced motion that really stops motion, and no second animation library.
@@ -48,41 +47,26 @@ describe('motion system', () => {
     for (const looping of ['.ds-skeleton', '.ds-typewriter-caret', '.ds-gradient-text', '.ds-spotlight']) expect(reducedCss).toContain(looping);
   });
 
-  it('the landing hero follows the specified entrance order and timing', () => {
-    const e = landingMotion.entrance;
-    expect(landingMotion.wordStagger).toBe(0.06);
-    expect(landingMotion.stagger).toBe(0.08);
-    expect(landingMotion.duration.reveal).toBe(0.4);
-    expect(landingMotion.distance.reveal).toBe(20);
-    expect(landingMotion.parallax).toBe(0.3);
-    const lastWord = e.headline + 4 * landingMotion.wordStagger; // five headline words
-    expect(e.copy - lastWord).toBeCloseTo(0.2, 6);
-    expect(e.action - e.copy).toBeCloseTo(0.3, 6);
-    expect(e.background).toBe(0.4);
-    expect(e.headline < e.copy && e.copy < e.action && e.action < e.descriptor).toBe(true);
-    const landing = read('components/LandingPage.tsx');
-    expect(landing).toContain('<WordReveal text="Interview practice" delay={timing.entrance.headline} play={heroInView} />');
-    expect(landing).toContain('<WordReveal text="that feels real." delay={timing.entrance.headline} startIndex={2} play={heroInView} />');
-    // The film opens the page; the live-3D section is second, so its entrance plays when it scrolls into view.
-    expect(landing.indexOf('<LandingFilm onStart={onStart} />')).toBeLessThan(landing.indexOf('<section className="c-hero c-container"'));
-    expect(landing).toContain('const heroInView = useInView(hero, { once: true, amount: 0.25 });');
-    expect(read('components/LandingFilm.tsx')).toContain('<h1 id="c-film-title">');
-    expect(landing).toMatch(/initial=\{reduced \? false : \{ opacity: \.72, scale: \.95 \}\}/); // CTA never starts invisible
-    expect(landing).toContain('window.scrollY > 80');
-    for (const advanced of ['{...magnetic(!!reduced)}', 'className="ds-spotlight"', '<Typewriter', 'variants={bento} custom={index}', 'timing.parallax', 'className="ds-gradient-text"']) expect(landing).toContain(advanced);
-    expect(landing.match(/from="left"/g)?.length).toBe(5); // section headings slide in from the left
+  it('the landing choreographs its scroll story: masked reveals, an opening image mask, layered parallax', () => {
+    const landing = read('experience/Landing.tsx');
+    // Headlines rise line by line out of a mask; supporting copy follows; each chapter fades as it leaves.
+    expect(landing).toContain("gsap.from(section.querySelectorAll('.lx-line > span'), { yPercent: 112, duration: 1.1, stagger: .08, ease: 'power4.out'");
+    expect(landing).toContain("gsap.to(sticky, { autoAlpha: 0, y: -40, ease: 'none', scrollTrigger: { trigger: section, start: 'bottom 70%', end: 'bottom 30%', scrub: true } });");
+    // Image masking: the interviewer film opens from a capsule to a full frame as you scroll.
+    expect(landing).toContain("gsap.fromTo('.lx-mask', { clipPath: 'inset(28% 34% 28% 34% round 999px)' }, { clipPath: 'inset(0% 0% 0% 0% round 24px)'");
+    // Layered depth: backdrop, panel and frame move at different rates.
+    for (const layer of ["'.lx-room-back'", "'.lx-room-panel'", "'.lx-room-frame'"]) expect(landing).toContain(`gsap.fromTo(${layer}`);
+    // GSAP arrives lazily, and nothing is choreographed under reduced motion.
+    expect(landing).toContain('void loadGsap().then(');
   });
 
   it('the landing navigation arrives once and condenses past 80px', () => {
-    const landingCss = read('components/LandingPage.css');
-    expect(landingCss).toContain('@keyframes c-nav-arrive { from { transform: translateY(-100%); } }');
-    expect(landingCss).toMatch(/\.cinema > \.c-nav \{[^}]*animation: c-nav-arrive[^}]*backwards;/);
-    // Condensing is transform-only: the bar's background layer slides up 24px (to a 64px bar) and the contents
-    // 12px, with a 12px blur and the 250ms nav duration; the box itself never changes size.
-    expect(landingCss).toMatch(/\.cinema > \.c-nav::before \{[^}]*transition: translate var\(--duration-nav\)/);
-    expect(landingCss).toMatch(/\.cinema > \.c-nav\.is-scrolled::before \{ translate: 0 -24px;[^}]*backdrop-filter: blur\(12px\);/);
-    expect(landingCss).toContain('.cinema > .c-nav.is-scrolled > * { translate: 0 -12px; }');
-    expect(landingCss).toContain('transform-origin: center; transition: transform var(--duration-normal) var(--ease-out); }');
+    const landing = read('experience/Landing.tsx');
+    expect(landing).toContain('setScrolled(window.scrollY > 80)');
+    const css = read('experience/landing.css');
+    expect(css).toContain('@keyframes lx-arrive { from { translate: 0 -100%; opacity: 0; } }');
+    expect(css).toMatch(/\.lx-nav \{[^}]*animation: lx-arrive[^}]*backwards;/);
+    expect(css).toContain('.lx-nav.is-scrolled { translate: 0 -8px; }'); // transform only: the bar never changes size
   });
 
   it('interaction and feedback motion use tokens only and match the brief', () => {

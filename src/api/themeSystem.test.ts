@@ -95,6 +95,7 @@ describe('dark mode', () => {
     const nav = read(`${SOURCE}/components/library/navigation.tsx`);
     expect(nav).toContain('<Icon icon={Moon} size="standalone" className="ds-theme-moon" /><Icon icon={Sun} size="standalone" className="ds-theme-sun" />');
     expect(read(`${SOURCE}/App.tsx`).match(/<ThemeToggle/g)?.length).toBe(2); // workspace topbar and sign-in corner
-    expect(read(`${SOURCE}/components/LandingPage.tsx`)).toContain('<ThemeToggle />');
+    // The landing is a night scene, dark in both themes (like the interview room); the app's toggles live in the workspace.
+    expect(read(`${SOURCE}/experience/Landing.tsx`)).toContain('<div className="lx" ref={root} data-theme="dark"');
   });
 });

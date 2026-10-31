@@ -1,0 +1,139 @@
+/* Landing, after the mindhyve reference (docs/references/01): a night clearing, glass pill navigation, light
+   editorial type bottom left, teal pill actions with a dark arrow chip, "Scroll to discover" bottom right.
+   Always dark. Colours come only from the six-colour paint tokens. */
+.lx { position: relative; color: var(--paint-ivory); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; background: transparent;
+  --ink: var(--paint-ink); --ivory: var(--paint-ivory); --teal: var(--paint-teal); --muted: color-mix(in srgb, var(--paint-ivory) 72%, transparent); --text: var(--paint-ivory); }
+body:has(.lx) { background: var(--paint-ink); }
+.lx a { color: inherit; text-decoration: none; }
+.lx :focus-visible { outline: 2px solid var(--paint-ivory); outline-offset: 4px; }
+.lx main:focus { outline: none; }
+.xp-canvas { position: fixed !important; inset: 0; z-index: 0; pointer-events: none; }
+.lx-fallback { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 50% 60% at 66% 46%, color-mix(in srgb, var(--paint-teal) 24%, transparent), transparent 70%), radial-gradient(ellipse 80% 40% at 50% 100%, color-mix(in srgb, var(--paint-teal) 10%, transparent), transparent), var(--paint-ink); }
+.lx-skip { position: fixed; top: 12px; left: 16px; z-index: 40; padding: 12px 20px; border-radius: 1000px; background: var(--paint-ivory); color: var(--paint-ink) !important; opacity: 0; pointer-events: none; }
+.lx-skip:focus { opacity: 1; pointer-events: auto; }
+
+/* ── Navigation: logo pill, glass pill bar, CTA pill, sound ── */
+.lx-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 30; display: flex; align-items: center; gap: 12px; padding: 20px clamp(16px, 2.6vw, 40px); animation: lx-arrive 900ms cubic-bezier(.2, .8, .2, 1) 200ms backwards; transition: translate 400ms var(--ease-out); will-change: translate; }
+.lx-nav.is-scrolled { translate: 0 -8px; }
+@keyframes lx-arrive { from { translate: 0 -100%; opacity: 0; } }
+.lx-logo { display: inline-flex; align-items: center; gap: 8px; min-height: var(--touch-target); padding: 0 16px 0 8px; border-radius: 1000px; background: color-mix(in srgb, var(--paint-ink) 56%, transparent); border: 1px solid color-mix(in srgb, var(--paint-ivory) 10%, transparent); backdrop-filter: blur(12px); font-weight: 650; font-size: 16px; letter-spacing: -.04em; }
+.lx-logo b { color: var(--paint-teal); font-weight: 650; margin-left: 4px; }
+.lx-logo-mark { width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, var(--paint-ivory), var(--paint-teal) 45%, var(--paint-ink) 80%); box-shadow: 0 0 16px color-mix(in srgb, var(--paint-teal) 56%, transparent); }
+.lx-pills { margin-left: auto; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 1000px; background: color-mix(in srgb, var(--paint-ink) 56%, transparent); border: 1px solid color-mix(in srgb, var(--paint-ivory) 10%, transparent); backdrop-filter: blur(12px); }
+.lx-pills > a, .lx-pill-quiet { position: relative; display: inline-flex; align-items: center; min-height: var(--touch-target); padding: 0 16px; border-radius: 1000px; border: 0; background: transparent; color: color-mix(in srgb, var(--paint-ivory) 80%, transparent); font: 500 13px var(--font-sans); cursor: pointer; transition: color 200ms ease, background 200ms ease; }
+.lx-pills > a:hover, .lx-pill-quiet:hover { color: var(--paint-ivory); background: color-mix(in srgb, var(--paint-ivory) 8%, transparent); }
+.lx-pills > a[aria-current] { color: var(--paint-ivory); background: color-mix(in srgb, var(--paint-teal) 18%, transparent); }
+.lx-nav-end { display: flex; align-items: center; gap: 8px; }
+.lx-nav-end .ds-sound-toggle, .lx-nav-end button { backdrop-filter: blur(12px); }
+.lx-menu { display: none; width: var(--touch-target); height: var(--touch-target); border-radius: 50%; place-items: center; border: 1px solid color-mix(in srgb, var(--paint-ivory) 14%, transparent); background: color-mix(in srgb, var(--paint-ink) 56%, transparent); color: var(--paint-ivory); }
+
+/* ── Actions: teal pill with a dark arrow chip; quiet outline pill ── */
+.lx-cta { display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 8px 0 24px; border: 0; border-radius: 1000px; background: var(--paint-teal); color: var(--paint-ink); font: 650 15px var(--font-sans); cursor: pointer; box-shadow: 0 0 32px color-mix(in srgb, var(--paint-teal) 40%, transparent); transition: filter 200ms ease, translate 200ms ease; }
+.lx-cta:hover { filter: var(--state-hover-filter); translate: 0 -2px; }
+.lx-cta:active { filter: var(--state-active-filter); translate: 0; }
+.lx-chip { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--paint-ink); color: var(--paint-teal); }
+.lx-cta-sm { min-height: var(--touch-target); padding: 0 4px 0 16px; font-size: 13px; gap: 8px; box-shadow: none; }
+.lx-cta-sm .lx-chip { width: 32px; height: 32px; }
+.lx-ghost { display: inline-flex; align-items: center; min-height: 52px; padding: 0 24px; border-radius: 1000px; border: 1px solid color-mix(in srgb, var(--paint-ivory) 36%, transparent); background: color-mix(in srgb, var(--paint-ink) 40%, transparent); color: var(--paint-ivory); font: 500 15px var(--font-sans); cursor: pointer; backdrop-filter: blur(8px); transition: border-color 200ms ease; }
+.lx-ghost:hover { border-color: var(--paint-ivory); }
+.lx-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+/* ── Chapters ── */
+.lx main { position: relative; z-index: 1; }
+.lx-chapter { position: relative; }
+.lx-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; padding: 112px clamp(20px, 5vw, 88px) 64px; box-sizing: border-box; }
+.lx-title { margin: 0; font-weight: 300; font-size: clamp(40px, 5.6vw, 88px); line-height: 1; letter-spacing: -.05em; color: var(--paint-ivory); }
+.lx-display { font-size: clamp(48px, 6.2vw, 104px); line-height: .96; letter-spacing: -.055em; }
+.lx-line { display: block; overflow: hidden; padding-bottom: .1em; margin-bottom: -.06em; }
+.lx-line > span { display: block; }
+.lx-eyebrow, .lx-brandline { margin: 0 0 24px; font-size: 11px; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: var(--paint-amber); }
+.lx-brandline { font-size: 15px; letter-spacing: -.02em; text-transform: none; color: var(--paint-teal); font-weight: 600; margin-bottom: 16px; }
+.lx-lede { margin: 28px 0 0; max-width: 44ch; font-size: clamp(15px, 1.2vw, 18px); line-height: 1.6; color: color-mix(in srgb, var(--paint-ivory) 86%, transparent); }
+.lx-lede em, .lx-you em { font-style: normal; color: var(--paint-teal); }
+.lx-body { margin: 28px 0 0; max-width: 46ch; font-size: 16px; line-height: 1.7; color: color-mix(in srgb, var(--paint-ivory) 84%, transparent); }
+.lx-copy, .lx-room-copy { align-self: center; max-width: 620px; padding: 48px; margin: -48px; border-radius: 40px; background: radial-gradient(ellipse 70% 70% at 50% 50%, color-mix(in srgb, var(--paint-ink) 86%, transparent) 30%, color-mix(in srgb, var(--paint-ink) 40%, transparent) 70%, transparent); }
+.lx-copy-right { justify-self: end; }
+.lx-tag { display: inline-block; margin: 16px 0 0; padding: 4px 12px; border-radius: 1000px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--paint-amber); border: 1px solid color-mix(in srgb, var(--paint-amber) 40%, transparent); }
+
+.lx-ch-hero .lx-sticky { align-content: end; padding-bottom: clamp(48px, 8vh, 96px); }
+.lx-hero-copy { max-width: 760px; }
+.lx-scroll { position: absolute; right: clamp(20px, 5vw, 88px); bottom: clamp(48px, 8vh, 96px); display: inline-flex; align-items: center; gap: 12px; min-height: var(--touch-target); font-size: 13px; color: color-mix(in srgb, var(--paint-ivory) 84%, transparent); }
+.lx-scroll span { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--paint-ivory) 32%, transparent); animation: lx-bob 2.4s ease-in-out infinite; will-change: translate; }
+@keyframes lx-bob { 50% { translate: 0 4px; } }
+
+.lx-split { align-self: center; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(32px, 5vw, 88px); align-items: center; }
+.lx-split .lx-copy { margin: 0; padding: 0; background: none; }
+.lx-mask-wrap { margin: 0; }
+.lx-mask { aspect-ratio: 16 / 10; overflow: hidden; border-radius: 24px; box-shadow: 0 0 80px color-mix(in srgb, var(--paint-teal) 24%, transparent); border: 1px solid color-mix(in srgb, var(--paint-teal) 32%, transparent); }
+.lx-mask video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.lx-mask-wrap figcaption { margin-top: 16px; font-size: 12px; color: color-mix(in srgb, var(--paint-ivory) 72%, transparent); max-width: 52ch; }
+
+.lx-steps { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 24px; }
+.lx-steps li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--paint-ivory) 14%, transparent); }
+.lx-steps span { font: 500 13px var(--font-mono); color: var(--paint-teal); }
+.lx-steps h3 { margin: 0 0 8px; font-size: 18px; font-weight: 500; letter-spacing: -.02em; }
+.lx-steps p { margin: 0; font-size: 14px; line-height: 1.6; color: color-mix(in srgb, var(--paint-ivory) 78%, transparent); }
+
+.lx-exchange { margin-top: 36px; padding: 20px 24px; border-radius: 20px; background: color-mix(in srgb, var(--paint-ink) 72%, transparent); border: 1px solid color-mix(in srgb, var(--paint-teal) 28%, transparent); backdrop-filter: blur(12px); }
+.lx-exchange .lx-tag { margin: 0 0 16px; }
+.lx-you, .lx-ai { margin: 0; font-size: 15px; line-height: 1.6; }
+.lx-ai { margin-top: 16px; padding-top: 16px; border-top: 1px dashed color-mix(in srgb, var(--paint-teal) 36%, transparent); color: var(--paint-teal); }
+.lx-you span, .lx-ai span { display: block; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: color-mix(in srgb, var(--paint-ivory) 64%, transparent); margin-bottom: 4px; }
+
+.lx-room { align-self: center; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
+.lx-room-frame { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 28px; perspective: 1400px; box-shadow: 0 40px 120px color-mix(in srgb, var(--paint-ink) 80%, transparent); }
+.lx-room-back { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lx-room-panel { position: absolute; left: 22%; top: 16%; width: 56%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--paint-teal) 56%, transparent); box-shadow: 0 0 48px color-mix(in srgb, var(--paint-teal) 40%, transparent); transform-style: preserve-3d; }
+.lx-room-panel img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.lx-facts { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 12px; font-size: 14px; color: color-mix(in srgb, var(--paint-ivory) 82%, transparent); }
+.lx-facts li { padding-left: 24px; position: relative; }
+.lx-facts li::before { content: ''; position: absolute; left: 0; top: .55em; width: 12px; height: 1px; background: var(--paint-teal); }
+
+.lx-gauges { display: flex; gap: 20px; margin-top: 32px; }
+.lx-gauge { position: relative; display: grid; place-items: center; align-content: center; width: 104px; height: 104px; border-radius: 50%; background: conic-gradient(var(--paint-teal) var(--sweep), color-mix(in srgb, var(--paint-ivory) 12%, transparent) 0); }
+.lx-gauge::before { content: ''; position: absolute; inset: 8px; border-radius: 50%; background: var(--paint-ink); }
+.lx-gauge b, .lx-gauge small { position: relative; }
+.lx-gauge b { font: 500 22px var(--font-mono); }
+.lx-gauge small { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--paint-ivory) 72%, transparent); }
+
+.lx-plan { position: relative; list-style: none; margin: 40px 0 0; padding: 0 0 0 32px; display: grid; gap: 28px; }
+.lx-plan-line { position: absolute; left: 4px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(var(--paint-amber), var(--paint-teal)); }
+.lx-plan li { position: relative; }
+.lx-plan li::before { content: ''; position: absolute; left: -32px; top: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--paint-amber); box-shadow: 0 0 12px var(--paint-amber); }
+.lx-plan b { font-size: 18px; font-weight: 500; }
+.lx-plan p { margin: 4px 0 0; font-size: 14px; line-height: 1.6; color: color-mix(in srgb, var(--paint-ivory) 78%, transparent); }
+
+.lx-final { align-self: end; padding-bottom: clamp(40px, 8vh, 96px); }
+
+.lx-footer { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px 48px; padding: 56px clamp(20px, 5vw, 88px) 40px; background: var(--paint-ink); border-top: 1px solid color-mix(in srgb, var(--paint-ivory) 10%, transparent); }
+.lx-footer-brand p { margin: 16px 0 0; font-size: 14px; color: color-mix(in srgb, var(--paint-ivory) 78%, transparent); }
+.lx-footer-brand .lx-logo { background: transparent; border: 0; padding-left: 0; backdrop-filter: none; }
+.lx-footer-links { display: flex; gap: 56px; }
+.lx-footer-links div { display: grid; gap: 4px; align-content: start; }
+.lx-footer-links span { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--paint-amber); margin-bottom: 8px; }
+.lx-footer-links a, .lx-footer-links button { display: inline-flex; align-items: center; min-height: var(--touch-target); padding: 0; border: 0; background: none; color: color-mix(in srgb, var(--paint-ivory) 84%, transparent); font: 14px var(--font-sans); cursor: pointer; text-align: left; }
+.lx-footer-links a:hover, .lx-footer-links button:hover { color: var(--paint-ivory); }
+.lx-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: color-mix(in srgb, var(--paint-ivory) 64%, transparent); max-width: 90ch; }
+
+@media (max-width: 1023px) {
+  .lx-pills { position: fixed; top: 80px; right: 16px; left: 16px; flex-direction: column; align-items: stretch; padding: 8px; border-radius: 24px; display: none; }
+  .lx-pills.is-open { display: flex; }
+  .lx-menu { display: grid; }
+  .lx-nav-end { margin-left: auto; }
+  .lx-split, .lx-room { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .lx-copy-right { justify-self: start; }
+}
+@media (max-width: 767px) {
+  .lx-sticky { padding: 96px 20px 40px; }
+  .lx-copy { padding: 20px; margin: -20px; background: color-mix(in srgb, var(--paint-ink) 64%, transparent); }
+  .lx-scroll { display: none; }
+  .lx-nav { padding: 16px; gap: 8px; }
+  .lx-nav-end .ds-sound-text { display: none; }
+  .lx-cta, .lx-ghost { min-height: 48px; }
+  .lx-gauges { gap: 12px; }
+  .lx-gauge { width: 88px; height: 88px; }
+  .lx-footer { grid-template-columns: minmax(0, 1fr); }
+  .lx-footer-links { gap: 32px; flex-wrap: wrap; }
+  .lx-mask-wrap figcaption { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .lx-nav { animation: none; } .lx-scroll span { animation: none; } .lx-cta { transition: none; } }

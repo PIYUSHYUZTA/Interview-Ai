@@ -41,13 +41,11 @@ describe('performance', () => {
     expect(motion).toMatch(/\.ds-spotlight-glow \{[^}]*will-change: translate;/);
     const components = read(`${SOURCE}/design-system/components.css`);
     for (const rule of ['.ds-tab-indicator { will-change: transform;', '.ds-progress-fill { will-change: transform;', '.ds-drawer-panel { will-change: translate;']) expect(components).toContain(rule);
-    const landing = read(`${SOURCE}/components/LandingPage.css`);
-    expect(landing).toMatch(/\.cinema > \.c-nav::before \{[^}]*will-change: translate;/);
-    expect(landing).toContain('.c-hero-backdrop { will-change: transform;');
-    // The spotlight follows the pointer by moving a pre-rendered layer, never by repainting a gradient.
-    const page = read(`${SOURCE}/components/LandingPage.tsx`);
-    expect(page).toContain('glow.style.translate = `${event.clientX - bounds.left}px ${event.clientY - bounds.top}px`;');
-    expect(page).not.toContain("'--spotlight-x'");
+    const landing = read(`${SOURCE}/experience/landing.css`);
+    expect(landing).toMatch(/\.lx-nav \{[^}]*will-change: translate;/);
+    expect(landing).toMatch(/\.lx-scroll span \{[^}]*will-change: translate;/);
+    // The landing follows the pointer by leaning the 3D camera inside the render loop, never by repainting the page.
+    expect(read(`${SOURCE}/experience/ExperienceCanvas.tsx`)).toContain('goal.lean.set(state.pointer.x * .45, state.pointer.y * .22, 0)');
   });
 
   it('gives every image and video intrinsic dimensions; images below the fold load lazily', () => {
@@ -57,7 +55,7 @@ describe('performance', () => {
         if (tag.startsWith('<img') && !tag.includes('hero-bust-poster.webp" alt="" width={900}')) expect([path.basename(file), tag.includes('loading="lazy"')]).toEqual([path.basename(file), true]);
       }
     }
-    expect(read(`${SOURCE}/components/LandingFilm.tsx`)).toContain('preload="none"'); // the film loads only when played
+    expect(read(`${SOURCE}/experience/Landing.tsx`)).toContain('preload="none"'); // the film loads only when played
   });
 
   it('loads off-screen work only when it is needed', () => {
@@ -66,7 +64,8 @@ describe('performance', () => {
     for (const screen of ['LandingPage', 'AuthScreen', 'Dashboard', 'ResumeUploadView', 'InterviewRoom', 'ResultsScreen']) expect(app).toMatch(new RegExp(`const ${screen} = lazy\\(\\(\\) => import\\(`));
     // GSAP is fetched only as the steps section approaches; the film video only when played on screen.
     expect(read(`${SOURCE}/components/landing-gsap.ts`)).toMatch(/import\(/);
-    expect(read(`${SOURCE}/components/LandingPage.tsx`)).toContain('void loadGsap().then(');
+    expect(read(`${SOURCE}/experience/Landing.tsx`)).toContain('void loadGsap().then(');
+    expect(read(`${SOURCE}/experience/Landing.tsx`)).toContain("const ExperienceCanvas = lazy(() => import('./ExperienceCanvas'));");
     // Content-visibility is deliberately not used: its size estimates move content when they miss (layout shift).
     expect(css.some((file) => /content-visibility\s*:/.test(read(file)))).toBe(false);
   });

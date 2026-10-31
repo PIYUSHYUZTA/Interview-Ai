@@ -15,9 +15,6 @@ const tsx = all.filter((f) => /\.tsx?$/.test(f.file));
 // Inline SVG that is a graphic, not an icon.
 const GRAPHICS: Record<string, string> = {
   'BlenderAssetScene.tsx': '3D scene fallback illustration',
-  'IntelligenceScene.tsx': 'sculpture fallback illustration',
-  'LandingPage.tsx': 'brand logo mark',
-  'LandingProductPreviews.tsx': 'camera illustration in a product preview',
   'ProgressHistory.tsx': 'progress chart',
   'ui.tsx': 'score ring',
   'VisionOverlay.tsx': 'landmark overlay on the camera preview',
@@ -60,8 +57,8 @@ describe('icon system', () => {
     const component = readFileSync(`${SOURCE}/components/icon/Icon.tsx`, 'utf8');
     expect(component).toMatch(/label: string;/); // IconButton cannot be used without a label
     expect(component).toContain('aria-label={label} data-tooltip={label}');
-    const landing = readFileSync(`${SOURCE}/components/LandingPage.tsx`, 'utf8');
-    expect(landing).toMatch(/className="c-menu-toggle ds-has-tooltip" data-tooltip=\{menuOpen \? 'Close menu' : 'Open menu'\}[^>]*aria-label=\{menuOpen \? 'Close menu' : 'Open menu'\}/);
+    const landing = readFileSync(`${SOURCE}/experience/Landing.tsx`, 'utf8');
+    expect(landing).toMatch(/className="lx-menu ds-has-tooltip" data-tooltip=\{menu \? 'Close menu' : 'Open menu'\}[^>]*aria-label=\{menu \? 'Close menu' : 'Open menu'\}/);
   });
 
   it('defines the hover state and the five animations, all respecting reduced motion', () => {

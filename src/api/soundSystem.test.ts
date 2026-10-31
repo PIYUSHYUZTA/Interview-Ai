@@ -141,7 +141,7 @@ describe('sound integration', () => {
     expect(app).toContain("playSound('page')");
     expect(app).toContain('<ThemeToggle tooltipSide="left" /><SoundToggle />');
     expect(read('components/InterviewRoom.tsx')).toContain('useSoundSuppressed();');
-    expect(read('components/LandingPage.tsx')).toContain('<SoundToggle className="c-sound-toggle" />');
+    expect(read('experience/Landing.tsx')).toContain('<SoundToggle className="lx-sound-toggle" />');
     const player = read('components/sound/sound.ts');
     expect(player).toContain("window.localStorage.getItem(STORAGE_KEY) === 'on'");
     expect(player).not.toMatch(/new Audio\(|fetch\(|\.mp3|\.wav|decodeAudioData/);
