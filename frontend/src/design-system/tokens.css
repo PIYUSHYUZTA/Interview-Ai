@@ -8,46 +8,35 @@
  * or on any subtree; data-theme="dark" forces dark inside a light subtree.
  */
 
-/* ── Palette primitives (the brand's nine colours plus tuned tints). Never use these in components. ── */
+/* ── Palette primitives: the brand's six colours, and mixes of only those six. Never use these in components.
+   Every derived value is an sRGB mix of two brand colours (noted beside it); nothing else enters the palette. ── */
 :root {
   --palette-ink: #031211;          /* Ink Black: dark base */
-  --palette-ivory: #E8E4D3;        /* Warm Ivory: dark-theme text */
-  --palette-teal: #00AEBB;         /* Electric Teal: primary brand */
-  --palette-teal-bright: #2CC3CF;  /* primary hover on dark */
-  --palette-teal-press: #009AA6;   /* primary hover/press on light */
-  --palette-teal-deep: #00707A;    /* teal as text on light (5.2:1) */
-  --palette-teal-ink: #005A62;     /* product teal text on light, also over tinted panels (≥ 6:1) */
-  --palette-amber: #B99D73;        /* Burnt Amber: accent */
-  --palette-earth: #6C5636;        /* Earth Brown: accent as text on light (6.1:1) */
-  --palette-charcoal: #090907;     /* Charcoal Black */
-  --palette-jet: #0A0A0A;          /* Jet Black */
-  --palette-cerulean: #007BA7;     /* Cerulean Blue */
-  --palette-rose: #FF2D95;         /* Neon Rose: error fills */
-  --palette-rose-light: #FF4AA3;
-  --palette-snow: #EDEDED;         /* product text and pale fills on dark */
-  --palette-abyss: #081C23;        /* tinted dark surface and hairline */
-  --palette-mist: #DCE6E5;         /* abyss mirrored for light: tinted pale surface and hairline */   /* Neon Rose as error text on dark: 6.2:1 (4.9:1 on overlay) */
+  --palette-charcoal: #090907;     /* Charcoal: dark panels */
+  --palette-ivory: #E8E4D3;        /* Warm Ivory: dark-theme text, light surfaces */
+  --palette-teal: #00AEBB;         /* Electric Teal: the AI, primary actions, focus */
+  --palette-amber: #B99D73;        /* Burnt Amber: progress, attention, warnings and errors (with icon + label) */
+  --palette-earth: #6C5636;        /* Earth Brown: structure; amber as text on light (5.0:1) */
 
-  /* Derived neutrals: ivory mixed into ink (dark) and ink into a warm off-white (light). */
+  --palette-teal-bright: #2AB8BF;  /* teal 82% + ivory: primary hover on dark */
+  --palette-teal-press: #009BA7;   /* teal 88% + ink: primary hover/press on light */
+  --palette-teal-deep: #026066;    /* teal 50% + ink: deep teal fill; teal text on light (5.3:1) */
+  --palette-teal-ink: #02585E;     /* teal 45% + ink: teal text over light panels (5.9:1) */
+  --palette-abyss: #031E1F;        /* teal 8% + ink: tinted dark surface */
+  --palette-mist: #D1DFD1;         /* teal 10% + ivory: tinted light surface */
+  --palette-earth-80: #57482F;     /* earth 80% + ink: warning/error text on light (6.3:1) */
+  --palette-parchment: #E1DAC6;    /* ivory 86% + amber: light base */
+
+  /* Ivory mixed into ink (dark) and ink into ivory (light). */
   --palette-ink-100: #0B1918;      /* 3.5% ivory */
   --palette-ink-200: #13211F;      /* 7% ivory */
   --palette-ink-300: #1B2825;      /* 10.5% ivory */
   --palette-ivory-74: #ACADA1;     /* 74% ivory on ink: 8.4:1 */
   --palette-ivory-60: #8C9085;     /* 60% ivory on ink: 5.9:1 (4.7:1 on overlay) */
   --palette-ivory-34: #515953;     /* 34% ivory on ink: disabled */
-  --palette-paper: #F3F1E9;        /* light base */
-  --palette-paper-100: #F9F8F3;    /* light surface */
-  --palette-white: #FFFFFF;        /* light elevated / overlay */
-  --palette-ink-76: #3D4845;       /* 76% ink on paper: 8.4:1 */
-  --palette-ink-60: #636B67;       /* 60% ink on paper: 4.9:1 */
-  --palette-ink-36: #9DA19B;       /* 36% ink on paper: disabled */
-
-  /* Semantic hues, tuned per theme for ≥ 4.5:1 as text. */
-  --palette-green: #46C98B;        --palette-green-deep: #167549;
-  --palette-gold: #E9B44C;         --palette-gold-deep: #8A5D00;
-  --palette-rose-deep: #C2117A;
-  --palette-sky: #4FA8D8;          --palette-sky-deep: #006E96;
-  --palette-black: #000000;
+  --palette-ink-76: #3A4440;       /* 76% ink on ivory: 9.6:1 */
+  --palette-ink-66: #515953;       /* 66% ink on ivory: 5.7:1 (5.2:1 on parchment) */
+  --palette-ink-36: #96988D;       /* 36% ink on ivory: disabled */
 }
 
 /* ── Colour tokens: dark (default) ── */
@@ -86,10 +75,10 @@
   --border-focus: var(--palette-teal);
 
   /* Semantic: base colour (text/icons, ≥ 4.5:1), subtle fill, border. */
-  --color-success: var(--palette-green);
-  --color-warning: var(--palette-gold);
-  --color-error: var(--palette-rose-light);
-  --color-info: var(--palette-sky);
+  --color-success: var(--palette-teal);
+  --color-warning: var(--palette-amber);
+  --color-error: var(--palette-amber);
+  --color-info: var(--palette-teal);
   --color-success-subtle: color-mix(in srgb, var(--color-success) 12%, transparent);
   --color-warning-subtle: color-mix(in srgb, var(--color-warning) 12%, transparent);
   --color-error-subtle: color-mix(in srgb, var(--color-error) 12%, transparent);
@@ -100,7 +89,7 @@
   --color-info-border: color-mix(in srgb, var(--color-info) 36%, transparent);
 
   /* Depth: the specified shadow scale is invisible on near-black, so dark uses stronger alphas. */
-  --shadow-color: var(--palette-black);
+  --shadow-color: var(--palette-ink);
   --shadow-xs: 0 1px 2px color-mix(in srgb, var(--shadow-color) 30%, transparent);
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--shadow-color) 36%, transparent);
   --shadow-md: 0 4px 16px color-mix(in srgb, var(--shadow-color) 44%, transparent);
@@ -108,27 +97,28 @@
   --shadow-brand: 0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
 
   /* Paint: the product's own colour roles (component CSS uses only these and the tokens above).
-     Dark values are the original product colours; the light block mirrors each one. "-text" variants are
+     Strict six colours: the retired roles (jet, snow, cerulean, rose) now resolve to brand colours, so every
+     surface uses only the six; the light block mirrors each one. "-text" variants are
      the accent as text, borders and icons, darkened in light for contrast; bare accents are fills. */
   color-scheme: dark;
-  --paint-jet: var(--palette-jet);
+  --paint-jet: var(--palette-ink);
   --paint-charcoal: var(--palette-charcoal);
   --paint-ink: var(--palette-ink);
   --paint-abyss: var(--palette-abyss);
-  --paint-snow: var(--palette-snow);
+  --paint-snow: var(--palette-ivory);
   --paint-ivory: var(--palette-ivory);
   --paint-teal: var(--palette-teal);
-  --paint-cerulean: var(--palette-cerulean);
-  --paint-rose: var(--palette-rose);
+  --paint-cerulean: var(--palette-teal-deep);
+  --paint-rose: var(--palette-amber);
   --paint-amber: var(--palette-amber);
   --paint-earth: var(--palette-earth);
   --paint-teal-text: var(--palette-teal);
-  --paint-cerulean-text: var(--palette-cerulean);
-  --paint-rose-text: var(--palette-rose);
+  --paint-cerulean-text: var(--palette-teal);
+  --paint-rose-text: var(--palette-amber);
   --paint-amber-text: var(--palette-amber);
   --paint-earth-text: var(--palette-earth);
-  --paint-shadow: var(--palette-jet);
-  --paint-on-accent: var(--palette-jet);
+  --paint-shadow: var(--palette-ink);
+  --paint-on-accent: var(--palette-ink);
 
   /* Interaction states that never depend on motion (they stay under reduced motion). */
   --state-hover-filter: brightness(1.14);
@@ -142,22 +132,22 @@
   --color-primary: var(--palette-teal);
   --color-primary-hover: var(--palette-teal-press);
   --color-primary-contrast: var(--palette-ink);          /* 7.1:1 */
-  --color-primary-text: var(--palette-teal-deep);       /* 5.2:1 (raw teal would be 2.4:1) */
+  --color-primary-text: var(--palette-teal-ink);       /* 5.2:1 (raw teal would be 2.4:1) */
   --color-primary-subtle: color-mix(in srgb, var(--palette-teal) 10%, transparent);
-  --color-primary-border: color-mix(in srgb, var(--palette-teal-deep) 36%, transparent);
+  --color-primary-border: color-mix(in srgb, var(--palette-teal-ink) 36%, transparent);
   --color-accent: var(--palette-amber);
   --color-accent-text: var(--palette-earth);            /* 6.1:1 */
   --color-accent-subtle: color-mix(in srgb, var(--palette-amber) 16%, transparent);
 
-  --bg-base: var(--palette-paper);
-  --bg-surface: var(--palette-paper-100);
-  --bg-elevated: var(--palette-white);
-  --bg-overlay: var(--palette-white);
+  --bg-base: var(--palette-parchment);
+  --bg-surface: var(--palette-ivory);
+  --bg-elevated: var(--palette-ivory);
+  --bg-overlay: var(--palette-ivory);
   --bg-scrim: color-mix(in srgb, var(--palette-ink) 40%, transparent);
 
   --text-primary: var(--palette-ink);                   /* 16.9:1 */
   --text-secondary: var(--palette-ink-76);              /*  8.4:1 */
-  --text-muted: var(--palette-ink-60);                  /*  4.9:1 */
+  --text-muted: var(--palette-ink-66);                  /*  4.9:1 */
   --text-disabled: var(--palette-ink-36);
 
   --border-subtle: color-mix(in srgb, var(--palette-ink) 7%, transparent);
@@ -165,10 +155,10 @@
   --border-strong: color-mix(in srgb, var(--palette-ink) 24%, transparent);
   --border-focus: var(--palette-teal-deep);
 
-  --color-success: var(--palette-green-deep);            /* 5.1:1 */
-  --color-warning: var(--palette-gold-deep);             /* 5.1:1 */
-  --color-error: var(--palette-rose-deep);               /* 5.1:1 */
-  --color-info: var(--palette-sky-deep);                 /* 5.1:1 */
+  --color-success: var(--palette-teal-ink);            /* 5.1:1 */
+  --color-warning: var(--palette-earth-80);             /* 5.1:1 */
+  --color-error: var(--palette-earth-80);               /* 5.1:1 */
+  --color-info: var(--palette-teal-ink);                 /* 5.1:1 */
   --color-success-subtle: color-mix(in srgb, var(--color-success) 10%, transparent);
   --color-warning-subtle: color-mix(in srgb, var(--color-warning) 10%, transparent);
   --color-error-subtle: color-mix(in srgb, var(--color-error) 10%, transparent);
@@ -179,7 +169,7 @@
   --color-info-border: color-mix(in srgb, var(--color-info) 32%, transparent);
 
   /* The specified scale, exactly. */
-  --shadow-color: var(--palette-black);
+  --shadow-color: var(--palette-ink);
   --shadow-xs: 0 1px 2px color-mix(in srgb, var(--shadow-color) 5%, transparent);
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--shadow-color) 8%, transparent);
   --shadow-md: 0 4px 16px color-mix(in srgb, var(--shadow-color) 12%, transparent);
@@ -187,24 +177,24 @@
   --shadow-brand: 0 0 24px color-mix(in srgb, var(--color-primary) 25%, transparent);
 
   color-scheme: light;
-  --paint-jet: var(--palette-paper);
-  --paint-charcoal: var(--palette-paper);
-  --paint-ink: var(--palette-paper-100);
+  --paint-jet: var(--palette-parchment);
+  --paint-charcoal: var(--palette-parchment);
+  --paint-ink: var(--palette-ivory);
   --paint-abyss: var(--palette-mist);
   --paint-snow: var(--palette-ink);
   --paint-ivory: var(--palette-ink);
   --paint-teal: var(--palette-teal);
-  --paint-cerulean: var(--palette-cerulean);
-  --paint-rose: var(--palette-rose);
+  --paint-cerulean: var(--palette-teal-deep);
+  --paint-rose: var(--palette-amber);
   --paint-amber: var(--palette-amber);
   --paint-earth: var(--palette-earth);
   --paint-teal-text: var(--palette-teal-ink);
-  --paint-cerulean-text: var(--palette-sky-deep);
-  --paint-rose-text: var(--palette-rose-deep);
+  --paint-cerulean-text: var(--palette-teal-ink);
+  --paint-rose-text: var(--palette-earth-80);
   --paint-amber-text: var(--palette-earth);
   --paint-earth-text: var(--palette-earth);
   --paint-shadow: color-mix(in srgb, var(--palette-ink) 28%, transparent);
-  --paint-on-accent: var(--palette-jet);
+  --paint-on-accent: var(--palette-ink);
 
   --state-hover-filter: brightness(0.95);
   --state-active-filter: brightness(0.88);

@@ -19,7 +19,7 @@ const CHAPTERS = [
 const SHOTS = [{ position: [0, 1.45, 5.4], fov: 39.6 }, { position: [4.0, 1.9, 3.8], fov: 39.6 }, { position: [1.3, 4.1, 4.0], fov: 44 }] as const;
 const AIM = [0, 1.45, 0] as const;
 // Palette, as light and particle colours (non-UI values; the UI uses tokens).
-const PALETTE = { ivory: 0xe8e4d3, teal: 0x00aebb, cerulean: 0x007ba7, brass: 0xb99d73, rose: 0xff2d95 };
+const PALETTE = { ink: 0x031211, ivory: 0xe8e4d3, teal: 0x00aebb, earth: 0x6c5636, brass: 0xb99d73 };
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const smooth = (value: number) => value * value * (3 - 2 * value);
@@ -96,7 +96,7 @@ export function LandingMovements() {
         const coarse = matchMedia('(pointer: coarse)').matches;
         renderer = new T.WebGLRenderer({ alpha: true, antialias: !coarse, powerPreference: 'high-performance' });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.25 : 1.75));
-        renderer.setClearColor(0x000000, 0);
+        renderer.setClearColor(PALETTE.ink, 0);
         renderer.toneMapping = T.AgXToneMapping; renderer.toneMappingExposure = 1.2;
         renderer.domElement.setAttribute('aria-hidden', 'true');
         renderer.domElement.addEventListener('webglcontextlost', lost);
@@ -112,7 +112,7 @@ export function LandingMovements() {
         const key = new T.DirectionalLight(PALETTE.brass, 2.6); key.position.set(-3.4, 4.4, 3.2);
         const rim = new T.DirectionalLight(PALETTE.teal, 2.2); rim.position.set(3.2, 2.8, -2.6);
         const doorway = new T.PointLight(PALETTE.teal, 26, 0, 2); doorway.position.set(0, 1.5, -1.9);
-        const fill = new T.DirectionalLight(PALETTE.cerulean, .7); fill.position.set(-2.6, .6, 1.2);
+        const fill = new T.DirectionalLight(PALETTE.earth, .7); fill.position.set(-2.6, .6, 1.2);
         scene.add(key, rim, doorway, fill, new T.HemisphereLight(PALETTE.ivory, 0x031211, .18));
 
         const part = (name: string) => root!.getObjectByName(name);
@@ -129,7 +129,7 @@ export function LandingMovements() {
           const radius = 1.6 + Math.random() * 4.2, angle = Math.random() * Math.PI * 2;
           positions.push(Math.cos(angle) * radius, Math.random() * 4.4 - .2, Math.sin(angle) * radius - 1);
           const pick = Math.random();
-          tint.setHex(pick < .62 ? PALETTE.ivory : pick < .84 ? PALETTE.teal : pick < .97 ? PALETTE.brass : PALETTE.rose);
+          tint.setHex(pick < .62 ? PALETTE.ivory : pick < .84 ? PALETTE.teal : pick < .97 ? PALETTE.brass : PALETTE.brass);
           colors.push(tint.r, tint.g, tint.b); seeds.push(Math.random());
         }
         const geometry = new T.BufferGeometry();

@@ -109,7 +109,7 @@ export function BlenderAssetScene({ variant, paused = false, state = 'idle', onS
           }
         });
         renderer = new T.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-        renderer.setClearColor(0x0a0a0a, 0);
+        renderer.setClearColor(0x031211, 0);
         renderer.toneMapping = variant === 'core' ? T.ACESFilmicToneMapping : T.AgXToneMapping;
         renderer.toneMappingExposure = variant === 'core' ? .88 : variant === 'hero' ? 1.35 : 1.02;
         if (variant === 'studio') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; }
@@ -137,9 +137,9 @@ export function BlenderAssetScene({ variant, paused = false, state = 'idle', onS
         const camera = new T.PerspectiveCamera(variant === 'core' ? 36 : variant === 'hero' ? 39 : headJoint ? 28 : 34, 1, .1, 40);
         camera.position.copy(framing.position);
         camera.lookAt(framing.target);
-        // The landing hero is keyed in Warm Ivory; the room keeps its neutral key.
-        const keyColor = variant === 'hero' ? 0xe8e4d3 : 0xededed;
-        scene.add(new T.HemisphereLight(keyColor, variant === 'hero' ? 0x031211 : 0x0a0a0a, variant === 'core' ? 1 : variant === 'hero' ? .3 : .22));
+        // Keyed in Warm Ivory (strict six-colour palette).
+        const keyColor = 0xe8e4d3;
+        scene.add(new T.HemisphereLight(keyColor, 0x031211, variant === 'core' ? 1 : variant === 'hero' ? .3 : .22));
         const key = new T.DirectionalLight(keyColor, variant === 'core' ? 1.5 : variant === 'hero' ? 1.15 : 2); key.position.set(-3, 4, 4);
         if (variant === 'studio') {
           key.castShadow = true; keyShadow = key.shadow; key.shadow.mapSize.set(1024, 1024);
@@ -149,20 +149,20 @@ export function BlenderAssetScene({ variant, paused = false, state = 'idle', onS
         }
         scene.add(key);
         if (variant !== 'core') {
-          // Cerulean rim behind the right shoulder, a restrained Neon Rose kicker on the left cheek.
-          const rim = new T.DirectionalLight(0x007ba7, 9); rim.position.set(1.4, framing.target.y + .5, -1.2); scene.add(rim);
-          const kicker = new T.DirectionalLight(0xff2d95, variant === 'hero' ? 1.8 : 2.2); kicker.position.set(-1.6, framing.target.y - .2, -.8); scene.add(kicker);
+          // Teal rim behind the right shoulder, a warm Burnt Amber kicker on the left cheek.
+          const rim = new T.DirectionalLight(0x00aebb, 6); rim.position.set(1.4, framing.target.y + .5, -1.2); scene.add(rim);
+          const kicker = new T.DirectionalLight(0xb99d73, variant === 'hero' ? 2.2 : 2.6); kicker.position.set(-1.6, framing.target.y - .2, -.8); scene.add(kicker);
           if (variant === 'hero') { const bounce = new T.DirectionalLight(0xb99d73, .6); bounce.position.set(1.2, framing.target.y - 1, 1.4); scene.add(bounce); }
         } else {
-          const rim = new T.PointLight(0x007ba7, 8, 12); rim.position.set(2, 2, 1); scene.add(rim);
-          const warm = new T.DirectionalLight(0xff2d95, .7); warm.position.set(-2, 1, -1); scene.add(warm);
+          const rim = new T.PointLight(0x00aebb, 6, 12); rim.position.set(2, 2, 1); scene.add(rim);
+          const warm = new T.DirectionalLight(0xb99d73, .9); warm.position.set(-2, 1, -1); scene.add(warm);
         }
         let dust: Three.Points | undefined;
         if (variant === 'hero') {
           // Luminous dust drifting behind the bust, weighted to the palette. Motion lives in the
           // vertex shader; time only advances while motion is allowed, so reduced motion freezes it.
           const count = 520, positions = new Float32Array(count * 3), seeds = new Float32Array(count), tints = new Float32Array(count * 3);
-          const palette: Array<[number, number]> = [[0x00aebb, .58], [0x007ba7, .27], [0xb99d73, .12], [0xff2d95, .03]];
+          const palette: Array<[number, number]> = [[0x00aebb, .6], [0xe8e4d3, .25], [0xb99d73, .15]];
           let seed = 7; const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
           const centre = framing.target;
           for (let index = 0; index < count; index++) {

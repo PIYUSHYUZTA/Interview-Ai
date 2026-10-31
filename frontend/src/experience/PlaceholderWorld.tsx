@@ -8,7 +8,7 @@ import { scrollState } from './scroll';
  * Phase 1 greybox: one placeholder set per chapter, in final palette materials and at final scale, so the
  * camera paths, pacing and transitions can be judged before the Blender assets (Phases 3–6) replace them.
  */
-const P = { jet: 0x0a0a0a, ink: 0x031211, charcoal: 0x090907, ivory: 0xe8e4d3, teal: 0x00aebb, cerulean: 0x007ba7, brass: 0xb99d73, earth: 0x6c5636, rose: 0xff2d95 };
+const P = { jet: 0x031211, ink: 0x031211, charcoal: 0x090907, ivory: 0xe8e4d3, teal: 0x00aebb, cerulean: 0x00aebb, brass: 0xb99d73, earth: 0x6c5636, rose: 0xb99d73 };
 const local = (index: number) => MathUtils.clamp(scrollState.chapter - index, 0, 1);
 const ease = (t: number) => 1 - (1 - t) ** 3;
 

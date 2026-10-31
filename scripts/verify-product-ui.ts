@@ -20,7 +20,7 @@ try {
   const page = await context.newPage(); const errors: string[] = [];
   page.on('pageerror', (error: Error) => errors.push(error.message));
   await page.goto(origin); await page.getByRole('button', { name: 'Workspace', exact: true }).click();
-  await page.getByRole('heading', { name: 'Progress over time' }).waitFor();
+  await page.getByRole('heading', { name: 'Performance growth' }).waitFor();
   await page.locator('.skip-link').focus();
   assert.equal(await page.locator('.skip-link').evaluate((e: HTMLElement) => e === document.activeElement), true);
   await page.keyboard.press('Enter');
@@ -67,15 +67,18 @@ try {
     await page.getByRole('button', { name: 'View my assessment', exact: true }).click();
     await page.getByRole('heading', { name: 'Difficulty progression', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Overview', exact: true }).click();
-    await page.getByRole('heading', { name: 'Progress over time' }).waitFor();
+    await page.getByRole('heading', { name: 'Performance growth' }).waitFor();
   }
-  await page.getByRole('img', { name: 'Saved overall scores from zero to one hundred, oldest to newest' }).waitFor();
+  // Growth chart: both saved assessments plotted; each opens its report; the dashed comparison skill can be switched.
+  await page.getByRole('img', { name: /^Overall score across 2 saved assessments/ }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Open report', exact: true }).count(), 2);
-  const measure = page.getByLabel('Progress measure');
-  const skill = await measure.locator('option').nth(1).getAttribute('value');
-  await measure.selectOption(skill!);
-  await page.getByRole('img', { name: /scores from zero to ten/ }).waitFor();
-  await measure.selectOption('overall');
+  const skills = page.getByRole('group', { name: 'Comparison skill' }).getByRole('button');
+  assert.ok(await skills.count() > 0);
+  await skills.last().click();
+  assert.equal(await skills.last().getAttribute('aria-pressed'), 'true');
+  // Stat tiles and the activity feed show the saved interviews.
+  assert.equal((await page.locator('.ws-kpi').first().locator('.ws-kpi-value').textContent())?.trim(), '2');
+  assert.equal(await page.getByRole('button', { name: /^Open the report for / }).count(), 2);
   const progress = await (await context.request.get(`${origin}/interviews/progress`)).json();
   assert.deepEqual(progress.reports.map((r: any) => r.sessionId), sessions);
   assert.ok(progress.repeatedWeaknesses.length > 0);
@@ -87,7 +90,7 @@ try {
   assert.deepEqual(await (await context.request.get(`${origin}/interviews/progress`)).json(), progress);
   await page.setViewportSize({ width: 1440, height: 1050 });
   await page.goto(origin); await page.getByRole('button', { name: 'Workspace', exact: true }).click();
-  await page.getByRole('button', { name: 'Open report', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Open the report for / }).first().click();
   await page.getByRole('heading', { name: 'Difficulty progression', exact: true }).waitFor();
   await page.screenshot({ path: path.resolve('.browser-verification/phase8-report.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

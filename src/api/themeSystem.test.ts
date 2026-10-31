@@ -39,12 +39,20 @@ describe('dark mode', () => {
     expect(scene.match(/"#[0-9a-f]{6}"/gi) ?? []).toEqual([]); // its SVG fallback uses tokens; only light colours (0x…) remain
   });
 
-  it('defines every paint role in both themes, with dark values equal to the original product colours', () => {
+  it('defines every paint role in both themes, using only the six brand colours and mixes of them', () => {
     const paints = Object.keys(dark).filter((name) => name.startsWith('--paint-'));
     expect(paints.length).toBeGreaterThanOrEqual(18);
     expect(paints.filter((name) => !(name in light))).toEqual([]);
-    const original: Record<string, string> = { '--paint-jet': '#0a0a0a', '--paint-charcoal': '#090907', '--paint-ink': '#031211', '--paint-abyss': '#081c23', '--paint-snow': '#ededed', '--paint-ivory': '#e8e4d3', '--paint-teal': '#00aebb', '--paint-cerulean': '#007ba7', '--paint-rose': '#ff2d95', '--paint-amber': '#b99d73', '--paint-earth': '#6c5636' };
-    for (const [name, value] of Object.entries(original)) expect([name, hex(dark, name)]).toEqual([name, value]);
+    // Strict six: the brand colours, exactly; every other palette value is documented as a mix of them.
+    const brand = { '--palette-ink': '#031211', '--palette-charcoal': '#090907', '--palette-ivory': '#e8e4d3', '--palette-teal': '#00aebb', '--palette-amber': '#b99d73', '--palette-earth': '#6c5636' };
+    for (const [name, value] of Object.entries(brand)) expect([name, palette[name].toLowerCase()]).toEqual([name, value]);
+    const paletteLines = block(':root {').split(/\r?\n/).filter((line) => /--palette-[\w-]+:\s*#/.test(line));
+    expect(paletteLines.filter((line) => !Object.keys(brand).some((name) => line.includes(`${name}:`)) && !/%/.test(line))).toEqual([]);
+    const brandOrMix = new Set(Object.values(palette).map((value) => value.toLowerCase()));
+    for (const theme of [dark, light]) for (const name of paints) { const value = theme[name]; if (/^var\(--palette-/.test(value)) expect([name, brandOrMix.has(hex(theme, name))]).toEqual([name, true]); }
+    // The retired roles resolve to brand colours in dark.
+    const retired: Record<string, string> = { '--paint-jet': '#031211', '--paint-snow': '#e8e4d3', '--paint-rose': '#b99d73', '--paint-teal': '#00aebb', '--paint-amber': '#b99d73', '--paint-earth': '#6c5636', '--paint-ivory': '#e8e4d3', '--paint-charcoal': '#090907', '--paint-ink': '#031211' };
+    for (const [name, value] of Object.entries(retired)) expect([name, hex(dark, name)]).toEqual([name, value]);
     expect(dark['color-scheme' as keyof typeof dark] ?? block(':root,\n[data-theme="dark"] {')).toContain('color-scheme: dark');
     expect(block('[data-theme="light"] {')).toContain('color-scheme: light');
   });

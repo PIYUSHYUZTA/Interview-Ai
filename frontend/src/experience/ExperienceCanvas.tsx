@@ -8,8 +8,9 @@ import { scrollState } from './scroll';
 import { tierSettings } from './quality';
 import { PlaceholderWorld } from './PlaceholderWorld';
 
-// Palette as light and material colours (non-UI values; the DOM uses tokens).
-export const PAINT = { jet: 0x0a0a0a, ink: 0x031211, charcoal: 0x090907, ivory: 0xe8e4d3, teal: 0x00aebb, cerulean: 0x007ba7, brass: 0xb99d73, earth: 0x6c5636, rose: 0xff2d95 };
+// Palette as light and material colours (non-UI values; the DOM uses tokens). Strict six colours:
+// the retired cerulean and rose roles resolve to teal and amber.
+export const PAINT = { jet: 0x031211, ink: 0x031211, charcoal: 0x090907, ivory: 0xe8e4d3, teal: 0x00aebb, cerulean: 0x00aebb, brass: 0xb99d73, earth: 0x6c5636, rose: 0xb99d73 };
 
 /** One spline through every chapter's two camera keys (plus a final hold), keyed by continuous chapter progress. */
 function CameraRig() {

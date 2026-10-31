@@ -8,7 +8,7 @@ import { flushSync } from 'react-dom';
  */
 export type Theme = 'dark' | 'light';
 export const THEME_KEY = 'interview-ai.theme';
-const THEME_COLOR: Record<Theme, string> = { dark: '#0A0A0A', light: '#F3F1E9' }; // browser chrome only
+const THEME_COLOR: Record<Theme, string> = { dark: '#031211', light: '#E1DAC6' }; // browser chrome only
 
 const saved = (): Theme | null => { try { const value = window.localStorage.getItem(THEME_KEY); return value === 'light' || value === 'dark' ? value : null; } catch { return null; } };
 const system = (): Theme => (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
