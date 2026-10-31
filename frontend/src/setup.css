@@ -1,0 +1,65 @@
+/* Interview setup, after the request-access reference (docs/references/03): a soft glow top left, one dark
+   rounded panel with a light title, quiet fields in a half/full rhythm and a small light submit pill; three
+   iridescent stage discs on the right. Colours come only from the six-colour paint tokens. */
+.su-page { position: relative; isolation: isolate; max-width: 1440px; overflow-x: clip; overflow-clip-margin: 160px; }
+.su-page::before { content: ''; position: absolute; z-index: -1; left: -120px; top: -160px; width: 640px; height: 520px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--paint-teal) 16%, transparent), transparent); pointer-events: none; }
+.su-layout { display: grid; grid-template-columns: minmax(0, 640px) minmax(320px, 1fr); gap: 48px; align-items: start; }
+
+.su-panel { display: grid; gap: 24px; padding: 32px; border-radius: 16px; background: color-mix(in srgb, var(--bg-surface) 92%, transparent); border: 1px solid var(--border-default); box-shadow: 0 24px 64px color-mix(in srgb, var(--paint-ink) 40%, transparent); min-width: 0; }
+.su-head h1 { font-size: clamp(26px, 2.2vw, 32px); font-weight: 400; letter-spacing: -.03em; line-height: 1.2; margin: 8px 0; }
+.su-head p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--text-secondary); max-width: 52ch; }
+.su-eyebrow { margin: 0; font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--paint-teal-text); }
+
+/* The stepper sits quietly inside the panel. */
+.app-shell .su-panel .stepper { margin: 0; padding: 0 0 16px; background: transparent; border: 0; border-bottom: 1px solid var(--border-subtle); border-radius: 0; }
+.app-shell .su-panel .stepper li { padding: 0; border: 0; color: var(--text-muted); }
+.app-shell .su-panel .stepper li.active { color: var(--text-primary); }
+.app-shell .su-panel .stepper li.active span { background: var(--paint-teal); border-color: var(--paint-teal); color: var(--paint-on-accent); }
+
+/* Stages flow as one column inside the panel; their cards become plain sections. */
+.su-panel .setup-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.app-shell .su-panel .card { background: transparent; border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+.app-shell .su-panel .card + .card, .su-panel .setup-grid > .stack { padding-top: 24px; border-top: 1px solid var(--border-subtle); }
+.su-panel h2 { font-size: 17px; font-weight: 500; letter-spacing: -.01em; }
+.app-shell .su-panel .eyebrow { color: var(--text-muted); }
+.su-panel .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+.app-shell .su-panel :is(input, select, textarea) { background: var(--bg-base); border: 1px solid var(--border-default); border-radius: 8px; }
+.app-shell .su-panel :is(input, select, textarea):hover { border-color: var(--border-strong); }
+.su-panel .upload-zone { border-radius: 12px; background: color-mix(in srgb, var(--paint-teal) 4%, var(--bg-base)); border-color: color-mix(in srgb, var(--paint-teal) 32%, transparent); }
+.su-panel .upload-symbol { background: color-mix(in srgb, var(--paint-teal) 14%, transparent); color: var(--paint-teal-text); }
+.app-shell .su-panel .btn { border-radius: 1000px; }
+.app-shell .su-panel .btn-primary { min-height: 44px; padding: 0 20px; }
+.su-panel .plan-rounds { margin: 16px 0; }
+.su-panel .plan-rounds article { padding: 16px 0; }
+.su-panel .notice { border-radius: 12px; }
+
+/* The stage discs. */
+.su-stage { position: sticky; top: 96px; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 16px; height: min(640px, calc(100vh - 160px)); min-height: 440px; }
+.su-discs { position: relative; min-height: 0; }
+.su-discs-canvas { position: absolute !important; inset: 0; }
+.su-stage-labels { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; gap: 24px; font-size: 11px; color: var(--text-muted); }
+.su-stage-labels li { display: flex; gap: 8px; align-items: baseline; }
+.su-stage-labels span { font: 600 10px var(--font-mono); }
+.su-stage-labels li[data-state="current"] { color: var(--text-primary); }
+.su-stage-labels li[data-state="current"] span { color: var(--paint-teal-text); }
+.su-stage-labels li[data-state="done"] span { color: var(--paint-amber-text); }
+
+/* Without WebGL: the same three discs, drawn flat. */
+.su-discs-flat { position: absolute; inset: 0; display: grid; place-content: center; }
+.su-discs-flat span { display: block; width: 240px; height: 120px; margin-top: -40px; border-radius: 50%; background: var(--paint-ink); border: 2px solid color-mix(in srgb, var(--paint-teal) 24%, transparent); }
+.su-discs-flat span[data-state="current"] { border-color: var(--paint-teal); box-shadow: 0 0 32px color-mix(in srgb, var(--paint-teal) 40%, transparent); }
+.su-discs-flat span[data-state="done"] { border-color: color-mix(in srgb, var(--paint-amber) 64%, transparent); }
+
+@media (max-width: 1279px) {
+  .su-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 32px; }
+}
+@media (max-width: 1023px) {
+  .su-layout { grid-template-columns: minmax(0, 1fr); }
+  .su-stage { position: relative; top: 0; order: -1; height: 240px; min-height: 0; }
+}
+@media (max-width: 767px) {
+  .su-panel { padding: 20px; }
+  .su-panel .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .su-stage { height: 200px; }
+  .su-stage-labels { gap: 12px; }
+}

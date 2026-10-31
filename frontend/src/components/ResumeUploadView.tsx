@@ -1,3 +1,4 @@
+import { SetupStage } from './SetupStage';
 import { useEffect, useRef, useState } from 'react';
 import type { InterviewCreateResponse, InterviewPreferences, ResumeUploadResponse, SetupOptions } from '../types';
 import { createInterview, getCurrentCandidate, getResume, getSetupOptions, uploadResume, uploadResumeFileWithProgress } from '../api';
@@ -129,8 +130,10 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
     const parts = record ? ['role', 'company', 'period', 'degree', 'institution', 'field'].flatMap((key) => typeof record[key] === 'string' && record[key] ? [record[key] as string] : []) : [String(item)];
     return <li key={i}>{parts.join(' · ') || 'See extracted text for details'}</li>;
   }) : <li className="muted">Not detected. You can add it to the extracted text.</li>;
-  return <div className="page setup-page">
-    <header className="page-heading"><div><p className="eyebrow">YOUR NEXT OPPORTUNITY STARTS HERE</p><h1>Make practice personal.</h1><p>Bring your experience. We’ll build an interview around it.</p></div><Status>Private practice workspace</Status></header>
+  // Layout after the setup reference (docs/references/03): one panel holding the current stage, and the three
+  // stage discs beside it. The stages, fields and actions are unchanged.
+  return <div className="page setup-page su-page"><div className="su-layout"><section className="su-panel" aria-labelledby="su-title">
+    <header className="su-head"><p className="su-eyebrow">Interview setup · step {stage} of 3</p><h1 id="su-title">Make practice personal.</h1><p>Bring your experience. We’ll build an interview around it.</p></header>
     {profile && !initialPreset && <p className="fine-print">Your saved resume is ready for review. You can edit or replace it. Previously observed gaps for this role and provider help prioritize practice; your new answers determine the new assessment.</p>}
     <ol className="stepper">{['Your profile', 'Interview preferences', 'Review your plan'].map((title, i) => <li key={title} className={stage === i + 1 ? 'active' : stage > i + 1 ? 'done' : ''}><span>{stage > i + 1 ? <CheckDrawIcon /> : `0${i + 1}`}</span>{title}</li>)}</ol>
     <ErrorNotice message={error} retry={!options ? loadOptions : undefined} />
@@ -181,5 +184,5 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
       <div className="actions spread"><Button variant="ghost" onClick={() => setStage(1)} disabled={!!busy}>Back to profile</Button><Button onClick={buildPlan} disabled={!!busy || !options}>Build my interview plan <Icon icon={ArrowRight} /></Button></div>
     </Card><Card className="setup-aside"><p className="eyebrow">PREPARED FOR YOU</p><h2>{profile?.candidateName}</h2><p className="muted">Your resume and target role guide the plan. Your answers guide what comes next.</p><div className="preview-list"><span><Icon icon={CircleCheck} size="standalone" /><strong>Candidate profile reviewed</strong></span><span><Icon icon={CircleCheck} size="standalone" /><strong>Questions adapt to your answers</strong></span><span><Icon icon={CircleCheck} size="standalone" /><strong>Voice answers · optional camera</strong></span></div><div className="notice">{options?.providerName === 'deterministic' ? 'Demo mode uses deterministic evaluation. No AI API key is needed.' : `Configured evaluation provider: ${options?.providerName ?? 'loading'}.`}</div></Card></div>}
     {stage === 3 && plan?.plan && <Card className="plan-card"><div className="section-heading"><div><p className="eyebrow">03 / READY WHEN YOU ARE</p><h2>Your interview, mapped out.</h2><p>{plan.plan.roleTitle} · {plan.plan.rounds.length} rounds · {plan.plan.totalQuestionBudget} questions</p></div><Status tone="success">Plan prepared</Status></div><div className="plan-rounds">{plan.plan.rounds.map((r) => <article key={r.roundNumber}><span className="round-number">0{r.roundNumber}</span><div><h3>{r.name.replace(/^Round \d+\s*[—–-]\s*/, '')}</h3><p>{r.description}</p><div className="chips">{r.targetSkills.map((s) => <span key={s}>{labelFor(s)}</span>)}</div><small>{r.questionBudget} questions · difficulty {r.difficultyRange.min * 2}–{r.difficultyRange.max * 2} / 10</small></div></article>)}</div><div className="notice">The plan sets the boundaries. Questions adapt to your answers and accumulated evidence. Questions are spoken aloud and your spoken answers are transcribed for assessment.</div><div className="actions spread"><Button variant="ghost" onClick={() => setStage(2)}>Edit preferences</Button><Button onClick={() => onInterviewPrepared(plan)}>Enter interview room <Icon icon={ArrowRight} /></Button></div></Card>}
-  </div>;
+  </section><SetupStage stage={stage} /></div></div>;
 }
