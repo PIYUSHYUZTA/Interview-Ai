@@ -27,6 +27,14 @@ function disposeModel(root: Three.Object3D) {
 const articulationShapes: Record<string, 'jawOpen' | 'mouthFunnel' | 'mouthPucker' | 'mouthStretch' | 'mouthPress'> = { jawOpen: 'jawOpen', mouthFunnel: 'mouthFunnel', mouthPucker: 'mouthPucker', mouthStretchLeft: 'mouthStretch', mouthStretchRight: 'mouthStretch', mouthPressLeft: 'mouthPress', mouthPressRight: 'mouthPress' };
 const assets = { core: 'intelligence-core', studio: 'human-interview-studio', hero: 'hero-bust' };
 const labels = { core: 'Faceted AI intelligence core with illuminated metallic orbits', studio: 'Digital human interviewer in a softly lit studio', hero: 'Digital human interviewer framed by illuminated orbital rings' };
+/** Re-hues a saturated authored colour into the six-colour palette, keeping its lightness: pinks and reds
+ * become Burnt Amber, blues become Electric Teal; neutrals, skin and the brand's own hues are left alone. */
+function toPalette(colour: Three.Color) {
+  const hsl = { h: 0, s: 0, l: 0 }; colour.getHSL(hsl);
+  if (hsl.s < .3) return;
+  if (hsl.h >= .75 || hsl.h < .02) colour.setHSL(.1, .34, hsl.l);
+  else if (hsl.h >= .54 && hsl.h < .75) colour.setHSL(.51, Math.min(1, hsl.s), hsl.l);
+}
 /** Data-saver, very low memory or very few cores: show the Blender poster instead of loading WebGL. */
 function prefersPoster() {
   const device = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
@@ -105,6 +113,8 @@ export function BlenderAssetScene({ variant, paused = false, state = 'idle', onS
             // The suit's normal map carries deep fold detail that reads as blotches under the rim light.
             if (material.name.includes('casualsuit') && 'normalScale' in material) (material as Three.MeshStandardMaterial).normalScale.setScalar(.3);
             if (variant === 'hero' && material.transparent) { Object.assign(material, { transparent: false, alphaTest: .42, alphaToCoverage: true, depthWrite: true }); }
+            // Strict six colours: the authored rose and cerulean accents in the GLBs become Burnt Amber and Electric Teal.
+            for (const key of ['color', 'emissive'] as const) { const value = (material as unknown as Record<string, Three.Color | undefined>)[key]; if (value?.isColor) toPalette(value); }
             if (material.name === 'Ink architectural surface') { const surface=material as Three.MeshStandardMaterial; surface.envMapIntensity=0;surface.roughness=1;surface.metalness=0; }
           }
         });
