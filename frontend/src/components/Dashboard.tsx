@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { getSessions, getCandidateProgress, getCurrentCandidate } from '../api';
-import type { CandidateProfileResponse, CandidateProgress, SessionSummary, InterviewResultsResponse } from '../types';
+import { getSessions, getCandidateProgress } from '../api';
+import type { CandidateProgress, SessionSummary, InterviewResultsResponse } from '../types';
 import { Icon } from './icon/Icon';
 import type { LucideIcon } from './icon/icons';
 import { ArrowRight, ChartColumn, CircleCheck, Clock, FileText, Mic, Sparkles, Target, TrendingDown, TrendingUp, TriangleAlert } from './icon/icons';
@@ -31,12 +31,11 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
-  const [profile, setProfile] = useState<CandidateProfileResponse | null>(null);
   const load = async () => {
     setLoading(true); setError(null);
     try {
-      const [result, development, account] = await Promise.all([getSessions(), getCandidateProgress(), getCurrentCandidate().catch(() => null)]);
-      setProgress(development); setProfile(account);
+      const [result, development] = await Promise.all([getSessions(), getCandidateProgress()]);
+      setProgress(development);
       const reports = [...development.reports].reverse();
       const rank = new Map(reports.map((r, i) => [r.sessionId, i]));
       setHistory([...result.interviews].sort((a, b) => (rank.get(a.sessionId) ?? -1) - (rank.get(b.sessionId) ?? -1)));
@@ -61,9 +60,6 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
 
   const scores = completed.map((s) => s.overallScore!);
   const average = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : null;
-  const account = profile?.candidate;
-  const initials = (account?.name ?? latest?.candidateName ?? '').split(/\s+/).map((part) => part[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-  const resumes = profile?.resumes.length ?? 0;
 
   return <div className="page dashboard-page ws-dashboard">
     <header className="ws-title-row">
@@ -74,11 +70,6 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
           ? <>{latest.roleTitle} · Your latest overall score is <strong className="ws-highlight">{latest.overallScore.toFixed(1)}/100</strong>{change !== null && <>, <strong className="ws-highlight">{change >= 0 ? '+' : ''}{change.toFixed(1)}</strong> against your previous matching interview</>}.</>
           : 'Build a baseline. Practise deliberately. See what develops.'}</p>
       </div>
-      {account && <section className="ws-profile" aria-label="Candidate profile">
-        <span className="ws-avatar" aria-hidden="true">{initials || '·'}</span>
-        <div><strong>{account.name}</strong><span>{account.email}</span>
-          <small>{latest ? `Target role · ${latest.roleTitle}` : 'No target role yet'} · {resumes ? `${resumes} résumé${resumes > 1 ? 's' : ''} on file` : 'No résumé yet'} · Member since {new Date(account.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</small></div>
-      </section>}
     </header>
 
     <RevealGroup className="ws-kpis">
@@ -197,7 +188,7 @@ function KpiTile({ index, label, icon, value, note, badge, badgeTone = 'up', bar
     <header><span className="ws-eyebrow">{label}</span>{badge && <span className="ws-badge" data-tone={badgeTone}>{badge}</span>}<span className="ws-kpi-icon"><Icon icon={icon} size="feature" /></span></header>
     <strong className="ws-kpi-value">{value}</strong>
     <p className="ws-kpi-note">{note}</p>
-    {bars.length > 0 && <div className="ws-bars" data-accent={accent ? '' : undefined} role="img" aria-label={`${barsLabel}: ${bars.map((b) => Math.round(b)).join(', ')}`}>{bars.map((b, i) => <span key={i} style={{ scale: `1 ${Math.max(.06, b / top)}` }} />)}</div>}
+    <div className="ws-bars" data-accent={accent ? '' : undefined} role="img" aria-label={bars.length ? `${barsLabel}: ${bars.map((b) => Math.round(b)).join(', ')}` : `${barsLabel}: no data yet`}>{[...Array(Math.max(0, 8 - bars.length)).fill(null), ...bars.slice(-8)].map((b, i) => b === null ? <span key={i} className="ws-bar-empty" /> : <span key={i} style={{ scale: `1 ${Math.max(.06, b / top)}` }} />)}</div>
   </article>;
 }
 

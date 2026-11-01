@@ -33,7 +33,7 @@ function Discs({ stage, still }: { stage: number; still: boolean }) {
       if (!disc) return;
       const current = index === stage - 1, done = index < stage - 1;
       // The current disc comes forward and turns a little more toward the viewer.
-      disc.position.z = MathUtils.lerp(disc.position.z, current ? .5 : 0, step);
+      disc.position.z = MathUtils.lerp(disc.position.z, current ? .9 : 0, step);
       disc.rotation.x = MathUtils.lerp(disc.rotation.x, current ? 1.05 : 1.2, step);
       const glow = current ? 1.25 : done ? .7 : .28;
       rims[index].uniforms.glow.value = MathUtils.lerp(rims[index].uniforms.glow.value, glow, step);
@@ -42,7 +42,7 @@ function Discs({ stage, still }: { stage: number; still: boolean }) {
     if (group.current && !still) group.current.rotation.y = Math.sin(state.clock.elapsedTime * .3) * .12 - .25;
   });
   return <group ref={group} rotation={[0, -.25, .12]}>
-    {[0, 1, 2].map((index) => <group key={index} ref={(node) => { discs.current[index] = node; }} position={[0, .95 - index * .95, 0]} rotation={[1.2, 0, 0]}>
+    {[0, 1, 2].map((index) => <group key={index} ref={(node) => { discs.current[index] = node; }} position={[0, 1.15 - index * 1.15, 0]} rotation={[1.2, 0, 0]}>
       <mesh><cylinderGeometry args={[1, 1, .06, 96]} /><meshPhysicalMaterial color={0x031211} roughness={.42} metalness={0} clearcoat={.35} clearcoatRoughness={.3} envMapIntensity={.18} /></mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[1, .034, 16, 160]} /><primitive object={rims[index]} attach="material" /></mesh>
     </group>)}

@@ -61,11 +61,13 @@ export function Landing({ onStart, onWorkspace, signedIn }: Props) {
       const context = gsap.context(() => {
         gsap.from('.lx-ch-hero .lx-line > span', { yPercent: 112, duration: 1.3, stagger: .1, ease: 'power4.out', delay: .2 });
         gsap.from('.lx-ch-hero .lx-fade', { autoAlpha: 0, y: 16, duration: 1, stagger: .1, ease: 'power3.out', delay: .7 });
-        for (const section of gsap.utils.toArray<HTMLElement>('.lx-chapter:not(.lx-ch-hero)')) {
+        // Each chapter leaves differently: rise, blur, scale through, or a mask wipe.
+        const exits = [{ autoAlpha: 0, y: -40 }, { autoAlpha: 0, filter: 'blur(12px)' }, { autoAlpha: 0, scale: 1.08 }, { clipPath: 'inset(0% 0% 100% 0%)' }];
+        for (const [order, section] of gsap.utils.toArray<HTMLElement>('.lx-chapter:not(.lx-ch-hero)').entries()) {
           const sticky = section.querySelector('.lx-sticky');
           gsap.from(section.querySelectorAll('.lx-line > span'), { yPercent: 112, duration: 1.1, stagger: .08, ease: 'power4.out', scrollTrigger: { trigger: section, start: 'top 55%' } });
           gsap.from(section.querySelectorAll('.lx-fade'), { autoAlpha: 0, y: 24, duration: .9, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: section, start: 'top 45%' } });
-          gsap.to(sticky, { autoAlpha: 0, y: -40, ease: 'none', scrollTrigger: { trigger: section, start: 'bottom 70%', end: 'bottom 30%', scrub: true } });
+          gsap.to(sticky, { ...exits[order % exits.length], ease: 'none', scrollTrigger: { trigger: section, start: 'bottom 70%', end: 'bottom 30%', scrub: true } });
         }
         gsap.to('.lx-ch-hero .lx-sticky', { autoAlpha: 0, y: -60, ease: 'none', scrollTrigger: { trigger: '.lx-ch-hero', start: 'bottom 85%', end: 'bottom 35%', scrub: true } });
         // Image masking: the interviewer film opens from a narrow capsule to a full frame.
@@ -87,6 +89,7 @@ export function Landing({ onStart, onWorkspace, signedIn }: Props) {
   const go = (event: React.MouseEvent, action: () => void) => { event.preventDefault(); setMenu(false); action(); };
   return <div className="lx" ref={root} data-theme="dark" data-tier={tier} data-motion={reduced ? 'reduced' : 'full'}>
     {live ? <Suspense fallback={null}><ExperienceCanvas tier={tier} still={reduced} /></Suspense> : <div className="lx-fallback" aria-hidden="true" />}
+    {live && <div className="lx-anchors" aria-hidden="true">{[['01', 'Résumé'], ['02', 'Conversation'], ['03', 'Report']].map(([n, label], index) => <div key={label} id={`lx-anchor-${index}`} className="lx-anchor"><span>{n}</span>{label}</div>)}</div>}
     <a className="lx-skip" href="#lx-main">Skip to content</a>
 
     <header className={`lx-nav ${scrolled ? 'is-scrolled' : ''}`}>

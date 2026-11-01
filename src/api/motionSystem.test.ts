@@ -51,7 +51,9 @@ describe('motion system', () => {
     const landing = read('experience/Landing.tsx');
     // Headlines rise line by line out of a mask; supporting copy follows; each chapter fades as it leaves.
     expect(landing).toContain("gsap.from(section.querySelectorAll('.lx-line > span'), { yPercent: 112, duration: 1.1, stagger: .08, ease: 'power4.out'");
-    expect(landing).toContain("gsap.to(sticky, { autoAlpha: 0, y: -40, ease: 'none', scrollTrigger: { trigger: section, start: 'bottom 70%', end: 'bottom 30%', scrub: true } });");
+    // Chapters leave in four different ways (rise, blur, scale through, mask wipe), scrubbed with the scroll.
+    expect(landing).toContain("const exits = [{ autoAlpha: 0, y: -40 }, { autoAlpha: 0, filter: 'blur(12px)' }, { autoAlpha: 0, scale: 1.08 }, { clipPath: 'inset(0% 0% 100% 0%)' }];");
+    expect(landing).toContain("gsap.to(sticky, { ...exits[order % exits.length], ease: 'none', scrollTrigger: { trigger: section, start: 'bottom 70%', end: 'bottom 30%', scrub: true } });");
     // Image masking: the interviewer film opens from a capsule to a full frame as you scroll.
     expect(landing).toContain("gsap.fromTo('.lx-mask', { clipPath: 'inset(28% 34% 28% 34% round 999px)' }, { clipPath: 'inset(0% 0% 0% 0% round 24px)'");
     // Layered depth: backdrop, panel and frame move at different rates.

@@ -55,10 +55,15 @@ function Tree({ still, mirror = false }: { still: boolean; mirror?: boolean }) {
   };
   useLayoutEffect(() => { place(bark.current, lower); place(glow.current, upper); }, [lower, upper]);
   const tint = useMemo(() => new Color(), []);
-  // A pulse of light climbs from the trunk to the tips while "follow-up questions" is on screen.
+  const painted = useRef(false);
+  // A pulse of light climbs from the trunk to the tips while "follow-up questions" is on screen. Colours are
+  // written only while the pulse is visible, plus once more to settle, never every frame for nothing.
   useFrame((state) => {
     const mesh = glow.current; if (!mesh) return;
-    const pulse = near(3, 1.1), t = still ? .5 : state.clock.elapsedTime;
+    const pulse = near(3, 1.1);
+    if (pulse === 0 && painted.current) return;
+    painted.current = pulse === 0;
+    const t = still ? .5 : state.clock.elapsedTime;
     const front = 3 + ((t * .9) % 4.5);
     upper.forEach((s, i) => {
       const wave = pulse * Math.max(0, 1 - Math.abs(s.depth - front) / .9);
@@ -85,15 +90,15 @@ function Canopy({ tips, still, dim = 1 }: { tips: Vector3[]; still: boolean; dim
   const material = useMemo(() => new ShaderMaterial({
     transparent: true, depthWrite: false, blending: AdditiveBlending,
     uniforms: { time: { value: 0 }, evidence: { value: 0 }, bloom: { value: 1 }, dim: { value: dim }, ivory: { value: new Color(P.ivory) }, teal: { value: new Color(P.teal) }, amber: { value: new Color(P.amber) }, scale: { value: 1 } },
-    vertexShader: 'attribute float seed; attribute float kind; uniform float time; uniform float bloom; uniform float scale; varying float vSeed; varying float vKind; varying float vTw;\n'
+    vertexShader: 'attribute float seed; attribute float kind; uniform float time; uniform float bloom; uniform float scale; uniform float evidence; varying float vSeed; varying float vKind; varying float vTw;\n'
       + 'void main(){ vSeed=seed; vKind=kind; vec3 p=position; p+=vec3(sin(time*.6+seed*30.),cos(time*.5+seed*20.),sin(time*.4+seed*12.))*.03;\n'
-      + ' vec4 mv=modelViewMatrix*vec4(p,1.); gl_Position=projectionMatrix*mv; vTw=.55+.45*sin(time*2.+seed*60.); gl_PointSize=scale*(1.4+seed*2.8)*bloom*(16./-mv.z); }',
+      + ' vec4 mv=modelViewMatrix*vec4(p,1.); gl_Position=projectionMatrix*mv; vTw=.55+.45*sin(time*2.+seed*60.); gl_PointSize=scale*(1.4+seed*2.8)*bloom*(1.+evidence*.6)*(16./-mv.z); }',
     fragmentShader: 'uniform vec3 ivory; uniform vec3 teal; uniform vec3 amber; uniform float evidence; uniform float dim; varying float vSeed; varying float vKind; varying float vTw;\n'
       + 'void main(){ float d=length(gl_PointCoord-.5); float a=smoothstep(.5,0.,d); vec3 base=mix(ivory,teal,smoothstep(.55,1.,vSeed)*.8); vec3 ev=vKind>.5?teal:amber;\n'
       + ' vec3 c=mix(base,ev,evidence); gl_FragColor=vec4(c*(.75+vTw*.9)*dim,a*(.55+vTw*.45)*dim); }',
   }), []);
   const { positions, seeds, kinds } = useMemo(() => {
-    const next = random(7), per = Math.ceil((matchMedia('(pointer: coarse)').matches ? 4200 : 12000) / tips.length);
+    const next = random(7), per = Math.ceil((matchMedia('(pointer: coarse)').matches ? 3600 : 8000) / tips.length);
     const positions: number[] = [], seeds: number[] = [], kinds: number[] = [];
     for (const tip of tips) for (let i = 0; i < per; i++) {
       const r = Math.pow(next(), .7) * .95, a = next() * Math.PI * 2, b = Math.acos(next() * 2 - 1);
@@ -192,6 +197,27 @@ function Sky() {
   return <mesh material={material}><sphereGeometry args={[80, 32, 16]} /></mesh>;
 }
 
+/**
+ * "How it works", told on the tree itself: the landing's DOM owns three labels (#lx-anchor-0..2); this projects
+ * the roots, trunk and canopy to the screen each frame and moves them there, visible only in that chapter.
+ * No portal into the canvas, so mounting and unmounting stay entirely React's.
+ */
+// Points on the far side of the tree from the chapter's copy (the 'how' shot looks from the left), so labels never sit on the text.
+const ANCHORS: [number, number, number][] = [[-1.6, .3, 1.6], [-.35, 1.6, .3], [-1.4, 4.2, .6]];
+function Anchors() {
+  const point = useMemo(() => new Vector3(), []);
+  useFrame(({ camera, size }) => {
+    const visible = near(2, 1);
+    ANCHORS.forEach((position, index) => {
+      const label = document.getElementById(`lx-anchor-${index}`); if (!label) return;
+      point.set(...position).project(camera);
+      label.style.opacity = point.z < 1 ? String(visible) : '0';
+      label.style.translate = `${((point.x + 1) / 2) * size.width}px ${((1 - point.y) / 2) * size.height}px`;
+    });
+  });
+  return null;
+}
+
 export function TreeWorld({ tier, still }: { tier: 'high' | 'medium'; still: boolean }) {
   return <>
     <Sky />
@@ -201,6 +227,7 @@ export function TreeWorld({ tier, still }: { tier: 'high' | 'medium'; still: boo
     <Tree still={still} />
     <group scale={[1, -1, 1]}><Tree still={still} mirror /></group>
     <LightPath />
+    <Anchors />
     <Fireflies count={tier === 'high' ? 220 : 90} still={still} />
     <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
       <planeGeometry args={[160, 160]} />

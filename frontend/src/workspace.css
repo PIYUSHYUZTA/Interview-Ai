@@ -203,3 +203,16 @@
 @media (max-width: 1279px) { .ws-insights { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .ws-skillbars { grid-column: 1 / -1; } }
 @media (max-width: 767px) { .ws-insights { grid-template-columns: minmax(0, 1fr); } .ws-profile { max-width: none; width: 100%; } .ws-skill-row { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) 32px 48px; gap: 8px; } }
 @media (prefers-reduced-motion: reduce) { .ws-tip { animation: none; } .ws-skill-fill, .ws-point { transition: none; } }
+
+/* ── Review fixes (docs/design-review.md, D1–D3) ── */
+/* D1: the candidate in the top bar, as the reference's top-right user block. */
+.topbar-profile { display: inline-flex; align-items: center; gap: 8px; padding-left: 8px; }
+.topbar-avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; font: 600 11px var(--font-sans); color: var(--paint-on-accent); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--paint-teal) 60%, var(--paint-ivory)), var(--paint-teal) 60%); }
+.topbar-profile strong { display: block; font-size: 12px; color: var(--text-primary); line-height: 1.2; }
+.topbar-profile small { display: block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--text-muted); }
+@media (max-width: 1023px) { .topbar-profile > span:last-child { display: none; } }
+/* D2: a compact workspace title; display type belongs to the landing. */
+.ws-title h1 { font-size: var(--title-page); font-weight: 600; letter-spacing: -.03em; }
+/* D3: empty bar slots keep the reference rhythm without inventing values. */
+.ws-bars > span { max-width: none; }
+.ws-bars > .ws-bar-empty { scale: 1 .06; background: color-mix(in srgb, var(--paint-ivory) 8%, transparent); }

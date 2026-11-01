@@ -74,7 +74,7 @@ try {
       await skills.last().click(); assert.equal(await skills.last().getAttribute('aria-pressed'), 'true');
       assert.ok(await page.locator('#sidebar-slot .ws-next').count() === 1, 'next best step in the sidebar card slot');
       // Candidate profile from the account; average score from completed interviews.
-      await page.getByRole('region', { name: 'Candidate profile' }).getByText('Alex Morgan', { exact: true }).waitFor();
+      await page.getByRole('group', { name: 'Candidate profile' }).getByText('Alex Morgan', { exact: true }).waitFor();
       const average = progress.reports.reduce((sum: number, r: any) => sum + r.overallScore, 0) / progress.reports.length;
       assert.equal((await page.locator('.ws-kpi').nth(1).locator('.ws-kpi-value .ds-visually-hidden').textContent())?.trim(), average.toFixed(1));
       // Skill progression, previous reports and recommended improvements, all from saved data.

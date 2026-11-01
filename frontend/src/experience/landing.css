@@ -137,3 +137,15 @@ body:has(.lx) { background: var(--paint-ink); }
   .lx-mask-wrap figcaption { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .lx-nav { animation: none; } .lx-scroll span { animation: none; } .lx-cta { transition: none; } }
+
+/* ── Review fixes (docs/design-review.md, L6, L7, L10) ── */
+/* L6: the hero headline at the reference's scale and weight; the closing line keeps the display size. */
+.lx-ch-hero .lx-display { font-size: var(--title-display); font-weight: 400; line-height: 1.02; letter-spacing: -.045em; }
+/* L10: a round, icon-only sound button beside the navigation, as in the reference. */
+.lx-nav-end .ds-sound-text { display: none; }
+.lx-nav-end .ds-sound-toggle { width: var(--touch-target); height: var(--touch-target); padding: 0; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--paint-ink) 56%, transparent); border: 1px solid color-mix(in srgb, var(--paint-ivory) 14%, transparent); }
+/* L7: labels anchored to the tree during "How it works". */
+.lx-anchors { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.lx-anchor { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 1000px; white-space: nowrap; font: 500 12px var(--font-sans); color: var(--paint-ivory); background: color-mix(in srgb, var(--paint-ink) 72%, transparent); border: 1px solid color-mix(in srgb, var(--paint-teal) 48%, transparent); box-shadow: 0 0 24px color-mix(in srgb, var(--paint-teal) 32%, transparent); opacity: 0; transition: opacity 300ms ease; }
+.lx-anchor span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font: 600 10px var(--font-mono); color: var(--paint-ink); background: var(--paint-teal); }
+@media (prefers-reduced-motion: reduce) { .lx-anchor { transition: none; } }

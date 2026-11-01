@@ -93,7 +93,7 @@ function Sphere({ state, level, speech, still }: Props) {
         <bufferGeometry><bufferAttribute attach="attributes-position" args={[geometry.positions, 3]} /><bufferAttribute attach="attributes-seed" args={[geometry.seeds, 1]} /></bufferGeometry>
       </points>
     </group>
-    {streams.map(({ curve, shader }, index) => <mesh key={index} material={shader}><tubeGeometry args={[curve, 64, .012, 6]} /></mesh>)}
+    {streams.map(({ curve, shader }, index) => <mesh key={index} material={shader}><tubeGeometry args={[curve, 64, .02, 6]} /></mesh>)}
   </group>;
 }
 

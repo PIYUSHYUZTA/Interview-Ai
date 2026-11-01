@@ -8,7 +8,7 @@
 .rp .rp-panel-title { font-size: 13px; line-height: 1.4; font-weight: 600; letter-spacing: 0; margin: 0 0 12px; color: var(--text-primary); }
 
 .rp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-.rp-head h1 { font-size: clamp(24px, 2vw, 28px); font-weight: 650; letter-spacing: -.035em; margin: 4px 0; }
+.rp-head h1 { font-size: var(--title-page); font-weight: 600; letter-spacing: -.035em; margin: 4px 0; }
 .rp-head p { margin: 0; font-size: 13px; color: var(--text-muted); }
 .rp-head .rp-eyebrow { color: var(--paint-teal-text); }
 .rp-gauges { display: flex; gap: 16px; }
@@ -147,3 +147,24 @@
   .rp-gauge-ring, .rp-track > span, .rp-bar, .rp-q-bar > i { animation: none !important; }
   .evidence details > div { break-inside: avoid; }
 }
+
+/* ── Review fixes (docs/design-review.md, P1, P3–P5) ── */
+/* P1: one compact analytics band instead of a column-height map. */
+@media (min-width: 1280px) { .rp-grid { grid-template-rows: 600px; } .rp-grid > * { min-height: 0; } .rp-map-stage { min-height: 0; } .rp-skills { overflow: auto; } }
+.rp-bottom { grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
+.rp-bottom .rp-donut-panel .rp-donut { width: 112px; height: 112px; margin: 0 auto 12px; }
+.rp-bottom .rp-donut-panel .rp-legend { gap: 4px; }
+@media (max-width: 1279px) { .rp-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 767px) { .rp-bottom { grid-template-columns: minmax(0, 1fr); } }
+/* P3: compact metric tiles, as in the reference. */
+.rp-metric { padding: 12px 16px; gap: 8px; }
+.rp-metric strong { font-size: 22px; }
+.rp-left { gap: 8px; }
+/* P5: unassessed skills behind one chip. */
+.rp-unassessed { margin-top: 16px; }
+.rp-unassessed summary { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 1000px; border: 1px dashed var(--border-strong); font-size: 12px; color: var(--text-muted); cursor: pointer; list-style: none; }
+.rp-unassessed[open] summary { margin-bottom: 16px; }
+/* P4: the detailed sections use the same hairline panels as the canvas. */
+.rp-page .report-metadata > div { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; }
+.rp-page .report-metadata span { color: var(--text-muted); }
+.rp-page .report-metadata strong { color: var(--text-primary); }

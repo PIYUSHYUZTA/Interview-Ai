@@ -1,3 +1,4 @@
+import '../setup.css'; // this screen's styles, loaded with its lazy chunk
 import { SetupStage } from './SetupStage';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
@@ -195,6 +196,7 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
         {!profile ? <><p className="muted">Upload your resume to review the skills and experience your interview can explore.</p><div className="preview-list"><span>01 <strong>Extract your experience</strong></span><span>02 <strong>Review what we found</strong></span><span>03 <strong>Practice for your target role</strong></span></div></> : <>
           <Status tone={dirty ? 'warning' : 'success'}>{dirty ? 'Changes need review' : 'Ready for your review'}</Status>
           <h3>Skills</h3><div className="chips">{profile.profile.skills.length ? profile.profile.skills.map((s) => <span key={s.skillId}>{labelFor(s.skillId)}</span>) : <p className="muted">No recognized skills detected.</p>}</div>
+          <details className="su-profile-more"><summary>Review extracted details</summary>
           <h3>Experience</h3><ul className="detail-list">{showItems(profile.profile.experience.filter((item) => (item as { employmentType?: string }).employmentType !== 'internship'))}</ul>
           {!!profile.insights?.internships.length && <><h3>Internships</h3><ul className="detail-list">{showItems(profile.insights.internships)}</ul></>}
           <h3>Education</h3><ul className="detail-list">{showItems(profile.profile.education)}</ul>
@@ -205,6 +207,7 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
           {!!profile.insights?.communicationEvidence.length && <><h3>Communication evidence</h3><ul className="detail-list">{profile.insights.communicationEvidence.slice(0, 3).map((evidence) => <li key={evidence.source.line}>“{evidence.text}” <small>Resume line {evidence.source.line}</small></li>)}</ul></>}
           {!!profile.insights?.leadershipEvidence.length && <><h3>Leadership evidence</h3><ul className="detail-list">{profile.insights.leadershipEvidence.slice(0, 3).map((evidence) => <li key={evidence.source.line}>“{evidence.text}” <small>Resume line {evidence.source.line}</small></li>)}</ul></>}
           {!!profile.insights?.validationAreas?.length && <><h3>Areas to validate in your interview</h3><ul className="detail-list">{profile.insights.validationAreas.slice(0, 4).map((area) => <li key={`${area.source.line}-${area.topic}`}><strong>{area.topic}</strong> — {area.rationale} <small>Resume line {area.source.line}</small></li>)}</ul></>}
+          </details>
           <p className="fine-print">Extracted claims are a starting point, not verified abilities. Review the source text for missing or incorrect details.</p>
         </>}
         {profile?.careerPath && <section className={`career-path-card ${profile.careerPath.needsClarification ? 'needs-clarification' : ''}`} aria-labelledby="career-path-heading"><p className="eyebrow">DETECTED FROM YOUR RESUME</p><h3 id="career-path-heading">{profile.careerPath.needsClarification ? 'Let’s choose the right direction.' : 'Likely career direction'}</h3><strong>{profile.careerPath.title}</strong><Status tone={profile.careerPath.confidence === 'high' ? 'success' : 'warning'}>{profile.careerPath.confidence} confidence</Status><p>{profile.careerPath.rationale}</p>{profile.careerPath.evidence.length > 0 && <small>Resume signals: {profile.careerPath.evidence.join(' · ')}</small>}

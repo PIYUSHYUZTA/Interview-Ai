@@ -57,11 +57,6 @@ export function ReportAnalytics({ results, onRestart }: { results: InterviewResu
         <Metric label="Communication" value={<CountUp value={results.componentScores.communication} decimals={1} />} unit="/10" bar={results.componentScores.communication / 10} note={`Weighted ${Math.round((results.details.scoringWeights.communication ?? 0) * 100)}% of the overall score`} />
         <Metric label="Problem-solving" value={<CountUp value={results.componentScores.problemSolving} decimals={1} />} unit="/10" bar={results.componentScores.problemSolving / 10} note={`Weighted ${Math.round((results.details.scoringWeights.problemSolving ?? 0) * 100)}% of the overall score`} />
         <Metric label="Answer quality" value={answerQuality === null ? '—' : <CountUp value={answerQuality} decimals={1} />} unit="/10" bar={(answerQuality ?? 0) / 10} note={`Mean score of your ${results.evidence.length} evaluated answers`} accent />
-        <div className="rp-panel rp-donut-panel">
-          <h2 className="rp-panel-title">Component scores</h2>
-          <div className="rp-donut" style={{ background: conic(components.map(([, v]) => Math.max(.1, v)), SERIES) }} role="img" aria-label={`Component scores out of 10: ${components.map(([id, v]) => `${labelFor(id)} ${v.toFixed(1)}`).join(', ')}`}><span>{(components.reduce((a, [, v]) => a + v, 0) / Math.max(1, components.length)).toFixed(1)}<small>avg /10</small></span></div>
-          <ul className="rp-legend">{components.map(([id, v], i) => <li key={id}><i style={{ background: SERIES[i % SERIES.length] }} />{labelFor(id)}<strong>{v.toFixed(1)}</strong></li>)}</ul>
-        </div>
       </div>
 
       <div className="rp-panel rp-map">
@@ -77,10 +72,9 @@ export function ReportAnalytics({ results, onRestart }: { results: InterviewResu
 
       <div className="rp-panel rp-skills">
         <h2 className="rp-panel-title">Skills</h2>
-        <ul className="rp-bubbles">{skills.map(([id, s]) => <li key={id} data-verdict={s.verdict}>
-          <span className="rp-bubble" style={{ '--fill': s.samples ? s.estimate / 10 : 0 } as CSSProperties}><b>{s.samples ? s.estimate.toFixed(1) : '—'}</b></span>
-          <span className="rp-bubble-label">{labelFor(id)}</span><span className="rp-bubble-verdict">{labelFor(s.verdict)}</span>
-        </li>)}</ul>
+        <ul className="rp-bubbles">{assessed.map(([id, s]) => <Bubble key={id} id={id} skill={s} />)}</ul>
+        {skills.length > assessed.length && <details className="rp-unassessed"><summary>+{skills.length - assessed.length} not assessed</summary>
+          <ul className="rp-bubbles">{skills.filter(([, s]) => !s.samples).map(([id, s]) => <Bubble key={id} id={id} skill={s} />)}</ul></details>}
         <p className="rp-note">{assessed.length} of {skills.length} skills had answer evidence.</p>
       </div>
     </div>
@@ -93,6 +87,11 @@ export function ReportAnalytics({ results, onRestart }: { results: InterviewResu
             onMouseEnter={() => setActive(e.questionId)} onMouseLeave={() => setActive(null)} onFocus={() => setActive(e.questionId)} onBlur={() => setActive(null)}
             aria-label={`Question ${i + 1}, ${labelFor(e.skillId)}: ${e.score.toFixed(1)} out of 10. Open the scored answer.`}>
             <span className="rp-bar" style={{ scale: `1 ${Math.max(.04, e.score / 10)}` }} /><span className="rp-bar-n">{i + 1}</span></a></li>)}</ol>
+      </div>
+      <div className="rp-panel rp-donut-panel">
+          <h2 className="rp-panel-title">Component scores</h2>
+          <div className="rp-donut" style={{ background: conic(components.map(([, v]) => Math.max(.1, v)), SERIES) }} role="img" aria-label={`Component scores out of 10: ${components.map(([id, v]) => `${labelFor(id)} ${v.toFixed(1)}`).join(', ')}`}><span>{(components.reduce((a, [, v]) => a + v, 0) / Math.max(1, components.length)).toFixed(1)}<small>avg /10</small></span></div>
+          <ul className="rp-legend">{components.map(([id, v], i) => <li key={id}><i style={{ background: SERIES[i % SERIES.length] }} />{labelFor(id)}<strong>{v.toFixed(1)}</strong></li>)}</ul>
       </div>
       <div className="rp-panel rp-split">
         <h2 className="rp-panel-title">Strengths and gaps</h2>
@@ -135,6 +134,13 @@ function downloadReport(results: InterviewResultsResponse) {
   const link = Object.assign(document.createElement('a'), { href: url, download: `interview-report-${results.sessionId}.json` });
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function Bubble({ id, skill }: { id: string; skill: InterviewResultsResponse['skillMap'][string] }) {
+  return <li data-verdict={skill.verdict}>
+    <span className="rp-bubble" style={{ '--fill': skill.samples ? skill.estimate / 10 : 0 } as CSSProperties}><b>{skill.samples ? skill.estimate.toFixed(1) : '—'}</b></span>
+    <span className="rp-bubble-label">{labelFor(id)}</span><span className="rp-bubble-verdict">{labelFor(skill.verdict)}</span>
+  </li>;
 }
 
 function Gauge({ value, max, label, text }: { value: number; max: number; label: string; text: string }) {

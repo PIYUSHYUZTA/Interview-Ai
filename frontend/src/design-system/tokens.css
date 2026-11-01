@@ -257,6 +257,9 @@
 
   /* Fluid type: each heading step scales linearly from its 375px size to its 1440px size. */
   --font-size-fluid-display: clamp(2.5rem, 1.8rem + 3vw, 4.5rem);    /* 40 → 72 */
+  /* Page titles, shared by all five pages: the landing's display headline and the workspace pages' title. */
+  --title-display: clamp(44px, 4.8vw, 76px);
+  --title-page: clamp(24px, 2vw, 28px);
   --font-size-fluid-h1: clamp(2rem, 1.65rem + 1.5vw, 3rem);          /* 32 → 48 */
   --font-size-fluid-h2: clamp(1.5rem, 1.32rem + 0.75vw, 2rem);       /* 24 → 32 */
   --font-size-fluid-h3: clamp(1.25rem, 1.16rem + 0.38vw, 1.5rem);    /* 20 → 24 */

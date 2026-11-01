@@ -1,3 +1,4 @@
+import '../report.css'; // this screen's styles, loaded with its lazy chunk
 import { useEffect, useState } from 'react';
 import type { InterviewResultsResponse } from '../types';
 import { AnswerReview } from './AnswerReview';

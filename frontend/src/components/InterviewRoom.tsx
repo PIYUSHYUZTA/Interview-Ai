@@ -1,3 +1,4 @@
+import '../room.css'; // this screen's styles, loaded with its lazy chunk
 import { MonitoringStatus } from './MonitoringStatus';
 import { faceStatus } from './monitoringPresentation';
 

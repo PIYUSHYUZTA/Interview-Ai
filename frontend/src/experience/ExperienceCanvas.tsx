@@ -32,7 +32,10 @@ function CameraRig({ still }: { still: boolean }) {
   const first = useRef(true);
   useFrame((state, delta) => {
     const index = Math.min(SHOTS.length - 1, Math.floor(scrollState.chapter)), within = Math.min(1, scrollState.chapter - index);
-    const key = still ? index * 2 + .5 : index * 2 + (within < .7 ? within / .7 : 1 + (within - .7) / .3);
+    // Hold eases in and out like a dolly; travel uses power2.inOut so cuts between chapters feel filmed.
+    const hold = within < .7 ? within / .7 : 1, travel = within < .7 ? 0 : (within - .7) / .3;
+    const easeInOut = (x: number) => (x < .5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
+    const key = still ? index * 2 + .5 : index * 2 + (within < .7 ? (1 - Math.cos(hold * Math.PI)) / 2 : 1 + easeInOut(travel));
     const t = Math.min(1, key / last);
     positions.getPoint(t, goal.position);
     targets.getPoint(t, goal.target);
@@ -47,6 +50,13 @@ function CameraRig({ still }: { still: boolean }) {
     camera.position.z = MathUtils.damp(camera.position.z, goal.position.z, lambda, step);
     goal.look.lerp(goal.target, 1 - Math.exp(-lambda * step));
     camera.lookAt(goal.look);
+    // Field of view per shot (a dolly-zoom on the live chapter), and a slight roll while travelling.
+    const shot = SHOTS[index], next = SHOTS[Math.min(SHOTS.length - 1, index + 1)];
+    const [fromFov, toFov] = shot.fov ?? [40, 40];
+    const fov = within < .7 ? fromFov + (toFov - fromFov) * hold : toFov + ((next.fov?.[0] ?? 40) - toFov) * easeInOut(travel);
+    const perspective = camera as import('three').PerspectiveCamera;
+    if (Math.abs(perspective.fov - fov) > .01) { perspective.fov = MathUtils.damp(perspective.fov, fov, lambda, step); perspective.updateProjectionMatrix(); }
+    camera.rotateZ(Math.sin(travel * Math.PI) * .03);
   });
   return null;
 }
