@@ -14,7 +14,7 @@ import { DeviceCheck } from './DeviceCheck';
 
 
 import { InterviewerVisual } from './InterviewerVisual';
-import { RoomTimeline, RoomVoice } from './RoomVoice';
+import { RoomSignal, RoomTimeline, RoomVoice, roomStateFor } from './RoomVoice';
 
 
 
@@ -679,6 +679,8 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
   const total = plan?.totalQuestionBudget ?? state.maxRounds * state.progress.questionBudgetInRound;
+  // Visual state only (sphere, badge, waveform): derived from the real phase, capture state and input level.
+  const roomState = roomStateFor(phase, media.listening, media.inputLevel);
 
 
 
@@ -707,8 +709,8 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
 
-      <div className="immersive-grid"><section className="voice-interviewer"><div className="room-holo"><span className="room-holo-sheen" aria-hidden="true" /><InterviewerVisual key={avatarRevision} onStatusChange={setAvatarStatus} immersive speech={media.avatarSpeech} state={phase === 'speaking' ? 'streaming' : phase === 'listening' ? 'listening' : ['preparing','evaluating'].includes(phase) ? 'thinking' : phase === 'error' ? 'error' : 'idle'} size={120} />{avatarStatus === 'fallback' && <div className="avatar-recovery" role="status">The 3D view is unavailable. Voice and interview progression remain available.<Button variant="ghost" onClick={()=>{setAvatarStatus('loading');setAvatarRevision(value=>value+1);}}>Retry 3D view</Button></div>}<Status tone="cyan">{media.listening&&media.inputLevel>3?'You are speaking  -  Microphone input detected':labels[phase]}</Status><p className="avatar-connection" role="status">{media.speechMode === 'synchronized' ? (avatarStatus==='ready'?'Local voice connected · audio-synchronized facial animation':`Local voice connected · 3D view ${avatarStatus==='loading'?'loading':'unavailable'}`) : media.speechMode === 'browser' ? media.speechNotice : '3D interviewer · voice connects when you start'}</p><h1>{question?.prompt ?? 'A conversation about your experience.'}</h1><p>{plan?.roleTitle} · {plan?.candidateName}</p></div>
-          <RoomVoice mode={media.listening && media.inputLevel > 3 ? 'you' : phase === 'speaking' ? 'interviewer' : 'idle'} level={media.listening ? media.inputLevel : 0} speech={media.avatarSpeech} />
+      <div className="immersive-grid"><section className="voice-interviewer"><div className="room-holo"><span className="room-holo-sheen" aria-hidden="true" /><InterviewerVisual key={avatarRevision} onStatusChange={setAvatarStatus} immersive speech={media.avatarSpeech} state={phase === 'speaking' ? 'streaming' : phase === 'listening' ? 'listening' : ['preparing','evaluating'].includes(phase) ? 'thinking' : phase === 'error' ? 'error' : 'idle'} size={120} /><RoomSignal state={roomState} level={media.listening ? media.inputLevel : 0} speech={media.avatarSpeech} />{avatarStatus === 'fallback' && <div className="avatar-recovery" role="status">The 3D view is unavailable. Voice and interview progression remain available.<Button variant="ghost" onClick={()=>{setAvatarStatus('loading');setAvatarRevision(value=>value+1);}}>Retry 3D view</Button></div>}<Status tone="cyan">{media.listening&&media.inputLevel>3?'You are speaking  -  Microphone input detected':labels[phase]}</Status><p className="avatar-connection" role="status">{media.speechMode === 'synchronized' ? (avatarStatus==='ready'?'Local voice connected · audio-synchronized facial animation':`Local voice connected · 3D view ${avatarStatus==='loading'?'loading':'unavailable'}`) : media.speechMode === 'browser' ? media.speechNotice : '3D interviewer · voice connects when you start'}</p><h1>{question?.prompt ?? 'A conversation about your experience.'}</h1><p>{plan?.roleTitle} · {plan?.candidateName}</p></div>
+          <RoomVoice state={roomState} level={media.listening ? media.inputLevel : 0} speech={media.avatarSpeech} />
           <RoomTimeline answered={state.progress.totalQuestionsAnswered} total={total} />
           {phase!=='ready'&&<section className="voice-console" aria-label="Voice answer controls">
           <div className="voice-console-status"><strong>{media.listening?(media.inputLevel>3?'You are speaking':'Listening'):['transcribing','evaluating','preparing'].includes(phase)?'Processing':phase==='speaking'?'AI Speaking':userPaused?'Interview paused':phase==='playback'?'Preparing question':phase==='connecting'?'Connecting microphone':'Microphone paused'}</strong><span>{media.listening?'Speak naturally. Pause for five seconds or choose Done speaking.':phase==='speaking'?'Choose Interrupt and answer to respond now.':userPaused?'Nothing is being played or recorded. Resume when you are ready.':media.micPending?'Waiting for microphone permission and capture - ':'Your microphone opens after the question finishes.'}</span></div>

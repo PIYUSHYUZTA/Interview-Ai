@@ -35,26 +35,40 @@ try {
   await page.locator('.blender-studio[data-scene-state="ready"]').waitFor();
   await page.locator('.room-voice-canvas canvas').waitFor();
   assert.equal(await page.locator('.room-timeline li').count(), 4);
-  assert.equal(await page.locator('.room-voice').getAttribute('data-mode'), 'idle');
+  // Six visual states, each from real voice state. A recorder notes every state the room passes through.
+  await page.evaluate(() => { const seen: string[] = []; (window as any).__states = seen; new MutationObserver(() => { const value = document.querySelector('.room-voice')?.getAttribute('data-state'); if (value && seen.at(-1) !== value) seen.push(value); }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-state'] }); });
+  const stateIs = (value: string, timeout = 45000) => page.waitForFunction((v: string) => document.querySelector('.room-voice')?.getAttribute('data-state') === v, value, { timeout });
+  assert.equal(await page.locator('.room-voice').getAttribute('data-state'), 'init');
+  assert.equal(await page.locator('.room-state').textContent(), 'Preparing the room');
   await page.waitForTimeout(1200);
   await page.addScriptTag({ path: axePath });
   const violations = await page.evaluate(async () => (await (window as any).axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'best-practice'] })).violations.map((v: any) => `${v.id}: ${v.nodes.length} ${v.nodes[0]?.target} ${v.nodes[0]?.any?.[0]?.message ?? ''}`));
   assert.deepEqual(violations, [], 'axe in the ready room');
-  await page.screenshot({ path: shot('ready') });
+  await page.screenshot({ path: shot('1-init') });
 
   await page.getByLabel('Speech transcription', { exact: true }).selectOption('browser');
   await page.getByRole('button', { name: 'Start voice interview', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('.room-voice')?.getAttribute('data-mode') === 'interviewer', null, { timeout: 30000 });
-  await page.waitForTimeout(900);
-  await page.screenshot({ path: shot('speaking') });
-  // After the question the microphone opens; the fake device produces a tone, so the sphere follows the candidate.
-  await page.waitForFunction(() => document.querySelector('.room-voice')?.getAttribute('data-mode') === 'you', null, { timeout: 45000 }).catch(() => undefined);
-  const listeningMode = await page.locator('.room-voice').getAttribute('data-mode');
-  await page.waitForTimeout(600);
-  await page.screenshot({ path: shot('listening') });
+  await stateIs('interviewer', 30000); await page.waitForTimeout(1200);
+  // The waveform draws the interviewer's real speech loudness: lit pixels in the teal bars.
+  const lit = await page.locator('.room-wave').evaluate((canvas: HTMLCanvasElement) => { const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data; let n = 0; for (let i = 3; i < data.length; i += 4) if (data[i] > 0) n++; return n; });
+  assert.ok(lit > 200, `waveform shows the speech signal (${lit} lit pixels)`);
+  await page.screenshot({ path: shot('2-interviewer') });
+  // After the question the microphone opens: listening, then speaking as the test device's tone is measured.
+  await page.waitForFunction(() => ['listening', 'speaking'].includes(document.querySelector('.room-voice')?.getAttribute('data-state') ?? ''), null, { timeout: 45000 });
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: shot('3-4-listening-speaking') });
+  // A spoken answer (recognition result injected, as in verify-voice-room), then Done speaking: processing, then the next question is prepared.
+  await page.evaluate(`window.speechInstances.at(-1)?.onresult?.({resultIndex:0,results:[{isFinal:true,0:{transcript:'I designed an idempotent payments API with unique constraints, transactions and retries, and measured latency in production.'}}]});`);
+  await page.getByRole('button', { name: 'Done speaking', exact: true }).click();
+  await stateIs('processing', 20000); await page.screenshot({ path: shot('5-processing') });
+  await stateIs('generating', 30000).then(() => page.screenshot({ path: shot('6-generating') })).catch(() => undefined);
+  await stateIs('interviewer', 45000);
+  const seen: string[] = await page.evaluate(() => (window as any).__states);
+  for (const expected of ['interviewer', 'processing']) assert.ok(seen.includes(expected), `passed through ${expected}: ${seen.join(' → ')}`);
+  assert.ok(seen.includes('listening') || seen.includes('speaking'), `passed through listening/speaking: ${seen.join(' → ')}`);
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(600);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal scroll at 390px');
   await page.screenshot({ path: shot('phone'), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log(`PASS: room backdrop, holographic interviewer panel, voice sphere (idle → interviewer${listeningMode === 'you' ? ' → you' : ''}), 4-question timeline, glass panels; axe clean; 390px fits; no page errors.`);
+  console.log(`PASS: room states init → ${seen.join(' → ')}; waveform draws the real speech signal; backdrop, holographic panel, voice sphere, timeline; axe clean; 390px fits; no page errors.`);
 } finally { await browser.close(); await vite.close(); await api.close(); }
