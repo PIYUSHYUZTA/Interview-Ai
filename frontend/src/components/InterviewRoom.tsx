@@ -53,11 +53,11 @@ type Phase = 'ready' | 'preparing' | 'playback' | 'speaking' | 'connecting' | 'l
 
 
 
-interface Props { providerName?: string; interviewId: string; initialState: PublicInterviewState; plan?: InterviewCreateResponse['plan']; integrityToken: string; integrityPolicy: IntegrityPolicy; onInterviewCompleted: (result: InterviewCompleteResponse) => void; onExitSession?: () => void }
+interface Props { providerName?: string; interviewId: string; initialState: PublicInterviewState; plan?: InterviewCreateResponse['plan']; integrityToken: string; integrityPolicy: IntegrityPolicy; onInterviewCompleted: (result: InterviewCompleteResponse) => void; onExitSession?: () => void; initialRecognitionMode?: 'local' | 'browser' }
 
 
 
-export function InterviewRoom({ providerName, interviewId, initialState, plan, integrityToken, integrityPolicy, onInterviewCompleted, onExitSession }: Props) {
+export function InterviewRoom({ providerName, interviewId, initialState, plan, integrityToken, integrityPolicy, onInterviewCompleted, onExitSession, initialRecognitionMode = 'local' }: Props) {
   // Interface sounds stay off in the room: the microphone is listening and the interviewer speaks.
   useSoundSuppressed();
 
@@ -75,7 +75,7 @@ export function InterviewRoom({ providerName, interviewId, initialState, plan, i
 
 
 
-  const [recognitionMode,setRecognitionMode]=useState<'local'|'browser'>('local');
+  const [recognitionMode,setRecognitionMode]=useState<'local'|'browser'>(initialRecognitionMode); // chosen in setup; changeable before starting
 
   const [avatarStatus,setAvatarStatus]=useState<'loading'|'ready'|'fallback'>('loading');
 

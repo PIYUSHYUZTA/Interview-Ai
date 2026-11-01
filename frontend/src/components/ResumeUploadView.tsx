@@ -1,9 +1,13 @@
 import { SetupStage } from './SetupStage';
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { usePrefersReducedMotion } from '../design-system/motion';
+import { playSound } from './sound/sound';
 import type { InterviewCreateResponse, InterviewPreferences, ResumeUploadResponse, SetupOptions } from '../types';
 import { createInterview, getCurrentCandidate, getResume, getSetupOptions, uploadResume, uploadResumeFileWithProgress } from '../api';
 import { CheckDrawIcon, Icon, SearchIcon } from './icon/Icon';
-import { ArrowRight, CircleCheck, CloudUpload, FileText } from './icon/icons';
+import { ArrowRight, Check, CloudUpload, FileText } from './icon/icons';
 import { Button, Card, ErrorNotice, Loading, Status, labelFor } from './ui';
 const SAMPLE_RESUMES = {
   senior_backend: `Alex Morgan
@@ -49,7 +53,37 @@ PROJECTS
 };
 
 
-interface ResumeUploadViewProps { onInterviewPrepared: (session: InterviewCreateResponse) => void; initialPreset?: string }
+type VoiceMode = 'local' | 'browser';
+const DIFFICULTY = [
+  { value: '', title: 'Adaptive', detail: 'Follows your experience and answers' },
+  { value: '2', title: 'Foundational', detail: 'Core concepts first' },
+  { value: '3', title: 'Balanced', detail: 'A steady mix' },
+  { value: '4', title: 'Challenging', detail: 'Depth and edge cases' },
+];
+const LEVELS: Record<string, string> = { '': 'From my résumé', junior: 'Early career', mid: 'Mid-level', senior: 'Senior' };
+
+/** One numbered configuration group in the setup panel. */
+function ConfigGroup({ index, title, hint, children }: { index: string; title: string; hint?: string; children: ReactNode }) {
+  return <section className="su-group" aria-labelledby={`su-group-${index}`}>
+    <header><span className="su-group-index" aria-hidden="true">{index}</span><h3 id={`su-group-${index}`}>{title}</h3></header>
+    {hint && <p className="su-group-hint">{hint}</p>}
+    {children}
+  </section>;
+}
+
+/** Selection tiles: a native radio group (arrow keys, one tab stop) presented as cards with a check mark. */
+function ChoiceTiles({ name, label, value, options, onChange }: { name: string; label: string; value: string; options: { value: string; title: string; detail?: string }[]; onChange: (value: string) => void }) {
+  return <div className="su-tiles" role="radiogroup" aria-label={label}>
+    {options.map((option) => <label key={option.value || 'default'} className="su-tile" data-checked={value === option.value ? '' : undefined}>
+      <input className="su-tile-input" type="radio" name={name} value={option.value} checked={value === option.value} onChange={() => { onChange(option.value); playSound('toggle'); }} />
+      <span className="su-tile-check" aria-hidden="true"><Icon icon={Check} /></span>
+      <strong>{option.title}</strong>
+      {option.detail && <small>{option.detail}</small>}
+    </label>)}
+  </div>;
+}
+
+interface ResumeUploadViewProps { onInterviewPrepared: (session: InterviewCreateResponse, voice: { recognitionMode: VoiceMode }) => void; initialPreset?: string }
 export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeUploadViewProps) {
   const [text, setText] = useState(initialPreset ? SAMPLE_RESUMES[initialPreset === 'ml_engineer' ? 'ml_engineer' : 'senior_backend'] : '');
   const [name, setName] = useState(initialPreset === 'ml_engineer' ? 'Priya Patel' : initialPreset ? 'Alex Morgan' : '');
@@ -69,6 +103,8 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<InterviewCreateResponse | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [voice, setVoice] = useState<VoiceMode>('local');
+  const reduced = !!usePrefersReducedMotion();
   const fileInput = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   const loadOptions = () => { setError(null); getSetupOptions().then(setOptions).catch((e) => setError(e.message)); };
@@ -138,6 +174,8 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
     <ol className="stepper">{['Your profile', 'Interview preferences', 'Review your plan'].map((title, i) => <li key={title} className={stage === i + 1 ? 'active' : stage > i + 1 ? 'done' : ''}><span>{stage > i + 1 ? <CheckDrawIcon /> : `0${i + 1}`}</span>{title}</li>)}</ol>
     <ErrorNotice message={error} retry={!options ? loadOptions : undefined} />
     {busy && (uploadStage ? <div className="resume-processing" role="status" aria-live="polite"><strong>{uploadStage}</strong>{uploadProgress !== null ? <><progress aria-label="Resume upload progress" max={100} value={uploadProgress} /><small>{uploadProgress}%</small></> : <span className="processing-indicator">This may take a few seconds.</span>}</div> : /^(Processing your resume|Reviewing your profile)/.test(busy) ? <div className="loading" role="status" aria-live="polite"><SearchIcon loading size="standalone" /><span>{busy}</span></div> : <Loading label={busy} />)}
+    {/* Each stage arrives with a short slide from the right (none under reduced motion). */}
+    <motion.div key={stage} className="su-stage-body" initial={reduced ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: .4, ease: [0.22, 1, 0.36, 1] }}>
     {stage === 1 && <div className="setup-grid">
       <Card><div className="section-heading"><div><p className="eyebrow">01 / PROFILE</p><h2>A little about you.</h2></div><Icon icon={FileText} size="feature" /></div>
         <div className="segmented" aria-label="Resume input method"><Button variant={mode === 'upload' ? 'secondary' : 'ghost'} onClick={() => setMode('upload')} disabled={!!busy}>Upload a file</Button><Button variant={mode === 'text' ? 'secondary' : 'ghost'} onClick={() => setMode('text')} disabled={!!busy}>Paste text</Button></div>
@@ -174,15 +212,49 @@ export function ResumeUploadView({ onInterviewPrepared, initialPreset }: ResumeU
         </section>}
       </Card><Button className="wide" disabled={!profile || dirty || !!busy || !name.trim() || !options || (!!profile.careerPath?.needsClarification && !clarifiedRole)} onClick={confirmCareerPath}>{profile?.careerPath?.needsClarification ? 'Continue with selected direction' : profile?.careerPath ? `Confirm ${profile.careerPath.title} & continue` : 'Continue to preferences'} <Icon icon={ArrowRight} /></Button></div>
     </div>}
-    {stage === 2 && <div className="setup-grid"><Card><p className="eyebrow">02 / YOUR PRACTICE</p><h2>Set your direction.</h2><div className="form-grid">
-      <label className="field">Experience level<select aria-label="Experience level" value={preferences.experienceLevel ?? ''} onChange={(e) => update({ experienceLevel: (e.target.value || undefined) as InterviewPreferences['experienceLevel'] })}><option value="">Use resume estimate</option><option value="junior">Early career</option><option value="mid">Mid-level</option><option value="senior">Senior</option></select></label>
-      <label className="field">Interview type<select aria-label="Interview type" value={preferences.interviewType} onChange={(e) => { update({ interviewType: e.target.value as InterviewPreferences['interviewType'] }); setRounds(options?.interviewTypes.find((t) => t.id === e.target.value)?.rounds ?? 4); }}>{options?.interviewTypes.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select></label>
-      <label className="field">Difficulty preference<select aria-label="Difficulty preference" value={preferences.targetDifficulty ?? ''} onChange={(e) => update({ targetDifficulty: e.target.value ? Number(e.target.value) : undefined })}><option value="">Adaptive · based on experience</option><option value="2">Foundational</option><option value="3">Balanced</option><option value="4">Challenging</option></select></label>
-      <label className="field">Rounds<select aria-label="Rounds" value={rounds} onChange={(e) => setRounds(Number(e.target.value))}>{Array.from({ length: options?.interviewTypes.find((t) => t.id === preferences.interviewType)?.rounds ?? 4 }, (_, i) => <option key={i} value={i + 1}>{i + 1} {i ? 'rounds' : 'round'}</option>)}</select></label>
-      <label className="field">Questions per round<select aria-label="Questions per round" value={preferences.questionsPerRound} onChange={(e) => update({ questionsPerRound: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6].map((n) => <option value={n} key={n}>{n} questions</option>)}</select></label>
-    </div><details className="optional-role-adjustments"><summary>Preparing for a different opportunity?</summary><label className="field">Target role<select aria-label="Target role (optional)" value={preferences.rolePreset} onChange={(e) => update({ rolePreset: e.target.value as InterviewPreferences['rolePreset'] })}>{options?.roles.map((role) => <option key={role.id} value={role.id}>{role.title}</option>)}</select></label><label className="field">Job description or role requirements (optional)<textarea aria-label="Job description or role requirements (optional)" rows={5} value={jd} onChange={(e) => setJd(e.target.value)} placeholder={'Paste the job title and requirements.\nRequired: PostgreSQL, indexing, transactions…'} /><small>When provided, the job description takes priority over the detected career direction.</small></label></details>
+    {stage === 2 && <div className="su-config">
+      <header className="su-step-head"><p className="eyebrow">02 / YOUR DIRECTION</p><h2>Shape the interview.</h2><p className="muted">Each choice shapes the plan. You review everything before the interview starts.</p></header>
+      <ConfigGroup index="01" title="Job role" hint="Detected from your résumé. Change it, or paste a job description, if you are preparing for something specific.">
+        <label className="field su-field">Target role<select aria-label="Target role (optional)" value={preferences.rolePreset} onChange={(e) => update({ rolePreset: e.target.value as InterviewPreferences['rolePreset'] })}>{options?.roles.map((role) => <option key={role.id} value={role.id}>{role.title}</option>)}</select></label>
+        <label className="field su-field">Job description or role requirements (optional)<textarea aria-label="Job description or role requirements (optional)" rows={4} value={jd} onChange={(e) => setJd(e.target.value)} placeholder={'Paste the job title and requirements.\nRequired: PostgreSQL, indexing, transactions…'} /><small>When provided, the job description takes priority over the detected career direction.</small></label>
+      </ConfigGroup>
+      <ConfigGroup index="02" title="Experience level">
+        <ChoiceTiles name="experience-level" label="Experience level" value={preferences.experienceLevel ?? ''} onChange={(value) => update({ experienceLevel: (value || undefined) as InterviewPreferences['experienceLevel'] })}
+          options={[{ value: '', title: 'From my résumé', detail: 'Estimated from your experience' }, { value: 'junior', title: 'Early career', detail: 'Foundations and learning' }, { value: 'mid', title: 'Mid-level', detail: 'Independent delivery' }, { value: 'senior', title: 'Senior', detail: 'Ownership and trade-offs' }]} />
+      </ConfigGroup>
+      <ConfigGroup index="03" title="Interview category">
+        <ChoiceTiles name="interview-type" label="Interview type" value={preferences.interviewType ?? 'full'} onChange={(value) => { update({ interviewType: value as InterviewPreferences['interviewType'] }); setRounds(options?.interviewTypes.find((t) => t.id === value)?.rounds ?? 4); }}
+          options={(options?.interviewTypes ?? []).map((t) => ({ value: t.id, title: t.label, detail: `Up to ${t.rounds} ${t.rounds === 1 ? 'round' : 'rounds'}` }))} />
+      </ConfigGroup>
+      <ConfigGroup index="04" title="Difficulty">
+        <ChoiceTiles name="difficulty" label="Difficulty preference" value={preferences.targetDifficulty === undefined ? '' : String(preferences.targetDifficulty)} onChange={(value) => update({ targetDifficulty: value ? Number(value) : undefined })}
+          options={DIFFICULTY.map((d) => ({ value: d.value, title: d.title, detail: d.detail }))} />
+      </ConfigGroup>
+      <ConfigGroup index="05" title="Interview length" hint={`${rounds * (preferences.questionsPerRound ?? 3)} questions in total, spoken aloud and answered by voice.`}>
+        <div className="su-length">
+          <label className="field su-field">Rounds<select aria-label="Rounds" value={rounds} onChange={(e) => setRounds(Number(e.target.value))}>{Array.from({ length: options?.interviewTypes.find((t) => t.id === preferences.interviewType)?.rounds ?? 4 }, (_, i) => <option key={i} value={i + 1}>{i + 1} {i ? 'rounds' : 'round'}</option>)}</select></label>
+          <label className="field su-field">Questions per round<select aria-label="Questions per round" value={preferences.questionsPerRound} onChange={(e) => update({ questionsPerRound: Number(e.target.value) })}>{[1, 2, 3, 4, 5, 6].map((n) => <option value={n} key={n}>{n} questions</option>)}</select></label>
+          <div className="su-length-grid" aria-hidden="true">{Array.from({ length: rounds }, (_, r) => <div key={r} className="su-length-row"><span>R{r + 1}</span>{Array.from({ length: preferences.questionsPerRound ?? 3 }, (_, q) => <i key={q} style={{ '--i': r * 6 + q } as CSSProperties} />)}</div>)}</div>
+        </div>
+      </ConfigGroup>
+      <ConfigGroup index="06" title="Voice" hint="Questions are always spoken aloud. Choose how your spoken answers are transcribed; you can change this in the room.">
+        <ChoiceTiles name="voice" label="Voice transcription" value={voice} onChange={(value) => setVoice(value as VoiceMode)}
+          options={[{ value: 'local', title: 'Local dictation', detail: 'Sent to this app’s backend, discarded after transcription' }, { value: 'browser', title: 'Browser recognition', detail: 'Uses your browser’s service; its vendor may process audio' }]} />
+      </ConfigGroup>
+      <div className="notice">{options?.providerName === 'deterministic' ? 'Demo mode uses deterministic evaluation. No AI API key is needed.' : `Configured evaluation provider: ${options?.providerName ?? 'loading'}.`}</div>
       <div className="actions spread"><Button variant="ghost" onClick={() => setStage(1)} disabled={!!busy}>Back to profile</Button><Button onClick={buildPlan} disabled={!!busy || !options}>Build my interview plan <Icon icon={ArrowRight} /></Button></div>
-    </Card><Card className="setup-aside"><p className="eyebrow">PREPARED FOR YOU</p><h2>{profile?.candidateName}</h2><p className="muted">Your resume and target role guide the plan. Your answers guide what comes next.</p><div className="preview-list"><span><Icon icon={CircleCheck} size="standalone" /><strong>Candidate profile reviewed</strong></span><span><Icon icon={CircleCheck} size="standalone" /><strong>Questions adapt to your answers</strong></span><span><Icon icon={CircleCheck} size="standalone" /><strong>Voice answers · optional camera</strong></span></div><div className="notice">{options?.providerName === 'deterministic' ? 'Demo mode uses deterministic evaluation. No AI API key is needed.' : `Configured evaluation provider: ${options?.providerName ?? 'loading'}.`}</div></Card></div>}
-    {stage === 3 && plan?.plan && <Card className="plan-card"><div className="section-heading"><div><p className="eyebrow">03 / READY WHEN YOU ARE</p><h2>Your interview, mapped out.</h2><p>{plan.plan.roleTitle} · {plan.plan.rounds.length} rounds · {plan.plan.totalQuestionBudget} questions</p></div><Status tone="success">Plan prepared</Status></div><div className="plan-rounds">{plan.plan.rounds.map((r) => <article key={r.roundNumber}><span className="round-number">0{r.roundNumber}</span><div><h3>{r.name.replace(/^Round \d+\s*[—–-]\s*/, '')}</h3><p>{r.description}</p><div className="chips">{r.targetSkills.map((s) => <span key={s}>{labelFor(s)}</span>)}</div><small>{r.questionBudget} questions · difficulty {r.difficultyRange.min * 2}–{r.difficultyRange.max * 2} / 10</small></div></article>)}</div><div className="notice">The plan sets the boundaries. Questions adapt to your answers and accumulated evidence. Questions are spoken aloud and your spoken answers are transcribed for assessment.</div><div className="actions spread"><Button variant="ghost" onClick={() => setStage(2)}>Edit preferences</Button><Button onClick={() => onInterviewPrepared(plan)}>Enter interview room <Icon icon={ArrowRight} /></Button></div></Card>}
+    </div>}
+    {stage === 3 && plan?.plan && <Card className="plan-card"><div className="section-heading"><div><p className="eyebrow">03 / READY WHEN YOU ARE</p><h2>Your interview, mapped out.</h2><p>{plan.plan.roleTitle} · {plan.plan.rounds.length} rounds · {plan.plan.totalQuestionBudget} questions</p></div><Status tone="success">Plan prepared</Status></div>
+      <section className="su-summary" aria-labelledby="su-summary-title"><h3 id="su-summary-title">Final configuration</h3><dl>
+        <div><dt>Role</dt><dd>{plan.plan.roleTitle}</dd></div>
+        <div><dt>Experience</dt><dd>{LEVELS[preferences.experienceLevel ?? ''] ?? 'From my résumé'}</dd></div>
+        <div><dt>Category</dt><dd>{options?.interviewTypes.find((t) => t.id === preferences.interviewType)?.label ?? labelFor(preferences.interviewType ?? 'full')}</dd></div>
+        <div><dt>Difficulty</dt><dd>{DIFFICULTY.find((d) => d.value === (preferences.targetDifficulty === undefined ? '' : String(preferences.targetDifficulty)))?.title}</dd></div>
+        <div><dt>Length</dt><dd>{plan.plan.rounds.length} {plan.plan.rounds.length === 1 ? 'round' : 'rounds'} · {plan.plan.totalQuestionBudget} questions</dd></div>
+        <div><dt>Voice</dt><dd>{voice === 'local' ? 'Local dictation' : 'Browser recognition'}</dd></div>
+        <div><dt>Job description</dt><dd>{jd.trim() ? 'Provided' : 'Not provided'}</dd></div>
+      </dl></section>
+      <div className="plan-rounds">{plan.plan.rounds.map((r) => <article key={r.roundNumber}><span className="round-number">0{r.roundNumber}</span><div><h3>{r.name.replace(/^Round \d+\s*[—–-]\s*/, '')}</h3><p>{r.description}</p><div className="chips">{r.targetSkills.map((s) => <span key={s}>{labelFor(s)}</span>)}</div><small>{r.questionBudget} questions · difficulty {r.difficultyRange.min * 2}–{r.difficultyRange.max * 2} / 10</small></div></article>)}</div><div className="notice">The plan sets the boundaries. Questions adapt to your answers and accumulated evidence. Questions are spoken aloud and your spoken answers are transcribed for assessment.</div><div className="actions spread"><Button variant="ghost" onClick={() => setStage(2)}>Edit preferences</Button><Button onClick={() => onInterviewPrepared(plan, { recognitionMode: voice })}>Enter interview room <Icon icon={ArrowRight} /></Button></div></Card>}
+    </motion.div>
   </section><SetupStage stage={stage} /></div></div>;
 }

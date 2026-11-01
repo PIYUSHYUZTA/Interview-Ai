@@ -63,3 +63,44 @@
   .su-stage { height: 200px; }
   .su-stage-labels { gap: 12px; }
 }
+
+/* ── Configuration (stage 2): numbered groups of selection tiles, not a form ── */
+.su-config { display: grid; gap: 28px; }
+.su-step-head h2 { margin: 4px 0 8px; }
+.su-step-head p { margin: 0; font-size: 13px; }
+.su-group { display: grid; gap: 12px; padding-top: 24px; border-top: 1px solid var(--border-subtle); }
+.su-group > header { display: flex; align-items: baseline; gap: 12px; }
+.su-group-index { font: 600 11px var(--font-mono); color: var(--paint-amber-text); }
+.su-group h3 { margin: 0; font-size: 15px; font-weight: 500; letter-spacing: -.01em; color: var(--text-primary); }
+.su-group-hint { margin: -4px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-muted); }
+.su-field { margin: 0 !important; }
+
+.su-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.su-tile { position: relative; display: grid; align-content: start; gap: 4px; min-height: 76px; padding: 12px 36px 12px 16px; border-radius: 12px; cursor: pointer; background: var(--bg-base); border: 1px solid var(--border-default); transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), translate var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
+.su-tile:hover { border-color: var(--border-strong); translate: 0 -2px; }
+.su-tile[data-checked] { border-color: var(--paint-teal); background: color-mix(in srgb, var(--paint-teal) 8%, var(--bg-base)); box-shadow: 0 0 0 1px var(--paint-teal), 0 8px 24px color-mix(in srgb, var(--paint-teal) 16%, transparent); }
+.su-tile:has(.su-tile-input:focus-visible) { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.su-tile-input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.su-tile strong { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.su-tile small { font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+.su-tile-check { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-strong); color: transparent; transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), scale var(--duration-fast) var(--ease-out); }
+.su-tile[data-checked] .su-tile-check { background: var(--paint-teal); border-color: var(--paint-teal); color: var(--paint-on-accent); scale: 1.08; }
+.su-tile-check svg { width: 12px; height: 12px; }
+
+.su-length { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 16px; align-items: end; }
+.su-length-grid { grid-column: 1 / -1; display: grid; gap: 8px; padding: 16px; border-radius: 12px; background: var(--bg-base); border: 1px dashed var(--border-default); }
+.su-length-row { display: flex; align-items: center; gap: 8px; }
+.su-length-row span { width: 28px; font: 600 10px var(--font-mono); color: var(--paint-amber-text); }
+.su-length-row i { width: 20px; height: 20px; border-radius: 8px; background: color-mix(in srgb, var(--paint-teal) 24%, transparent); border: 1px solid color-mix(in srgb, var(--paint-teal) 48%, transparent); animation: su-dot-in var(--duration-normal) var(--ease-out) backwards; animation-delay: calc(var(--i) * 20ms); }
+@keyframes su-dot-in { from { opacity: 0; scale: .4; } }
+
+/* ── Final configuration (stage 3) ── */
+.su-summary { margin: 20px 0 8px; padding: 16px 20px; border-radius: 12px; background: color-mix(in srgb, var(--paint-teal) 5%, var(--bg-base)); border: 1px solid color-mix(in srgb, var(--paint-teal) 24%, transparent); }
+.su-summary h3 { margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--paint-teal-text); letter-spacing: .02em; }
+.su-summary dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px 20px; margin: 0; }
+.su-summary dt { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+.su-summary dd { margin: 4px 0 0; font-size: 13px; color: var(--text-primary); }
+
+@media (max-width: 767px) { .su-tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .su-length { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .su-tile, .su-tile-check { transition: none; } .su-tile:hover { translate: none; } .su-length-row i { animation: none; } }
+.su-tiles[aria-label="Voice transcription"] { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }

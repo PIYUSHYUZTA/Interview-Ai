@@ -35,6 +35,7 @@ try {
       assert.deepEqual(violations, [], `${theme} ${stage}: axe`);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({ path: shot(`${theme}-${stage}`) });
+      if (stage === 'preferences') await page.screenshot({ path: shot(`${theme}-${stage}-full`), fullPage: true });
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(500);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${theme} ${stage}: no horizontal scroll at 390px`);
       if (stage === 'profile' || stage === 'plan') await page.screenshot({ path: shot(`${theme}-${stage}-phone`), fullPage: true });
@@ -50,12 +51,21 @@ try {
     await check('profile');
     await page.getByRole('button', { name: /Confirm .*continue/ }).click();
     await page.getByLabel('Rounds', { exact: true }).selectOption('1');
+    // Selection tiles: native radio groups presented as cards.
+    await page.getByRole('radiogroup', { name: 'Experience level' }).getByText('Senior', { exact: true }).click();
+    await page.getByRole('radiogroup', { name: 'Difficulty preference' }).getByText('Challenging', { exact: true }).click();
+    await page.getByRole('radiogroup', { name: 'Voice transcription' }).getByText('Browser recognition', { exact: true }).click();
+    assert.equal(await page.getByRole('radio', { name: /Senior/ }).isChecked(), true);
+    assert.equal(await page.locator('.su-length-grid i').count(), 3, 'one round of three questions');
     await check('preferences');
     await page.getByRole('button', { name: 'Build my interview plan' }).click();
     await page.getByRole('heading', { name: 'Your interview, mapped out.' }).waitFor();
+    const summary = (await page.locator('.su-summary').textContent()) ?? '';
+    for (const expected of ['Senior', 'Challenging', 'Browser recognition', '1 round', 'Not provided']) assert.ok(summary.includes(expected), `final configuration shows ${expected}`);
     await check('plan');
     await page.getByRole('button', { name: 'Enter interview room', exact: true }).click();
     await page.locator('.immersive-host').waitFor(); // the room opens; its own verifiers cover it
+    assert.equal(await page.getByLabel('Speech transcription', { exact: true }).inputValue(), 'browser', 'the room starts with the voice choice made in setup');
     await context.close();
   }
   assert.deepEqual(errors, []);
