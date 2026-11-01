@@ -78,7 +78,7 @@ try {
   assert.equal(await skills.last().getAttribute('aria-pressed'), 'true');
   // Stat tiles and the activity feed show the saved interviews.
   assert.equal((await page.locator('.ws-kpi').first().locator('.ws-kpi-value').textContent())?.trim(), '2');
-  assert.equal(await page.getByRole('button', { name: /^Open the report for / }).count(), 2);
+  assert.equal(await page.locator('.ws-feed').getByRole('button', { name: /^Open the report for / }).count(), 2);
   const progress = await (await context.request.get(`${origin}/interviews/progress`)).json();
   assert.deepEqual(progress.reports.map((r: any) => r.sessionId), sessions);
   assert.ok(progress.repeatedWeaknesses.length > 0);

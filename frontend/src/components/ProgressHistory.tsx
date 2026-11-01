@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import type { CandidateProgress, InterviewResultsResponse } from '../types';
-import { Button, Meter, labelFor } from './ui';
+import { labelFor } from './ui';
 
 /** Smooth path through points (monotone cubic), so the growth line curves without overshooting. */
 function smoothPath(points: { x: number; y: number }[]) {
@@ -36,6 +36,12 @@ export function GrowthChart({ progress, onReport }: { progress: CandidateProgres
   const skillLine = compare ? reports.flatMap((r, i) => (r.skillMap[compare]?.samples ? [{ x: x(i), y: yFor(r.skillMap[compare].estimate * 10) }] : [])) : [];
   const line = smoothPath(overall);
   const date = (r: InterviewResultsResponse) => new Date(r.details.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const mean = reports.length ? reports.reduce((sum, r) => sum + r.overallScore, 0) / reports.length : 0;
+  // Crosshair: follows the pointer to the nearest assessment, or the arrow keys when the chart has focus.
+  const [hover, setHover] = useState<number | null>(null);
+  const nearest = (event: React.PointerEvent<SVGSVGElement>) => { const box = event.currentTarget.getBoundingClientRect(); const vx = ((event.clientX - box.left) / box.width) * W; setHover(overall.reduce((best, p, i) => (Math.abs(p.x - vx) < Math.abs(overall[best].x - vx) ? i : best), 0)); };
+  const keys = (event: React.KeyboardEvent) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); setHover((h) => Math.max(0, Math.min(overall.length - 1, (h ?? (event.key === 'ArrowRight' ? -1 : overall.length)) + (event.key === 'ArrowRight' ? 1 : -1)))); } if (event.key === 'Enter' && hover !== null) onReport(overall[hover].report.sessionId); };
+  const point = hover !== null ? overall[hover] : null;
   return <section className="ws-panel ws-growth" aria-labelledby="ws-growth-title">
     <header className="ws-panel-head">
       <div><h2 id="ws-growth-title">Performance growth</h2><p>Overall score per saved assessment{compare ? <>, with <span className="ws-key-dashed">{labelFor(compare)}</span> for comparison</> : ''}.</p></div>
@@ -44,31 +50,23 @@ export function GrowthChart({ progress, onReport }: { progress: CandidateProgres
         {skills.length > 0 && <div className="ws-pills" role="group" aria-label="Comparison skill">{skills.slice(0, 4).map((id) => <button key={id} type="button" aria-pressed={id === compare} onClick={() => setSkill(id)}>{labelFor(id)}</button>)}</div>}
       </div>
     </header>
-    {reports.length >= 2 ? <figure className="ws-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Overall score across ${reports.length} saved assessments, from ${reports[0].overallScore.toFixed(1)} to ${reports.at(-1)!.overallScore.toFixed(1)} out of 100`}>
+    {reports.length >= 2 ? <figure className="ws-chart" tabIndex={0} onKeyDown={keys} onBlur={() => setHover(null)} aria-label="Performance growth chart. Use the left and right arrow keys to read each assessment; Enter opens its report.">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" onPointerMove={nearest} onPointerLeave={() => setHover(null)} onClick={() => point && onReport(point.report.sessionId)} aria-label={`Overall score across ${reports.length} saved assessments, from ${reports[0].overallScore.toFixed(1)} to ${reports.at(-1)!.overallScore.toFixed(1)} out of 100`}>
         <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style={{ stopColor: 'var(--paint-teal)' }} stopOpacity=".32" /><stop offset="100%" style={{ stopColor: 'var(--paint-teal)' }} stopOpacity="0" /></linearGradient></defs>
         {[0, 50, 100].map((v) => <g key={v} className="ws-grid"><line x1={LEFT} x2={RIGHT} y1={yFor(v)} y2={yFor(v)} /><text x="0" y={yFor(v) + 4}>{v}</text></g>)}
         <path d={`${line} L${RIGHT},${BOTTOM} L${LEFT},${BOTTOM} Z`} fill={`url(#${gradientId})`} />
         {skillLine.length > 1 && <path className="ws-line-dashed" d={smoothPath(skillLine)} fill="none" />}
+        <line className="ws-mean" x1={LEFT} x2={RIGHT} y1={yFor(mean)} y2={yFor(mean)} />
+        <text className="ws-mean-label" x={LEFT + 4} y={yFor(mean) - 6}>avg {mean.toFixed(1)}</text>
         <path className="ws-line" d={line} fill="none" pathLength={1} />
-        {overall.map((p) => <circle key={p.report.sessionId} className="ws-point" cx={p.x} cy={p.y} r="4"><title>{date(p.report)}: {p.report.overallScore.toFixed(1)}/100</title></circle>)}
+        {point && <line className="ws-cross" x1={point.x} x2={point.x} y1={TOP} y2={BOTTOM} />}
+        {overall.map((p, i) => <circle key={p.report.sessionId} className="ws-point" data-active={hover === i ? '' : undefined} cx={p.x} cy={p.y} r={hover === i ? 6 : 4} />)}
       </svg>
+      {point && <div className="ws-tip" style={{ left: `${(point.x / W) * 100}%`, top: `${(point.y / H) * 100}%` }} aria-live="polite"><strong>{point.report.overallScore.toFixed(1)}<small>/100</small></strong><span>#{hover! + 1} · {date(point.report)}</span>{compare && point.report.skillMap[compare]?.samples ? <span className="ws-tip-skill">{labelFor(compare)} {point.report.skillMap[compare].estimate.toFixed(1)}/10</span> : null}<em>Click to open the report</em></div>}
       <figcaption className="ws-axis">{reports.map((r, i) => <span key={r.sessionId}>#{i + 1} · {date(r)}</span>)}</figcaption>
     </figure> : <div className="ws-chart-empty"><p>Complete two interviews in the same comparison group to see your growth.</p></div>}
     <details className="ws-method"><summary>How scores are compared</summary><p>{progress.methodology}</p></details>
     <table className="ds-visually-hidden"><caption>Saved assessments in this comparison group</caption><thead><tr><th>Date</th><th>Overall</th>{compare && <th>{labelFor(compare)}</th>}<th>Report</th></tr></thead>
       <tbody>{reports.map((r) => <tr key={r.sessionId}><td>{date(r)}</td><td>{r.overallScore.toFixed(1)}</td>{compare && <td>{r.skillMap[compare]?.samples ? (r.skillMap[compare].estimate).toFixed(1) : '—'}</td>}<td><button type="button" onClick={() => onReport(r.sessionId)}>Open report</button></td></tr>)}</tbody></table>
-  </section>;
-}
-
-/** Latest observed skills, repeated gaps and recommended practice (below the dashboard's first screen). */
-export function SkillProfile({ progress, onReport }: { progress: CandidateProgress; onReport: (id: string) => void }) {
-  return <section className="ws-panel ws-skills" aria-labelledby="ws-skills-title">
-    <header className="ws-panel-head"><div><h2 id="ws-skills-title">Current skill profile</h2><p>Latest observed evidence for each skill.</p></div></header>
-    {progress.currentSkills.length ? <div className="ws-skill-grid">{progress.currentSkills.map((s) => <article key={s.skillId}><Meter label={labelFor(s.skillId)} value={s.estimate} /><p>{labelFor(s.verdict)} · {Math.round(s.confidence * 100)}% confidence</p><small>{s.roleTitle} · {new Date(s.date).toLocaleDateString()}</small><Button variant="ghost" onClick={() => onReport(s.sessionId)}>Source assessment</Button></article>)}</div> : <p>No assessed skills yet.</p>}
-    <div className="ws-skill-notes">
-      <div><h3>Repeated gaps</h3>{progress.repeatedWeaknesses.length ? progress.repeatedWeaknesses.map((s) => <p key={s.skillId}>{labelFor(s.skillId)} · observed in {s.count} interviews · {s.stillCurrent ? 'still present in latest evidence' : 'no longer shown in latest evidence'}</p>) : <p>No repeated gaps recorded yet.</p>}</div>
-      <div><h3>Recommended practice</h3>{progress.recommendations.length ? <ol className="practice-list">{progress.recommendations.map((r) => <li key={r.skillId}><strong>{labelFor(r.skillId)}</strong>: {r.targetOutcome}<p>{r.reason}</p></li>)}</ol> : <p>Complete an interview for evidence-based recommendations.</p>}</div>
-    </div>
   </section>;
 }

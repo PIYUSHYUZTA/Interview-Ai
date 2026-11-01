@@ -35,7 +35,17 @@
 
 /* ── Dashboard ── */
 .ws-dashboard { display: grid; gap: 16px; max-width: 1440px; }
-.ws-title h1 { font-size: clamp(24px, 2vw, 28px); font-weight: 650; letter-spacing: -.035em; margin: 0 0 4px; }
+/* Title row: the landing's light editorial type, kept at workspace scale, beside the candidate profile. */
+.ws-title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.ws-title-row > .ws-title { flex: 1 1 480px; min-width: 0; }
+.ws-title-row > .ws-profile { flex: 0 1 400px; }
+.ws-kicker { margin: 0 0 8px; font-size: 10px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: var(--paint-amber-text); }
+.ws-title h1 { font-size: clamp(28px, 2.6vw, 40px); font-weight: 300; letter-spacing: -.045em; line-height: 1.1; margin: 0 0 8px; }
+.ws-profile { display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 12px; border-radius: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); max-width: 440px; }
+.ws-avatar { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; font: 600 14px var(--font-sans); color: var(--paint-on-accent); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--paint-teal) 60%, var(--paint-ivory)), var(--paint-teal) 60%); box-shadow: 0 0 20px color-mix(in srgb, var(--paint-teal) 32%, transparent); }
+.ws-profile strong { display: block; font-size: 13px; color: var(--text-primary); }
+.ws-profile span:not(.ws-avatar) { display: block; font-size: 11px; color: var(--text-secondary); }
+.ws-profile small { display: block; margin-top: 4px; font-size: 10px; color: var(--text-muted); line-height: 1.5; }
 .ws-title p { margin: 0; font-size: 13px; color: var(--text-muted); max-width: 80ch; }
 .ws-highlight { color: var(--paint-teal-text); font-weight: 600; }
 
@@ -138,3 +148,58 @@
 @media (prefers-reduced-motion: reduce) {
   .ws-line, .ws-orb { animation: none; }
 }
+
+/* Growth chart micro-interactions: crosshair, active point, tooltip, average line. */
+.ws-chart { position: relative; border-radius: 12px; outline-offset: 4px; }
+.ws-chart svg { cursor: crosshair; }
+.ws-mean { stroke: color-mix(in srgb, var(--paint-ivory) 36%, transparent); stroke-width: 1; stroke-dasharray: 2 4; }
+.ws-mean-label { fill: var(--text-muted); font: 10px var(--font-mono); }
+.ws-cross { stroke: color-mix(in srgb, var(--paint-teal) 56%, transparent); stroke-width: 1; }
+.ws-point { transition: r var(--duration-fast) var(--ease-out); }
+.ws-point[data-active] { fill: var(--paint-teal); filter: drop-shadow(0 0 8px var(--paint-teal)); }
+.ws-tip { position: absolute; z-index: 2; translate: -50% calc(-100% - 16px); display: grid; gap: 2px; min-width: 128px; padding: 8px 12px; border-radius: 12px; pointer-events: none; background: color-mix(in srgb, var(--bg-base) 92%, transparent); border: 1px solid color-mix(in srgb, var(--paint-teal) 40%, transparent); box-shadow: 0 12px 32px color-mix(in srgb, var(--paint-ink) 40%, transparent); font-size: 11px; color: var(--text-secondary); animation: ws-tip-in var(--duration-fast) var(--ease-out); }
+.ws-tip strong { font: 600 18px var(--font-mono); color: var(--text-primary); }
+.ws-tip strong small { font-size: 10px; color: var(--text-muted); margin-left: 2px; }
+.ws-tip-skill { color: var(--paint-amber-text); }
+.ws-tip em { font-style: normal; font-size: 10px; color: var(--text-muted); }
+@keyframes ws-tip-in { from { opacity: 0; translate: -50% calc(-100% - 8px); } }
+
+/* Insights row: skill progression, assessment reports, recommended improvements. */
+.ws-insights { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ws-empty { margin: 0; font-size: 12px; color: var(--text-muted); }
+.ws-skillbars ul, .ws-reports ol, .ws-improve-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ws-skill-row { display: grid; grid-template-columns: minmax(88px, 128px) minmax(0, 1fr) 32px 56px; align-items: center; gap: 12px; width: 100%; min-height: var(--touch-target); padding: 4px 8px; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease-out); }
+.ws-skill-row:hover { background: color-mix(in srgb, var(--paint-ivory) 5%, transparent); }
+.ws-skill-name { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-skill-track { position: relative; height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--paint-ivory) 8%, transparent); }
+.ws-skill-fill { position: absolute; inset: 0; border-radius: inherit; transform-origin: left; background: linear-gradient(90deg, color-mix(in srgb, var(--paint-teal) 48%, transparent), var(--paint-teal)); transition: scale 700ms var(--ease-out); }
+.ws-skill-fill[data-verdict="gap"], .ws-skill-fill[data-verdict="partially_meets"] { background: linear-gradient(90deg, color-mix(in srgb, var(--paint-amber) 40%, transparent), var(--paint-amber)); }
+.ws-skill-ghost { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--paint-ivory); opacity: .7; }
+.ws-skill-value { font: 600 12px var(--font-mono); color: var(--text-primary); text-align: right; }
+.ws-skill-delta { display: inline-flex; align-items: center; gap: 4px; justify-content: flex-end; font: 500 11px var(--font-mono); color: var(--text-muted); }
+.ws-skill-delta[data-tone="up"] { color: var(--paint-teal-text); }
+.ws-skill-delta[data-tone="down"] { color: var(--paint-amber-text); }
+
+.ws-report-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px; border: 0; border-radius: 12px; background: transparent; color: var(--text-muted); text-align: left; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.ws-report-row:hover { background: color-mix(in srgb, var(--paint-ivory) 5%, transparent); color: var(--paint-teal-text); }
+.ws-report-score { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: conic-gradient(var(--paint-teal) var(--sweep), color-mix(in srgb, var(--paint-ivory) 10%, transparent) 0); }
+.ws-report-score::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--bg-surface); }
+.ws-report-score b { position: relative; font: 600 12px var(--font-mono); color: var(--text-primary); }
+.ws-report-text strong { display: block; font-size: 12px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-report-text small { display: block; font-size: 10px; color: var(--text-muted); }
+
+.ws-improve { display: grid; gap: 16px; }
+.ws-improve .ws-panel-head { margin-bottom: 0; }
+.ws-improve-list { gap: 16px; }
+.ws-improve-list li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; }
+.ws-improve-index { font: 600 12px var(--font-mono); color: var(--paint-amber-text); padding-top: 2px; }
+.ws-improve-list strong { font-size: 13px; color: var(--text-primary); }
+.ws-improve-list p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; }
+.ws-improve-list small { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 10px; color: var(--text-muted); }
+.ws-improve-list small[data-current] { color: var(--paint-amber-text); }
+.ws-improve-cta.btn-primary { justify-self: start; border-radius: 1000px; background: var(--paint-teal); color: var(--paint-on-accent); }
+.ws-improve-cta.btn-primary:hover:not(:disabled) { background: var(--paint-teal); filter: var(--state-hover-filter); }
+
+@media (max-width: 1279px) { .ws-insights { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .ws-skillbars { grid-column: 1 / -1; } }
+@media (max-width: 767px) { .ws-insights { grid-template-columns: minmax(0, 1fr); } .ws-profile { max-width: none; width: 100%; } .ws-skill-row { grid-template-columns: minmax(72px, 96px) minmax(0, 1fr) 32px 48px; gap: 8px; } }
+@media (prefers-reduced-motion: reduce) { .ws-tip { animation: none; } .ws-skill-fill, .ws-point { transition: none; } }

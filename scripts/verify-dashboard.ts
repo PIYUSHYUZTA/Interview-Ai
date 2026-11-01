@@ -68,11 +68,24 @@ try {
     if (theme === 'dark') {
       assert.equal((await page.locator('.ws-kpi').first().locator('.ws-kpi-value .ds-visually-hidden').textContent())?.trim(), '3'); // CountUp's announced value
       await page.getByRole('img', { name: /^Overall score across 3 saved assessments/ }).waitFor();
-      assert.equal(await page.getByRole('button', { name: /^Open the report for / }).count(), 3);
+      assert.equal(await page.locator('.ws-feed').getByRole('button', { name: /^Open the report for / }).count(), 3);
       assert.equal(await page.getByRole('button', { name: 'New interview', exact: true }).count(), 1); // one, in the sidebar
       const skills = page.getByRole('group', { name: 'Comparison skill' }).getByRole('button');
       await skills.last().click(); assert.equal(await skills.last().getAttribute('aria-pressed'), 'true');
       assert.ok(await page.locator('#sidebar-slot .ws-next').count() === 1, 'next best step in the sidebar card slot');
+      // Candidate profile from the account; average score from completed interviews.
+      await page.getByRole('region', { name: 'Candidate profile' }).getByText('Alex Morgan', { exact: true }).waitFor();
+      const average = progress.reports.reduce((sum: number, r: any) => sum + r.overallScore, 0) / progress.reports.length;
+      assert.equal((await page.locator('.ws-kpi').nth(1).locator('.ws-kpi-value .ds-visually-hidden').textContent())?.trim(), average.toFixed(1));
+      // Skill progression, previous reports and recommended improvements, all from saved data.
+      assert.equal(await page.locator('.ws-skill-row').count(), progress.currentSkills.length);
+      assert.equal(await page.locator('.ws-report-row').count(), Math.min(6, progress.reports.length));
+      assert.equal(await page.locator('.ws-improve-list li').count(), Math.min(3, progress.recommendations.length));
+      // Chart micro-interaction: keyboard crosshair with a tooltip; Enter opens that report.
+      await page.locator('.ws-chart').focus(); await page.keyboard.press('ArrowRight');
+      await page.locator('.ws-tip').waitFor();
+      assert.match((await page.locator('.ws-tip').textContent()) ?? '', /\/100/);
+      await page.locator('.ws-chart').hover(); await page.mouse.move(900, 560);
     }
     // Accessibility: axe (WCAG 2.1 AA + best practice) on the full dashboard, in each theme.
     await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js', { paths: [path.dirname(process.env.PLAYWRIGHT_MODULE_PATH ?? '.'), process.cwd()] }) });

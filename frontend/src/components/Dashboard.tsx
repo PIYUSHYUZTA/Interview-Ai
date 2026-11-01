@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { getSessions, getCandidateProgress } from '../api';
-import type { CandidateProgress, SessionSummary, InterviewResultsResponse } from '../types';
+import { getSessions, getCandidateProgress, getCurrentCandidate } from '../api';
+import type { CandidateProfileResponse, CandidateProgress, SessionSummary, InterviewResultsResponse } from '../types';
 import { Icon } from './icon/Icon';
 import type { LucideIcon } from './icon/icons';
-import { ArrowRight, ChartColumn, CircleCheck, Clock, FileText, Mic, Sparkles, Target, TriangleAlert } from './icon/icons';
+import { ArrowRight, ChartColumn, CircleCheck, Clock, FileText, Mic, Sparkles, Target, TrendingDown, TrendingUp, TriangleAlert } from './icon/icons';
 import { Button, EmptyState, Status, labelFor } from './ui';
 import { Skeleton, SkeletonScreen } from './motion/feedback';
 import { CountUp, RevealGroup, revealItem } from './motion/reveal';
 import { ErrorState } from './library/overlays';
-import { SkillDevelopment } from './SkillDevelopment';
-import { GrowthChart, SkillProfile } from './ProgressHistory';
+import { GrowthChart } from './ProgressHistory';
 
 /** The two sample résumés the setup screen can prefill (see ResumeUploadView). */
 const SAMPLES = [{ id: 'senior_backend', label: 'Senior backend engineer' }, { id: 'ml_engineer', label: 'Machine learning engineer' }];
@@ -19,9 +18,10 @@ const SAMPLES = [{ id: 'senior_backend', label: 'Senior backend engineer' }, { i
 interface Props { onStartNewInterview: (preset?: string) => void; onViewInterviewResults: (id: string) => void }
 
 /**
- * Candidate dashboard, after the Synexis reference: page title with one highlighted figure, three stat
- * tiles with mini bars, a growth chart beside an activity feed with the voice orb, and a quick-start strip.
- * Every number comes from saved interviews; nothing is invented when there is no data yet.
+ * Candidate dashboard, after the Synexis reference: page title with one highlighted figure and the candidate's
+ * profile, three stat tiles with mini bars, a growth chart beside an activity feed with the voice orb, a quick-start
+ * strip, then skill progression, previous reports and recommended improvements. Every number comes from saved
+ * interviews and the account; nothing is invented when there is no data yet.
  */
 export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props) {
   const [progress, setProgress] = useState<CandidateProgress | null>(null);
@@ -31,11 +31,12 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
+  const [profile, setProfile] = useState<CandidateProfileResponse | null>(null);
   const load = async () => {
     setLoading(true); setError(null);
     try {
-      const [result, development] = await Promise.all([getSessions(), getCandidateProgress()]);
-      setProgress(development);
+      const [result, development, account] = await Promise.all([getSessions(), getCandidateProgress(), getCurrentCandidate().catch(() => null)]);
+      setProgress(development); setProfile(account);
       const reports = [...development.reports].reverse();
       const rank = new Map(reports.map((r, i) => [r.sessionId, i]));
       setHistory([...result.interviews].sort((a, b) => (rank.get(a.sessionId) ?? -1) - (rank.get(b.sessionId) ?? -1)));
@@ -58,20 +59,34 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
   const first = latest?.candidateName.split(' ')[0];
   const nextStep = latest?.roadmap[0];
 
+  const scores = completed.map((s) => s.overallScore!);
+  const average = scores.length ? scores.reduce((sum, v) => sum + v, 0) / scores.length : null;
+  const account = profile?.candidate;
+  const initials = (account?.name ?? latest?.candidateName ?? '').split(/\s+/).map((part) => part[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+  const resumes = profile?.resumes.length ?? 0;
+
   return <div className="page dashboard-page ws-dashboard">
-    <header className="ws-title">
-      <h1>{first ? `${first}’s practice overview` : 'Practice overview'}</h1>
-      <p>{latest
-        ? <>{latest.roleTitle} · Your latest overall score is <strong className="ws-highlight">{latest.overallScore.toFixed(1)}/100</strong>{change !== null && <>, <strong className="ws-highlight">{change >= 0 ? '+' : ''}{change.toFixed(1)}</strong> against your previous matching interview</>}.</>
-        : 'Build a baseline. Practise deliberately. See what develops.'}</p>
+    <header className="ws-title-row">
+      <div className="ws-title">
+        <p className="ws-kicker">Practice overview</p>
+        <h1>{first ? `Welcome back, ${first}.` : 'Your practice, at a glance.'}</h1>
+        <p>{latest
+          ? <>{latest.roleTitle} · Your latest overall score is <strong className="ws-highlight">{latest.overallScore.toFixed(1)}/100</strong>{change !== null && <>, <strong className="ws-highlight">{change >= 0 ? '+' : ''}{change.toFixed(1)}</strong> against your previous matching interview</>}.</>
+          : 'Build a baseline. Practise deliberately. See what develops.'}</p>
+      </div>
+      {account && <section className="ws-profile" aria-label="Candidate profile">
+        <span className="ws-avatar" aria-hidden="true">{initials || '·'}</span>
+        <div><strong>{account.name}</strong><span>{account.email}</span>
+          <small>{latest ? `Target role · ${latest.roleTitle}` : 'No target role yet'} · {resumes ? `${resumes} résumé${resumes > 1 ? 's' : ''} on file` : 'No résumé yet'} · Member since {new Date(account.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</small></div>
+      </section>}
     </header>
 
     <RevealGroup className="ws-kpis">
       <KpiTile index={0} label="Completed interviews" icon={CircleCheck} badge={thisWeek ? `+${thisWeek} this week` : undefined}
-        value={<CountUp value={completed.length} />} note={`${completed.reduce((n, s) => n + s.answered, 0)} answers assessed`}
+        value={<><CountUp value={completed.length} /><small>of {history.length}</small></>} note={`${history.length - completed.length} unfinished · ${completed.reduce((n, s) => n + s.answered, 0)} answers assessed`}
         bars={recent.map((r) => r.evidence.length)} barsLabel="Answers in each of your latest interviews" />
-      <KpiTile index={1} label="Latest overall score" icon={ChartColumn} badge={change === null ? undefined : `${change >= 0 ? '+' : ''}${change.toFixed(1)}`} badgeTone={change !== null && change < 0 ? 'down' : 'up'}
-        value={latest ? <><CountUp value={latest.overallScore} decimals={1} /><small>/100</small></> : '—'} note={latest ? labelFor(latest.performanceBand) : 'No assessment yet'}
+      <KpiTile index={1} label="Average score" icon={ChartColumn} badge={change === null ? undefined : `${change >= 0 ? '+' : ''}${change.toFixed(1)} latest`} badgeTone={change !== null && change < 0 ? 'down' : 'up'}
+        value={average !== null ? <><CountUp value={average} decimals={1} /><small>/100</small></> : '—'} note={latest ? `Latest ${latest.overallScore.toFixed(1)} · ${labelFor(latest.performanceBand)}` : 'No assessment yet'}
         bars={recent.map((r) => r.overallScore)} max={100} barsLabel="Overall score of your latest interviews" />
       <KpiTile index={2} label="Role readiness" icon={Target} badge={latest?.readiness ? `${latest.readiness.coverage}% coverage` : undefined}
         value={latest?.readiness?.score != null ? <><CountUp value={latest.readiness.score} /><small>/100</small></> : '—'}
@@ -105,8 +120,11 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
     {nextStep !== undefined && <SidebarSlot><div className="ws-next"><span className="ws-next-icon"><Icon icon={Target} /></span><strong>Your next best step</strong><p>{labelFor(nextStep.skillId)}: {nextStep.action}</p><Button variant="secondary" onClick={() => onStartNewInterview()}>Practise this <Icon icon={ArrowRight} /></Button></div></SidebarSlot>}
 
     <div className="ws-below">
-      <SkillDevelopment latest={latest} previous={previous} />
-      {progress && <SkillProfile progress={progress} onReport={onViewInterviewResults} />}
+      {progress && <div className="ws-insights">
+        <SkillProgression progress={progress} previous={previous} onReport={onViewInterviewResults} />
+        <ReportsList reports={saved} onReport={onViewInterviewResults} />
+        <Improvements progress={progress} onPractise={() => onStartNewInterview()} />
+      </div>}
       <section className="ws-panel ws-history" id="ws-history" aria-labelledby="ws-history-title">
         <header className="ws-panel-head"><div><h2 id="ws-history-title">Interview history</h2><p>{history.length} sessions saved to this account.</p></div>
           <div className="ws-pills" role="group" aria-label="Filter interview history">{['all', 'completed', 'unfinished'].map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>{labelFor(item)}</button>)}</div></header>
@@ -118,6 +136,57 @@ export function Dashboard({ onStartNewInterview, onViewInterviewResults }: Props
       {latest?.providerName === 'deterministic' && <p className="fine-print">Demo mode · heuristic evaluation</p>}
     </div>
   </div>;
+}
+
+/** Each assessed skill: its latest estimate as a bar, the previous comparable estimate as a ghost marker, the change. */
+function SkillProgression({ progress, previous, onReport }: { progress: CandidateProgress; previous: InterviewResultsResponse | null; onReport: (id: string) => void }) {
+  const skills = [...progress.currentSkills].sort((a, b) => b.estimate - a.estimate);
+  return <section className="ws-panel ws-skillbars" aria-labelledby="ws-skillbars-title">
+    <header className="ws-panel-head"><div><h2 id="ws-skillbars-title">Skill progression</h2><p>Latest evidence per skill out of 10; the marker is your previous comparable interview.</p></div></header>
+    {skills.length ? <ul>{skills.map((skill) => {
+      const before = previous?.skillMap[skill.skillId];
+      const delta = before?.samples ? skill.estimate - before.estimate : null;
+      const tone = delta === null || Math.abs(delta) < .05 ? 'none' : delta > 0 ? 'up' : 'down';
+      return <li key={skill.skillId}>
+        <button type="button" className="ws-skill-row" onClick={() => onReport(skill.sessionId)} aria-label={`${labelFor(skill.skillId)}: ${skill.estimate.toFixed(1)} out of 10${delta === null ? '' : tone === 'none' ? ', unchanged' : `, ${tone} ${Math.abs(delta).toFixed(1)}`}. Open the source assessment.`}>
+          <span className="ws-skill-name" aria-hidden="true">{labelFor(skill.skillId)}</span>
+          <span className="ws-skill-track" aria-hidden="true">
+            <span className="ws-skill-fill" data-verdict={skill.verdict} style={{ scale: `${Math.max(.02, skill.estimate / 10)} 1` }} />
+            {before?.samples ? <span className="ws-skill-ghost" style={{ left: `${(before.estimate / 10) * 100}%` }} /> : null}
+          </span>
+          <span className="ws-skill-value" aria-hidden="true">{skill.estimate.toFixed(1)}</span>
+          <span className="ws-skill-delta" data-tone={tone} aria-hidden="true">{delta === null ? '—' : tone === 'none' ? '±0.0' : <><Icon icon={tone === 'up' ? TrendingUp : TrendingDown} />{delta > 0 ? '+' : ''}{delta.toFixed(1)}</>}</span>
+        </button>
+      </li>;
+    })}</ul> : <p className="ws-empty">Your first completed interview will reveal your starting point.</p>}
+  </section>;
+}
+
+/** Previous assessment reports, newest first, each opening the full report. */
+function ReportsList({ reports, onReport }: { reports: InterviewResultsResponse[]; onReport: (id: string) => void }) {
+  const list = [...reports].reverse().slice(0, 6);
+  return <section className="ws-panel ws-reports" aria-labelledby="ws-reports-title">
+    <header className="ws-panel-head"><div><h2 id="ws-reports-title">Assessment reports</h2><p>{reports.length} saved {reports.length === 1 ? 'report' : 'reports'}, newest first.</p></div></header>
+    {list.length ? <ol>{list.map((report) => <li key={report.sessionId}>
+      <button type="button" className="ws-report-row" onClick={() => onReport(report.sessionId)} aria-label={`Open the report for ${report.roleTitle}, ${new Date(report.details.completedAt).toLocaleDateString()}: ${report.overallScore.toFixed(1)} out of 100`}>
+        <span className="ws-report-score" style={{ '--sweep': `${report.overallScore * 3.6}deg` } as CSSProperties} aria-hidden="true"><b>{Math.round(report.overallScore)}</b></span>
+        <span className="ws-report-text" aria-hidden="true"><strong>{report.roleTitle}</strong><small>{new Date(report.details.completedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} · {labelFor(report.performanceBand)} · {report.evidence.length} answers</small></span>
+        <Icon icon={ArrowRight} />
+      </button>
+    </li>)}</ol> : <p className="ws-empty">Reports appear here after each completed interview.</p>}
+  </section>;
+}
+
+/** What to practise next: the evidence-based plan, and gaps that keep recurring across interviews. */
+function Improvements({ progress, onPractise }: { progress: CandidateProgress; onPractise: () => void }) {
+  return <section className="ws-panel ws-improve" aria-labelledby="ws-improve-title">
+    <header className="ws-panel-head"><div><h2 id="ws-improve-title">Recommended improvements</h2><p>From the evidence in your saved interviews.</p></div></header>
+    {progress.recommendations.length ? <ol className="ws-improve-list">{progress.recommendations.slice(0, 3).map((item, index) => {
+      const repeated = progress.repeatedWeaknesses.find((weakness) => weakness.skillId === item.skillId);
+      return <li key={item.skillId}><span className="ws-improve-index">{String(index + 1).padStart(2, '0')}</span><div><strong>{labelFor(item.skillId)}</strong><p>{item.targetOutcome}</p>{repeated && <small data-current={repeated.stillCurrent ? '' : undefined}><Icon icon={TriangleAlert} /> Gap seen in {repeated.count} interviews{repeated.stillCurrent ? ', still present' : ', no longer shown'}</small>}</div></li>;
+    })}</ol> : <p className="ws-empty">Complete an interview for evidence-based recommendations.</p>}
+    <Button className="ws-improve-cta" onClick={onPractise}>Practise next <Icon icon={ArrowRight} /></Button>
+  </section>;
 }
 
 /** A stat tile: uppercase label, large figure, note, change badge, faint icon and a mini bar chart. */
