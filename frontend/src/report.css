@@ -101,3 +101,49 @@
   .rp-bubbles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .rp-bars { overflow-x: auto; }
 }
+
+/* Animated score indicators: gauges sweep and bars grow from zero on arrival (not under reduced motion). */
+@property --sweep { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+.rp-gauge-ring { animation: rp-sweep 1.4s var(--ease-out) both; }
+@keyframes rp-sweep { from { --sweep: 0deg; } }
+.rp-track > span, .rp-bar, .rp-q-bar > i { animation: rp-grow 1.1s var(--ease-out) both; }
+.rp-bar { animation-name: rp-rise; }
+@keyframes rp-grow { from { scale: 0 1; } }
+@keyframes rp-rise { from { scale: 1 0; } }
+
+/* Export actions under the title. */
+.rp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.rp-action { display: inline-flex; align-items: center; gap: 8px; min-height: var(--touch-target); padding: 0 16px; border-radius: 1000px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); font: 500 12px var(--font-sans); cursor: pointer; transition: border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.rp-action:hover { border-color: var(--paint-teal); color: var(--text-primary); }
+
+/* Readable structure below the canvas: an index, then sections. */
+.rp-index { position: sticky; top: 72px; z-index: 3; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 1000px; justify-self: start; background: color-mix(in srgb, var(--bg-base) 88%, transparent); border: 1px solid var(--border-subtle); backdrop-filter: blur(12px); }
+.rp-index a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 1000px; font-size: 12px; color: var(--text-secondary); text-decoration: none; }
+.rp-index a:hover { color: var(--text-primary); background: color-mix(in srgb, var(--paint-teal) 12%, transparent); }
+.rp-section { scroll-margin-top: 128px; }
+.rp-section-title { margin: 0 0 12px; font-size: 20px; font-weight: 400; letter-spacing: -.02em; }
+.rp-findings-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.rp-findings-grid .card { border-radius: 16px; background: var(--bg-surface); border-color: var(--border-default); }
+.rp-findings-grid h3 { margin: 4px 0 12px; font-size: 17px; }
+.rp-findings-grid h4 { margin: 20px 0 4px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--paint-amber-text); }
+.rp-strengths { border-top: 2px solid var(--paint-teal) !important; }
+.rp-weaknesses { border-top: 2px solid var(--paint-amber) !important; }
+.rp-q-bar { display: block; flex: 0 0 96px; height: 4px; margin-left: auto; border-radius: 4px; background: color-mix(in srgb, var(--paint-ivory) 10%, transparent); overflow: hidden; }
+.rp-q-bar > i { display: block; height: 100%; background: var(--paint-amber); transform-origin: left; }
+.rp-q-bar[data-meets] > i { background: var(--paint-teal); }
+.rp-q-bar + strong { margin-left: 12px; }
+
+@media (max-width: 767px) { .rp-findings-grid { grid-template-columns: minmax(0, 1fr); } .rp-index { position: static; border-radius: 16px; } .rp-q-bar { flex-basis: 48px; } }
+@media (prefers-reduced-motion: reduce) { .rp-gauge-ring, .rp-track > span, .rp-bar, .rp-q-bar > i { animation: none; } }
+
+/* Print or save as PDF: the light theme is applied for printing (see ReportAnalytics); only the report prints. */
+@media print {
+  .app-shell > .sidebar, .app-shell .topbar, .app-footer, .skip-link, .rp-actions, .rp-index, .rp-next .btn, .rp-map-stage, .ds-sound-corner, .ds-toast-region { display: none !important; }
+  .app-shell { display: block; background: var(--bg-base); }
+  .app-shell .main-shell main { padding: 0; max-width: none; }
+  .rp-page, .rp-panel, .rp-page .card { break-inside: avoid; box-shadow: none !important; backdrop-filter: none !important; }
+  .rp-map { display: none; }
+  .rp-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .rp-gauge-ring, .rp-track > span, .rp-bar, .rp-q-bar > i { animation: none !important; }
+  .evidence details > div { break-inside: avoid; }
+}

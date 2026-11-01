@@ -1,11 +1,12 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { InterviewResultsResponse } from '../types';
 import { detectTier } from '../experience/quality';
 import { usePrefersReducedMotion } from '../design-system/motion';
 import { Icon } from './icon/Icon';
-import { ArrowRight, CircleCheck, Target, TriangleAlert } from './icon/icons';
+import { ArrowRight, CircleCheck, FileText, Target, TriangleAlert, Upload } from './icon/icons';
 import { Button, labelFor } from './ui';
+import { CountUp } from './motion/reveal';
 import type { MapAnswer } from './ReportNeuralMap';
 
 const ReportNeuralMap = lazy(() => import('./ReportNeuralMap'));
@@ -37,10 +38,12 @@ export function ReportAnalytics({ results, onRestart }: { results: InterviewResu
   const readiness = results.readiness;
   const activeAnswer = results.evidence.find((e) => e.questionId === active);
   const completed = new Date(results.details.completedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const answerQuality = results.evidence.length ? results.evidence.reduce((sum, e) => sum + e.score, 0) / results.evidence.length : null;
 
   return <section className="rp" aria-labelledby="rp-title">
     <header className="rp-head">
-      <div><p className="rp-eyebrow">Intelligence report</p><h1 id="rp-title">{results.roleTitle}</h1><p>{results.candidateName} · {completed} · {results.evidence.length} answers assessed</p></div>
+      <div><p className="rp-eyebrow">Intelligence report</p><h1 id="rp-title">{results.roleTitle}</h1><p>{results.candidateName} · {completed} · {results.evidence.length} answers assessed · {clock(results.details.durationSec)} duration</p>
+        <div className="rp-actions"><button type="button" className="rp-action" onClick={printReport}><Icon icon={FileText} />Print or save as PDF</button><button type="button" className="rp-action" onClick={() => downloadReport(results)}><Icon icon={Upload} />Download data</button></div></div>
       <div className="rp-gauges">
         <Gauge value={results.overallScore} max={100} label="Overall" text={results.overallScore.toFixed(0)} />
         <Gauge value={readiness?.score ?? 0} max={100} label="Readiness" text={readiness?.score != null ? String(readiness.score) : '—'} />
@@ -50,9 +53,10 @@ export function ReportAnalytics({ results, onRestart }: { results: InterviewResu
 
     <div className="rp-grid">
       <div className="rp-left">
-        <Metric label="Overall score" value={results.overallScore.toFixed(1)} unit="/100" bar={results.overallScore / 100} note={labelFor(results.performanceBand)} />
-        <Metric label="Role readiness" value={readiness?.score != null ? String(readiness.score) : '—'} unit="/100" bar={(readiness?.coverage ?? 0) / 100} note={readiness ? `${readiness.coverage}% coverage · ${readiness.assessedSkills} of ${readiness.totalSkills} skills` : 'Not available'} accent />
-        <Metric label="Duration" value={clock(results.details.durationSec)} unit="m:ss" note={`${results.evidence.length} answers`} />
+        <Metric label="Technical knowledge" value={<CountUp value={results.componentScores.technical} decimals={1} />} unit="/10" bar={results.componentScores.technical / 10} note={`Weighted ${Math.round((results.details.scoringWeights.technical ?? 0) * 100)}% of the overall score`} />
+        <Metric label="Communication" value={<CountUp value={results.componentScores.communication} decimals={1} />} unit="/10" bar={results.componentScores.communication / 10} note={`Weighted ${Math.round((results.details.scoringWeights.communication ?? 0) * 100)}% of the overall score`} />
+        <Metric label="Problem-solving" value={<CountUp value={results.componentScores.problemSolving} decimals={1} />} unit="/10" bar={results.componentScores.problemSolving / 10} note={`Weighted ${Math.round((results.details.scoringWeights.problemSolving ?? 0) * 100)}% of the overall score`} />
+        <Metric label="Answer quality" value={answerQuality === null ? '—' : <CountUp value={answerQuality} decimals={1} />} unit="/10" bar={(answerQuality ?? 0) / 10} note={`Mean score of your ${results.evidence.length} evaluated answers`} accent />
         <div className="rp-panel rp-donut-panel">
           <h2 className="rp-panel-title">Component scores</h2>
           <div className="rp-donut" style={{ background: conic(components.map(([, v]) => Math.max(.1, v)), SERIES) }} role="img" aria-label={`Component scores out of 10: ${components.map(([id, v]) => `${labelFor(id)} ${v.toFixed(1)}`).join(', ')}`}><span>{(components.reduce((a, [, v]) => a + v, 0) / Math.max(1, components.length)).toFixed(1)}<small>avg /10</small></span></div>
@@ -106,13 +110,40 @@ export function ReportAnalytics({ results, onRestart }: { results: InterviewResu
   </section>;
 }
 
+/** Print or save as PDF: the light theme prints on ivory paper, with every answer expanded; both are restored after. */
+function printReport() { window.print(); }
+let printState: { theme?: string; closed: HTMLDetailsElement[] } | null = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeprint', () => {
+    if (!document.querySelector('.rp') || printState) return; // a print already in progress keeps its saved state
+    const closed = [...document.querySelectorAll<HTMLDetailsElement>('.rp-page details:not([open])')];
+    closed.forEach((item) => { item.open = true; });
+    printState = { theme: document.documentElement.dataset.theme, closed };
+    document.documentElement.dataset.theme = 'light';
+  });
+  window.addEventListener('afterprint', () => {
+    if (!printState) return;
+    printState.closed.forEach((item) => { item.open = false; });
+    if (printState.theme) document.documentElement.dataset.theme = printState.theme;
+    printState = null;
+  });
+}
+
+/** The report's actual evaluation results as JSON, exactly as the backend returned them. */
+function downloadReport(results: InterviewResultsResponse) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' }));
+  const link = Object.assign(document.createElement('a'), { href: url, download: `interview-report-${results.sessionId}.json` });
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function Gauge({ value, max, label, text }: { value: number; max: number; label: string; text: string }) {
   return <div className="rp-gauge" style={{ '--sweep': `${Math.max(0, Math.min(1, value / max)) * 360}deg` } as CSSProperties} role="img" aria-label={`${label}: ${text}`}>
     <span className="rp-gauge-ring" aria-hidden="true" /><strong aria-hidden="true">{text}</strong><span className="rp-gauge-label" aria-hidden="true">{label}</span>
   </div>;
 }
 
-function Metric({ label, value, unit, bar, note, accent = false }: { label: string; value: string; unit: string; bar?: number; note: string; accent?: boolean }) {
+function Metric({ label, value, unit, bar, note, accent = false }: { label: string; value: ReactNode; unit: string; bar?: number; note: string; accent?: boolean }) {
   return <div className="rp-panel rp-metric">
     <span className="rp-eyebrow">{label}</span>
     {bar !== undefined && <span className="rp-track" data-accent={accent ? '' : undefined}><span style={{ scale: `${Math.max(0, Math.min(1, bar))} 1` }} /></span>}

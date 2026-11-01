@@ -55,6 +55,27 @@ try {
       assert.equal(await page.getByRole('img', { name: /^Overall: / }).count(), 1);
       assert.equal(await page.locator('.rp-bubbles li').count(), Object.keys(results.skillMap).length);
       await page.getByRole('heading', { name: 'Difficulty progression', exact: true }).waitFor(); // the detailed sections remain
+      // The four named measures are the backend's own scores; answer quality is the mean of the answer scores.
+      const tiles = await page.locator('.rp-metric').evaluateAll((items: HTMLElement[]) => items.map((item) => [item.querySelector('.rp-eyebrow')?.textContent, item.querySelector('strong .ds-visually-hidden')?.textContent]));
+      const mean = results.evidence.reduce((sum: number, e: any) => sum + e.score, 0) / results.evidence.length;
+      assert.deepEqual(tiles, [['Technical knowledge', results.componentScores.technical.toFixed(1)], ['Communication', results.componentScores.communication.toFixed(1)], ['Problem-solving', results.componentScores.problemSolving.toFixed(1)], ['Answer quality', mean.toFixed(1)]]);
+      for (const heading of ['Strengths', 'Weaknesses', 'Skill breakdown', 'Question-level evaluation', 'Improvement roadmap']) await page.getByRole('heading', { name: heading, exact: true }).waitFor();
+      assert.equal(await page.locator('#rp-questions details').count(), results.evidence.length);
+      // Export: the data download is exactly the backend's results.
+      const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download data' }).click()]);
+      const exported = JSON.parse(require('node:fs').readFileSync(await download.path(), 'utf8'));
+      assert.equal(exported.sessionId, results.sessionId); assert.equal(exported.overallScore, results.overallScore);
+      // Print / PDF: printing switches to the light theme and expands every answer, then restores both.
+      await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');
+      assert.equal(await page.locator('#rp-questions details:not([open])').count(), 0);
+      await page.emulateMedia({ media: 'print' });
+      await page.setViewportSize({ width: 900, height: 1200 }); await page.screenshot({ path: shot('print'), fullPage: true }); await page.setViewportSize({ width: 1440, height: 900 });
+      await page.pdf({ path: path.resolve('.browser-verification/report.pdf'), format: 'A4', printBackground: true });
+      await page.emulateMedia({ media: 'screen' });
+      await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
+      assert.ok(require('node:fs').statSync(path.resolve('.browser-verification/report.pdf')).size > 20000, 'PDF written');
     }
     await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js', { paths: [path.dirname(process.env.PLAYWRIGHT_MODULE_PATH ?? '.'), process.cwd()] }) });
     const violations = await page.evaluate(async () => (await (window as any).axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'best-practice'] })).violations.map((v: any) => `${v.id}: ${v.nodes.length} ${v.nodes[0]?.target}`));
