@@ -60,8 +60,23 @@ try {
   assert.equal((await context.request.post(`${base}/auth/register`, { data: { name: 'Live camera check', email: `live-${Date.now()}@example.test`, password: `Live-${Date.now()}-Check!` } })).status(), 201);
   const page = await context.newPage(); page.setDefaultTimeout(60000);
   const samples: { at: number; observation: Obs }[] = [];
-  page.on('response', async (response: any) => { if (/\/proctoring-frame$/.test(response.url()) && response.status() === 200) { const body = await response.json().catch(() => null); if (body?.observation) samples.push({ at: Date.now(), observation: body.observation }); } });
-  await page.addInitScript({ content: `window.SpeechRecognition=window.SpeechRecognition||class{start(){this.onstart?.();}stop(){setTimeout(()=>this.onend?.(),30);}abort(){}};` });
+  const t0 = Date.now(); let currentStep = 'setup';
+  report.frames = []; report.timeline = [];
+  page.on('response', async (response: any) => {
+    if (!/\/proctoring-frame$/.test(response.url())) return;
+    const status = response.status(); const body = await response.json().catch(() => null); const at = Date.now();
+    if (status === 200 && body?.observation) samples.push({ at, observation: body.observation });
+    const o = body?.observation;
+    report.frames.push({ t: +((at - t0) / 1000).toFixed(1), step: currentStep, status, error: status === 200 ? undefined : body?.error,
+      faces: o?.faceCount, faceState: o?.faceState, quality: o?.faceQuality?.checks, lowLight: o?.faceQuality?.lowLight,
+      yaw: o?.headPoseDegrees?.yaw, pitch: o?.headPoseDegrees?.pitch, headReliable: o?.directionEstimate?.headReliable, framing: o?.directionEstimate?.framing,
+      reliability: o?.directionEstimate?.reliabilityReason, gaze: o?.directionEstimate?.gazeOffset, gazeReliable: o?.directionEstimate?.gazeReliable,
+      eyesClosed: o?.directionEstimate?.eyesClosed, hands: o?.movementObservation?.handTracks?.length, rejectedHands: o?.movementObservation?.rejectedHands,
+      wristsVisible: o?.movementObservation?.body?.landmarks?.filter((l: any) => l.index === 15 || l.index === 16).length, bodyState: o?.movementObservation?.body?.state,
+      frame: o?.frameQuality, phone: o?.phoneObservation ? { status: o.phoneObservation.status, score: o.phoneObservation.score } : undefined, ms: o?.frame?.processingMs });
+  });
+  // Speech never advances the interview during the check: recognition starts but never returns words.
+  await page.addInitScript({ content: `window.SpeechRecognition=window.webkitSpeechRecognition=class{start(){this.onstart?.();}stop(){setTimeout(()=>this.onend?.(),30);}abort(){}};` });
   if (fixture) await installFaceFixture(page);
   await page.goto(base);
   report.camera = await page.evaluate(async () => (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput').map(d => d.label || '(label hidden until permission)'));
@@ -77,17 +92,37 @@ try {
   await page.getByLabel('Speech transcription', { exact: true }).selectOption('browser');
   await page.getByRole('button', { name: 'Start voice interview', exact: true }).click();
   report.camera = await page.evaluate(async () => (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput').map(d => d.label));
-  const show = (text: string) => page.evaluate((t) => { let el = document.getElementById('live-check-prompt'); if (!el) { el = document.createElement('div'); el.id = 'live-check-prompt'; el.setAttribute('style', 'position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:2147483647;background:#031211;color:#E8E4D3;border:2px solid #00AEBB;padding:18px 28px;font:600 22px/1.4 system-ui;max-width:80vw;text-align:center;border-radius:12px'); document.body.appendChild(el); } el.textContent = t; }, text);
-  for (let n = 5; n > 0; n--) { await show(`Live camera check starting in ${n}… Follow the instructions shown here.`); await page.waitForTimeout(1000); }
+  const show = (text: string) => page.evaluate((t) => { let el = document.getElementById('live-check-prompt'); if (!el) { el = document.createElement('div'); el.id = 'live-check-prompt'; el.setAttribute('style', 'position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:2147483647;background:#031211;color:#E8E4D3;border:2px solid #00AEBB;padding:18px 28px;font:600 22px/1.4 system-ui;max-width:80vw;text-align:center;border-radius:12px;white-space:pre-line'); document.body.appendChild(el); } el.textContent = t; }, text);
+  for (let n = 5; n > 0; n--) { await show(`Live camera check starting in ${n}… Keep this window in front until the end, and follow the instructions shown here.`); await page.waitForTimeout(1000); }
   await show('Sit normally and look at the screen (measuring your resting head position).'); await page.waitForTimeout(4000);
   const restSamples = samples.slice(-6).map(s => s.observation).filter(o => o.headPoseDegrees);
   const rest = { yaw: restSamples.length ? restSamples.reduce((a, o) => a + o.headPoseDegrees.yaw, 0) / restSamples.length : 0, pitch: restSamples.length ? restSamples.reduce((a, o) => a + o.headPoseDegrees.pitch, 0) / restSamples.length : 0 };
+  // Plain-string page code: tsx would inject a __name helper into named functions, which the page lacks.
+  const probe = `(() => {
+    const v = document.querySelector('video[aria-label="Local camera preview"]');
+    const tracks = v && v.srcObject ? v.srcObject.getVideoTracks().map(t => t.label + ':' + t.readyState + (t.muted ? ':muted' : '') + (t.enabled ? '' : ':disabled')) : [];
+    const texts = sel => Array.from(document.querySelectorAll(sel)).map(e => (e.textContent || '').trim()).filter(Boolean);
+    const badge = document.querySelector('.camera-preview > small[role="status"]');
+    return { visibility: document.visibilityState, focused: document.hasFocus(), tracks, badge: badge ? badge.textContent : null,
+      sampler: texts('p').find(t => /^(Connected|Visual|Waiting|Analyzing|Sampling|Interview ended)/.test(t)) || null, alerts: texts('[role="alert"]').slice(0, 3) };
+  })()`;
+  const snapshot = async () => { const state = await page.evaluate(probe).catch((e: Error) => ({ probeError: e.message })); report.timeline.push({ t: +((Date.now() - t0) / 1000).toFixed(1), step: currentStep, ...state }); };
   for (const step of STEPS) {
+    currentStep = step.id;
     if (fixture) await page.evaluate((m) => { (window as any).fixtureImageMode = m; }, step.fixtureMode ?? 'portrait');
-    for (let left = step.seconds; left > 0; left--) { await show(`${step.prompt}  (${left})`); await page.waitForTimeout(1000); }
-    const from = Date.now() - (step.seconds - 2) * 1000; // ignore the first 2 s while the person reacts
-    const window = samples.filter(s => s.at >= from).map(s => s.observation);
-    const verdict = window.length ? step.judge(window, rest) : { status: 'FAIL' as const, measured: 'no analysed samples arrived' };
+    // Wait for the action rather than a fixed window: the step ends as soon as Python has seen it (after at
+    // least 4 s), or after the limit. Live readings are shown so the person can see whether it registered.
+    const from = Date.now(), limit = fixture ? step.seconds : step.optional ? 15 : 20;
+    let window: Obs[] = [], verdict: ReturnType<Step['judge']> = { status: 'FAIL', measured: 'no analysed samples arrived' };
+    for (let elapsed = 0; elapsed < limit; elapsed++) {
+      window = samples.filter(s => s.at >= from).map(s => s.observation);
+      if (window.length) verdict = step.judge(window, rest);
+      if (!fixture && elapsed >= 4 && verdict.status === 'PASS') break;
+      const o = window.at(-1);
+      const live = o ? `Seen now: ${o.faceCount} face(s) · ${o.movementObservation?.handTracks?.length ?? 0} hand(s) · head yaw ${o.headPoseDegrees?.yaw?.toFixed(0) ?? '–'}° pitch ${o.headPoseDegrees?.pitch?.toFixed(0) ?? '–'}° · eyes ${o.directionEstimate?.gazeOffset ? (o.directionEstimate.gazeOffset.horizontal >= 0 ? '+' : '') + o.directionEstimate.gazeOffset.horizontal.toFixed(2) : '–'} · image ${o.frameQuality?.usable === false ? 'unusable' : 'usable'}` : 'Waiting for camera samples…';
+      await show(`${step.prompt}  (${limit - elapsed})\n${live}${verdict.status === 'PASS' ? '  ✓ seen' : ''}`); await snapshot(); await page.waitForTimeout(1000);
+    }
+    if (!fixture && verdict.status === 'FAIL' && window.length) verdict = { ...verdict, measured: `${verdict.measured} — the requested action was not seen within ${limit} s` };
     const status = fixture && !step.fixtureMode ? 'SKIPPED' : verdict.status;
     report.steps.push({ id: step.id, prompt: step.prompt, status, measured: fixture && !step.fixtureMode ? 'not reproducible with a still fixture image' : verdict.measured, samples: window.length });
     console.log(`${status.padEnd(7)} ${step.id.padEnd(14)} ${report.steps.at(-1).measured}`);

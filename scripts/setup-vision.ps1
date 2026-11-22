@@ -4,6 +4,13 @@
 # official MediaPipe models by SHA-256 (downloading any that are missing), then runs the vision self-check.
 param([string]$PythonVersion = '3.13', [switch]$Recreate, [switch]$Dev)
 $ErrorActionPreference = 'Stop'
+# uv, pip, Python and npx report progress on stderr. Under 'Stop', Windows PowerShell 5.1 turns that into a
+# terminating error whenever output is redirected (for example 2>&1 into a log), so native tools are judged
+# by their exit code instead.
+function Invoke-Native([scriptblock]$Command) {
+    $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    try { & $Command } finally { $ErrorActionPreference = $previous }
+}
 $root = Split-Path $PSScriptRoot -Parent
 $venv = Join-Path $root '.venv-proctoring'
 $venvPython = Join-Path $venv 'Scripts\python.exe'
@@ -19,23 +26,23 @@ if ($Recreate -and (Test-Path $venv)) { Remove-Item -Recurse -Force $venv }
 if (-not (Test-Path $venvPython)) {
     if ($uv) {
         Write-Host "Creating .venv-proctoring with uv (Python $PythonVersion)"
-        & $uv venv --python $PythonVersion $venv
+        Invoke-Native { & $uv venv --python $PythonVersion $venv }
     } else {
         Write-Host "Creating .venv-proctoring with the py launcher (Python $PythonVersion)"
-        & py "-$PythonVersion" -m venv $venv
+        Invoke-Native { & py "-$PythonVersion" -m venv $venv }
     }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $venvPython)) { throw "Could not create .venv-proctoring with Python $PythonVersion. Install Python $PythonVersion or uv (python -m pip install --user uv), then retry." }
 }
 
-$version = & $venvPython -c "import sys; print('%d.%d' % sys.version_info[:2])"
+$version = Invoke-Native { & $venvPython -c "import sys; print('%d.%d' % sys.version_info[:2])" }
 if ([version]$version -ge [version]'3.14' -or [version]$version -lt [version]'3.10') { throw ".venv-proctoring uses Python $version; the vision service needs 3.10-3.13. Rerun with -Recreate." }
 
 Write-Host "Installing pinned vision dependencies into Python $version"
-if ($uv) { & $uv pip install --python $venvPython -r $lock } else { & $venvPython -m pip install --disable-pip-version-check -r $lock }
+Invoke-Native { if ($uv) { & $uv pip install --python $venvPython -r $lock } else { & $venvPython -m pip install --disable-pip-version-check -r $lock } }
 if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed.' }
 
 Write-Host 'Verifying MediaPipe model assets'
 & (Join-Path $PSScriptRoot 'install-proctoring-models.ps1')
 
 Push-Location $root
-try { & npx tsx scripts/check-vision.ts; if ($LASTEXITCODE -ne 0) { throw 'Vision self-check failed.' } } finally { Pop-Location }
+try { Invoke-Native { & npx tsx scripts/check-vision.ts }; if ($LASTEXITCODE -ne 0) { throw 'Vision self-check failed.' } } finally { Pop-Location }

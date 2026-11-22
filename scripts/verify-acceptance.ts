@@ -24,14 +24,15 @@ try {
   page.on('pageerror', (e: Error) => pageErrors.push(e.message));
   const email = `acceptance-${Date.now()}@example.test`; const password = 'AcceptancePass!2026';
   assert.equal((await context.request.get(`${origin}/interviews`)).status(), 401);
-  await page.goto(origin); await page.getByRole('button', { name: 'Workspace', exact: true }).click();
+  // Signed out, the landing navigation says 'Sign in' (it says 'Workspace' once signed in).
+  await page.goto(origin); await page.getByRole('button', { name: /^(Sign in|Workspace)$/ }).first().click();
   await page.getByLabel('Full name', { exact: true }).fill('Acceptance Candidate');
   await page.getByLabel('Email address', { exact: true }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create candidate account', exact: true }).click();
   await page.getByRole('heading', { name: 'Interview history', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await page.getByRole('button', { name: 'Workspace', exact: true }).click();
+  await page.getByRole('button', { name: /^(Sign in|Workspace)$/ }).first().click();
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByLabel('Email address', { exact: true }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill('incorrect-password');
@@ -97,6 +98,8 @@ try {
 
   // Unsupported recognition must leave the backend session unstarted.
   await page.evaluate(`window.savedSpeech=window.SpeechRecognition;window.savedWebkitSpeech=window.webkitSpeechRecognition;window.SpeechRecognition=undefined;window.webkitSpeechRecognition=undefined;window.startRequests=0;const fetchStart=window.fetch;window.fetch=function(url,...args){if(String(url).endsWith('/start'))window.startRequests++;return fetchStart.call(this,url,...args);};`);
+  // The room now offers a choice of speech service; this check is about the browser service being unavailable.
+  await page.getByLabel('Speech transcription', { exact: true }).selectOption('browser');
   await page.getByRole('button',{name:'Start voice interview',exact:true}).click();await page.getByRole('alert').filter({hasText:'No interview was started.'}).waitFor();
   assert.equal(await page.evaluate(()=>(window as any).startRequests),0);
   await page.evaluate(`window.SpeechRecognition=window.savedSpeech;window.webkitSpeechRecognition=window.savedWebkitSpeech;`);
